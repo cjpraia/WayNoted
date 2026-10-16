@@ -9,7 +9,7 @@ const item = (id: string, en: string, pt: string, category: SlashCommand['catego
   ({ id, en, pt, category, operation, aliases: [...new Set([id, en.toLowerCase(), pt.toLowerCase(), ...aliases])], status: 'local-adaptation', limit })
 
 export const INTEGRATION_COMMANDS: readonly SlashCommand[] = [
-  item('dictation', 'Dictation', 'Ditado', 'Media', 'integration:dictation', ['dictate', 'ditar', 'voz', 'voice', 'speech', 'fala', 'transcrever', 'microfone'], 'Reconhecimento de fala on-device do macOS; sem nuvem.'),
+  item('dictation', 'Dictation', 'Ditado', 'Media', 'integration:dictation', ['dictate', 'ditar', 'voz', 'voice', 'speech', 'fala', 'transcrever', 'microfone'], 'Reconhecimento de fala no dispositivo; sem nuvem.'),
   item('today-agenda', 'Today’s agenda', 'Agenda de hoje', 'Advanced blocks', 'integration:agenda', ['agenda', 'calendar', 'calendário', 'calendario', 'eventos', 'events', 'today', 'hoje'], 'Eventos do Calendário do macOS escolhidos em Configurações.'),
 ]
 

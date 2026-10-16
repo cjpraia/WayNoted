@@ -112,7 +112,7 @@ export function VoiceTasksDialog({ onClose }: { onClose(): void }) {
         {aiReady && <label className="vt-ai"><input type="checkbox" checked={useAi} onChange={event => setUseAi(event.target.checked)} /> {t('Separar com IA local', 'Split with local AI')}</label>}
       </div>
       {snapshot.phase === 'error' && snapshot.error && <p className="vt-error" role="alert">{snapshot.error} {snapshot.pane && <button type="button" className="tk-link" onClick={() => void window.api?.openPrivacySettings?.(snapshot.pane!)}>{t('Abrir Ajustes do Sistema', 'Open System Settings')}</button>}</p>}
-      {!hasMic && <p className="vt-hint">{t('O ditado só existe no app para Mac. Cole ou digite o texto abaixo.', 'Dictation only exists in the Mac app. Paste or type the text below.')}</p>}
+      {!hasMic && <p className="vt-hint">{t('O ditado requer o aplicativo para desktop. Cole ou digite o texto abaixo.', 'Dictation requires the desktop app. Paste or type the text below.')}</p>}
       <label className="vt-field"><span>{t('Transcrição', 'Transcript')}</span>
         <Textarea rows={3} value={shown} readOnly={listening} placeholder={t('O que você disser aparece aqui. Você pode editar.', 'What you say appears here. You can edit it.')} onChange={event => { setTranscript(event.target.value); setAnalyzed(false) }} />
       </label>

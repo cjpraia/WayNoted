@@ -6,7 +6,18 @@ Your data stays on your computer. No account, built-in cloud sync, or telemetry 
 
 The interface supports **English and Brazilian Portuguese**. New installations start in English; existing language preferences are preserved. Change the language in **Settings → My account**.
 
-## Get started
+## Download for Windows
+
+Download the installer for your Windows 11 computer:
+
+| Computer | Installer |
+|---|---|
+| Intel or AMD (most PCs) | [Windows x64](https://github.com/cjpraia/WayNoted/releases/latest/download/WayNoted-Setup-1.0.1-win-x64.exe) |
+| ARM, including Snapdragon PCs | [Windows ARM64](https://github.com/cjpraia/WayNoted/releases/latest/download/WayNoted-Setup-1.0.1-win-arm64.exe) |
+
+Run Setup, then open **WayNoted** from Start. No developer tools, Node.js, .NET installation, or account are needed. These installers are unsigned: Windows may show an unknown-publisher warning, and managed PCs or Smart App Control may block unsigned applications. See the [Windows installation guide](docs/WINDOWS.md) for installation, updates, backups, and supported features. Checksums and verification reports are on the [release page](https://github.com/cjpraia/WayNoted/releases/latest).
+
+## Development setup
 
 For development, use Node.js 24 and npm. macOS builds require Apple Silicon and Xcode Command Line Tools; some native features require macOS 14 or later. Windows builds target Windows 11 x64 and ARM64 and require the .NET 10 SDK and Visual Studio C++ Build Tools. Installed Windows builds include the runtimes; users do not need Node.js or .NET.
 
@@ -39,7 +50,7 @@ To rebuild and launch the app, run `./scripts/launch.command`. The bundle is cre
 | [Distribution](docs/DISTRIBUTION.md) | Builds, signing, and updates |
 | [Licensing](docs/LICENSING.md) | Project license and third-party notices |
 
-Windows packaging and platform support are implemented. CI builds x64 and ARM64 NSIS installers and checks the installed application with disposable data. Validation builds are unsigned and are not a signed stable release. See [Windows distribution](docs/DISTRIBUTION.md#windows-builds) for build commands, native features, and release gates.
+Windows x64 and ARM64 installers are built and exercised on Windows CI, including an upgrade from the previous application version and restoration of a password-protected backup generated on macOS. See [Distribution](docs/DISTRIBUTION.md#windows-builds) for the build and verification process.
 
 ## Contributing
 

@@ -1,7 +1,7 @@
 {
   "name": "workspace-desktop",
   "productName": "WayNoted",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "WayNoted — local workspace for macOS and Windows",
   "main": "electron/main.cjs",
   "scripts": {
@@ -22,7 +22,7 @@
     "predev": "npm run configure",
     "prebuild": "npm run configure",
     "pretest": "npm run configure",
-    "dist:win": "npm run configure && npm run build && npm run build:native && npm run build:agent && node build/package.mjs --platform=win32 --arch=x64",
+    "dist:win": "npm run configure && npm run build && node build/build-windows-native.mjs --arch=x64 && npm run build:agent && node build/package.mjs --platform=win32 --arch=x64",
     "dist:win:arm64": "npm run configure && npm run build && node build/build-windows-native.mjs --arch=arm64 && npm run build:agent && node build/package.mjs --platform=win32 --arch=arm64",
     "check:package": "node scripts/check-package.mjs"
   },

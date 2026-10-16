@@ -50,7 +50,7 @@ export function UpdateCheck() {
       onChange={event => { setResult(null); setNeedsUrl(false); actions.updateSettings({ updateFeedUrl: event.target.value }) }} />
     <div className="uc-actions">
       <Button disabled={!native || busy} onClick={() => void check()}>{busy ? t('Buscando…', 'Checking…') : t('Buscar atualizações', 'Check for updates')}</Button>
-      {!native && <span className="st-hint">{t('Disponível no aplicativo para macOS.', 'Available in the macOS app.')}</span>}
+      {!native && <span className="st-hint">{t('Disponível no aplicativo para desktop.', 'Available in the desktop app.')}</span>}
     </div>
     <div className="uc-result" role="status" aria-live="polite">
       {needsUrl && !feedUrl.trim() && <span data-testid="uc-needs-url">{t('Informe o endereço do arquivo de versões acima para buscar atualizações.', 'Enter the versions file address above to check for updates.')}</span>}

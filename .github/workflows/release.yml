@@ -1,0 +1,35 @@
+name: Publish Windows release
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: windows-publication
+  cancel-in-progress: false
+jobs:
+  verify:
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/desktop.yml
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: windows-validation-unsigned-*
+          path: .artifacts/downloads
+      - name: Assemble verified installers and release metadata
+        run: node scripts/prepare-windows-release.mjs
+      - name: Publish the versioned public download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          gh release create "v$version" .artifacts/publication/*.exe .artifacts/publication/SHA256SUMS .artifacts/publication/verification.json .artifacts/publication/updates.json --target "$GITHUB_SHA" --title "WayNoted $version for Windows" --notes-file .artifacts/publication/release-notes.md --latest

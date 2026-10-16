@@ -4,6 +4,7 @@ on:
     branches: [main, 'codex/windows-support']
   pull_request:
   workflow_dispatch:
+  workflow_call:
 permissions:
   contents: read
 concurrency:
@@ -30,7 +31,17 @@ jobs:
       - run: npm test
         env:
           TEST_JOBS: '2'
+      - name: Create a portable encrypted workspace on macOS
+        if: runner.os == 'macOS'
+        run: node scripts/create-portable-fixture.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: runner.os == 'macOS'
+        with:
+          name: macos-portable-backup
+          path: .artifacts/portable-backup/
+          retention-days: 7
   windows-package:
+    needs: tests
     strategy:
       fail-fast: false
       matrix:
@@ -59,12 +70,29 @@ jobs:
         timeout-minutes: 12
       - name: Build Windows installer (unsigned validation artifact)
         run: npm run ${{ matrix.command }}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          # The previous shipped Windows implementation, with its original version.
+          ref: c71c0f3a2f2974dcd08a864510ccd9b603f2b3f2
+          path: .artifacts/baseline-source
+          persist-credentials: false
+      - name: Build the previous version for an actual installer upgrade
+        working-directory: .artifacts/baseline-source
+        run: |
+          npm ci --foreground-scripts
+          npm run ${{ matrix.command }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: macos-portable-backup
+          path: .artifacts/portable-backup
       - name: Verify the real installed application
         shell: pwsh
         run: |
           $setup = Get-ChildItem release/*-Setup-*-win-${{ matrix.arch }}.exe | Select-Object -First 1
           if (!$setup) { throw 'Installer not found' }
-          node scripts/check-package.mjs "--installer=$($setup.FullName)"
+          $baseline = Get-ChildItem .artifacts/baseline-source/release/*-Setup-*-win-${{ matrix.arch }}.exe | Select-Object -First 1
+          if (!$baseline) { throw 'Baseline installer not found' }
+          node scripts/check-package.mjs "--installer=$($setup.FullName)" "--baseline-installer=$($baseline.FullName)" --portable-backup=.artifacts/portable-backup
       - name: Compute checksums
         shell: pwsh
         run: |
@@ -78,6 +106,7 @@ jobs:
           name: windows-validation-unsigned-${{ matrix.arch }}-${{ github.sha }}
           if-no-files-found: warn
           retention-days: 14
+          include-hidden-files: true
           path: |
             release/*-Setup-*-win-${{ matrix.arch }}.exe
             release/SHA256SUMS

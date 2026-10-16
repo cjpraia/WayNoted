@@ -10,6 +10,8 @@ import { promisify } from 'node:util'
 const run = promisify(execFile)
 const option = name => process.argv.find(value => value.startsWith(`--${name}=`))?.slice(name.length + 3)
 const installer = option('installer')
+const baselineInstaller = option('baseline-installer')
+const portableBackup = option('portable-backup')
 if (installer && !process.env.CI && !process.argv.includes('--allow-install')) throw new Error('Installer checks replace and uninstall the selected app. Use a disposable Windows environment and pass --allow-install explicitly.')
 const appPath = option('app') || (process.platform === 'win32' ? path.join(process.env.LOCALAPPDATA, 'Programs', 'WorkspaceDesktop', 'Desktop.exe') : path.resolve('release/Desktop-darwin-arm64/Desktop.app/Contents/MacOS/Desktop'))
 const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'workspace-package-'))
@@ -17,7 +19,7 @@ const profile = path.join(directory, 'profile with spaces — á')
 const artifacts = path.resolve('.artifacts', 'package-check', process.platform)
 await fs.mkdir(artifacts, { recursive: true }); await fs.mkdir(path.join(profile, 'data'), { recursive: true })
 await fs.writeFile(path.join(profile, 'data', 'meta.json'), JSON.stringify({ pages: {}, settings: { locale: 'en-US', localApiEnabled: true }, notifications: {}, syncedBlocks: {} }))
-const result = { platform: process.platform, arch: process.arch, checks: [] }
+const result = { platform: process.platform, arch: process.arch, sourceCommit: process.env.GITHUB_SHA || null, checks: [] }
 let application
 const check = (name, details = {}) => { result.checks.push({ name, ...details }); console.log('PASS:', name) }
 const env = { ...process.env, WORKSPACE_USER_DATA: profile }; delete env.ELECTRON_RUN_AS_NODE
@@ -40,8 +42,32 @@ async function eventually(fn) {
   throw last || new Error('Timed out waiting for persisted content')
 }
 try {
-  if (installer) { assert.equal(process.platform, 'win32'); await run(path.resolve(installer), ['/S'], { timeout: 180000, windowsHide: true }); check('Installer completes as current user') }
+  if (baselineInstaller && !installer) throw new Error('An upgrade check requires both installers')
+  if (installer) { assert.equal(process.platform, 'win32'); await run(path.resolve(baselineInstaller || installer), ['/S'], { timeout: 180000, windowsHide: true }); check('Installer completes as current user') }
   let page = await launch()
+  if (baselineInstaller) {
+    const startingVersion = await application.evaluate(({ app }) => app.getVersion())
+    await page.keyboard.press('Control+n')
+    const oldTitle = page.locator('textarea.pg-title')
+    await oldTitle.fill('Upgrade preservation check'); await oldTitle.press('End'); await oldTitle.press('Enter')
+    const oldEditor = page.locator('[contenteditable="true"]:visible').first()
+    await oldEditor.click(); await page.keyboard.type('Content created by the previous installed version.')
+    const oldPage = await eventually(async () => Object.values((await page.evaluate(() => window.api.loadMeta())).pages).find(item => item.title === 'Upgrade preservation check'))
+    await eventually(async () => JSON.stringify(await page.evaluate(id => window.api.loadDoc(id), oldPage.id)).includes('Content created by the previous installed version.'))
+    await page.evaluate(() => window.api.vaultEnable('Upgrade-package-check-42!', { acknowledged: true }))
+    await application.close(); application = undefined
+    await run(path.resolve(installer), ['/S'], { timeout: 180000, windowsHide: true })
+    page = await launch()
+    const installedVersion = await application.evaluate(({ app }) => app.getVersion())
+    assert.equal(installedVersion, JSON.parse(await fs.readFile('package.json', 'utf8')).version)
+    assert.notEqual(installedVersion, startingVersion)
+    assert.ok((await page.evaluate(() => window.api.vaultStatus())).locked)
+    await page.evaluate(() => window.api.vaultUnlock('Upgrade-package-check-42!')); await page.reload()
+    assert.equal((await page.evaluate(() => window.api.loadMeta())).pages[oldPage.id].title, 'Upgrade preservation check')
+    assert.ok(JSON.stringify(await page.evaluate(id => window.api.loadDoc(id), oldPage.id)).includes('Content created by the previous installed version.'))
+    check('Version upgrade preserves password vault, page identity and full content', { from: startingVersion, to: installedVersion })
+    await page.evaluate(() => window.api.vaultDisable('Upgrade-package-check-42!')); await page.reload()
+  }
   const runtime = await page.evaluate(() => window.api.runtimeInfo())
   assert.equal(runtime.platform, process.platform); check('Installed app launches with native bridge')
   const api = await page.evaluate(() => window.api.localApiInfo())
@@ -122,6 +148,28 @@ try {
       await eventually(async () => (await page.locator('body').innerText()).includes('Windows package persistence check')); check('Reinstall preserves vault access and notes')
       await application.close(); application = undefined
     } finally { await fs.rm(sentinel, { force: true }) }
+  }
+  if (portableBackup) {
+    const fixture = JSON.parse(await fs.readFile(path.join(portableBackup, 'fixture.json'), 'utf8'))
+    if (process.platform === 'win32') assert.equal(fixture.platform, 'darwin', 'The transfer fixture must actually originate on macOS')
+    env.WORKSPACE_USER_DATA = path.join(directory, 'transferred profile — á')
+    page = await launch()
+    await page.evaluate(directory => window.api.backupSettingsSet({ directory, enabled: false }), path.resolve(portableBackup))
+    const restored = await page.evaluate(id => window.api.backupRestore(id), fixture.id)
+    assert.ok(restored.restored > 0)
+    await page.reload()
+    await page.locator('input[type=password]').first().waitFor({ state: 'visible', timeout: 30000 })
+    await page.evaluate(password => window.api.vaultUnlock(password), fixture.password)
+    await page.reload()
+    const meta = await page.evaluate(() => window.api.loadMeta())
+    assert.equal(meta.pages[fixture.ids.row].title, 'Transferred row — café')
+    assert.equal(meta.pages[fixture.ids.row].props.city, 'São Paulo')
+    assert.ok(meta.pages[fixture.ids.database].database.properties.some(item => item.id === 'city'))
+    assert.ok(JSON.stringify(await page.evaluate(id => window.api.loadDoc(id), fixture.ids.row)).includes('Cross-platform row content'))
+    await page.evaluate(({ id, password }) => window.api.pageUnlock(id, password), { id: fixture.ids.protected, password: fixture.pagePassword })
+    assert.ok(JSON.stringify(await page.evaluate(id => window.api.loadDoc(id), fixture.ids.protected)).includes('Protected content survives operating system transfer.'))
+    check('macOS backup restores databases, Unicode, workspace password and protected pages on Windows', { sourcePlatform: fixture.platform })
+    await application.close(); application = undefined
   }
 } catch (error) { result.error = error.stack; if (application) { const pages = await application.windows(); if (pages[0]) { await pages[0].screenshot({ path: path.join(artifacts, 'failure.png') }).catch(() => {}); await fs.writeFile(path.join(artifacts, 'failure.html'), await pages[0].content()).catch(() => {}) } }; throw error }
 finally { if (application) await application.close().catch(() => {}); await fs.writeFile(path.join(artifacts, 'results.json'), JSON.stringify(result, null, 2)); await fs.rm(directory, { recursive: true, force: true }).catch(() => {}) }
