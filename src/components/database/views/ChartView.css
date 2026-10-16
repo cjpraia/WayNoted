@@ -1,0 +1,254 @@
+/* Visualização Gráfico (prefixo ch-). Eixos e rótulos 12 px cinza, grade fina, cores da paleta de opções. */
+.ch-root {
+  max-width: 960px;
+  padding: 8px 0 24px;
+}
+.ch-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 32px;
+  margin-bottom: 8px;
+}
+.ch-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.ch-subtitle {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-tertiary);
+}
+.ch-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0.85;
+}
+.ch-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  transition: background 100ms, color 100ms;
+}
+.ch-export:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.ch-export:disabled {
+  opacity: 0.4;
+}
+
+.ch-card {
+  padding: 16px 12px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+.ch-plot {
+  position: relative;
+}
+.ch-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  font-family: inherit;
+}
+.ch-bg {
+  fill: var(--bg);
+}
+.ch-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+  opacity: 0.7;
+}
+.ch-axis {
+  stroke: var(--border-strong, var(--border));
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+.ch-tick {
+  fill: var(--text-tertiary);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.ch-label {
+  fill: var(--text-secondary);
+  font-size: 12px;
+}
+.ch-negative {
+  fill: var(--opt-red-dot);
+}
+.ch-mark {
+  cursor: pointer;
+  outline: none;
+  transition: opacity 120ms, filter 120ms;
+}
+.ch-mark:hover {
+  filter: brightness(0.94);
+}
+:root[data-theme='dark'] .ch-mark:hover {
+  filter: brightness(1.12);
+}
+.ch-mark.is-dimmed {
+  opacity: 0.35;
+}
+.ch-mark:focus-visible {
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+.ch-hit {
+  fill: transparent;
+}
+.ch-line {
+  fill: none;
+  stroke: var(--opt-blue-dot);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.ch-area {
+  fill: var(--opt-blue-dot);
+  fill-opacity: 0.1;
+}
+.ch-point {
+  fill: var(--bg);
+  stroke: var(--opt-blue-dot);
+  stroke-width: 2;
+  pointer-events: none;
+  transition: r 120ms;
+}
+.ch-point.is-hover {
+  fill: var(--opt-blue-dot);
+}
+.ch-track {
+  fill: none;
+  stroke: var(--bg-hover);
+}
+.ch-donut-total {
+  fill: var(--text);
+  font-size: 24px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.ch-number {
+  fill: var(--text);
+  font-size: 56px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.ch-number-caption {
+  fill: var(--text-tertiary);
+  font-size: 14px;
+}
+
+/* Dica no estilo popover */
+.ch-tooltip {
+  position: absolute;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 96px;
+  max-width: 220px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: 8px;
+  background: var(--bg-popover);
+  box-shadow: var(--shadow-popover);
+  font-size: 12px;
+  line-height: 16px;
+  pointer-events: none;
+}
+.ch-tooltip-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  overflow: hidden;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ch-tooltip-label i,
+.ch-detail-head i {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.ch-tooltip strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.ch-tooltip-meta {
+  color: var(--text-tertiary);
+}
+
+/* Páginas do grupo selecionado */
+.ch-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 12px;
+  padding: var(--space-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+}
+.ch-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 8px;
+  font-weight: 600;
+  color: var(--text);
+}
+.ch-detail-head span {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-tertiary);
+}
+.ch-detail button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 30px;
+  padding: 0 8px;
+  border-radius: var(--radius);
+  text-align: left;
+  color: var(--text);
+}
+.ch-detail button span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ch-detail button:hover {
+  background: var(--bg-hover);
+}
+
+/* Gráficos ricos: Sankey, árvore e controle da segunda propriedade. */
+.ch-flow { fill-opacity: 0.35; }
+.ch-flow:hover, .ch-flow:focus-visible { fill-opacity: 0.6; }
+.ch-tree-frame { fill: var(--bg-hover); stroke: var(--border); }
+.ch-tree-title { font-weight: 600; }
+.ch-tree-label { fill: #fff; font-size: 12px; font-weight: 600; paint-order: stroke; stroke: rgba(0, 0, 0, 0.25); stroke-width: 2px; }
+.ch-tree-value { font-weight: 400; }
+.ch-secondary { display: inline-flex; align-items: center; gap: var(--space-1); margin-right: var(--space-1); font-size: 12px; color: var(--text-secondary); }
+.ch-secondary .np-select { height: 26px; min-width: 0; max-width: 160px; font-size: 12px; }

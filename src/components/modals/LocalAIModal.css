@@ -1,0 +1,26 @@
+.lai-overlay{position:fixed;inset:0;z-index:1300;background:var(--bg-overlay);display:flex;align-items:center;justify-content:center;padding:32px}
+.lai-dialog{width:640px;max-height:88vh;overflow:auto;background:var(--bg-popover);color:var(--text);border-radius:12px;padding:24px;box-shadow:var(--shadow-modal);display:flex;flex-direction:column;gap:var(--space-3);outline:none}
+.lai-dialog header{display:flex;align-items:center;gap:var(--space-2)}.lai-dialog header h2{font-size:18px;margin:0;flex:1}.lai-dialog p{margin:0;color:var(--text-secondary);font-size:13px}.lai-dialog label{display:flex;flex-direction:column;gap:var(--space-1);font-size:13px}.lai-dialog textarea{border:1px solid var(--border);border-radius:6px;padding:var(--space-2);background:var(--bg);color:var(--text);font:inherit;width:100%}.lai-dialog textarea{min-height:84px;resize:vertical;user-select:text}.lai-dialog button{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);padding:8px var(--space-3);border-radius:6px;border:1px solid var(--border)}.lai-dialog button:disabled{opacity:.5;cursor:default}.lai-dialog button:not(:disabled):hover{background:var(--bg-hover)}.lai-dialog .lai-primary{background:var(--accent);color: var(--on-accent);border-color:var(--accent)}.lai-dialog .lai-primary:not(:disabled):hover{background:var(--accent-hover)}.lai-dialog .lai-check{flex-direction:row;align-items:center}.lai-model{display:flex;align-items:flex-end;gap:8px}.lai-model label{flex:1}.lai-dialog details{font-size:12px;color:var(--text-secondary)}.lai-dialog summary{cursor:pointer;margin-bottom:8px}.lai-result{border-top:1px solid var(--border);padding-top:var(--space-3)}.lai-result textarea{min-height:180px}.lai-result>div{display:flex;justify-content:flex-end;gap:8px;margin-top:var(--space-2)}.lai-dialog .lai-error{color:var(--danger)}
+
+/* padronização de modal: raio 12, cabeçalho 16/600, campos 32, botões 28 */
+.lai-dialog{padding:20px 24px 24px;gap:var(--space-3)}
+.lai-dialog header{gap:8px}.lai-dialog header>svg{color:var(--icon);flex:none}
+.lai-dialog header h2{font-size:16px;font-weight:600}
+.lai-dialog header button{width:26px;height:26px;padding:0;border:0;border-radius:6px;color:var(--icon)}
+.lai-dialog p{line-height:1.45}
+.lai-dialog label{font-size:12px;color:var(--text-secondary);gap:var(--space-1)}
+.lai-dialog textarea{border:0;box-shadow:inset 0 0 0 1px var(--border-strong);border-radius:8px;background:var(--bg-input);color:var(--text);font-size:14px;outline:0;transition:box-shadow .12s}
+.lai-dialog textarea{padding:8px var(--space-2);line-height:1.45}
+.lai-dialog textarea:focus{box-shadow:inset 0 0 0 1px var(--accent),0 0 0 2px var(--accent-bg)}
+.lai-dialog button{height:28px;padding:0 12px;font-size:13px;border:0;box-shadow:0 0 0 1px var(--border-strong);border-radius:6px;white-space:nowrap}
+.lai-dialog button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.lai-dialog .lai-primary{align-self:flex-start;border:0;box-shadow:none}
+.lai-dialog .lai-check{font-size:14px;color:var(--text);gap:16px;flex-direction:row-reverse;justify-content:space-between}
+.lai-dialog input[type=checkbox]{appearance:none;-webkit-appearance:none;position:relative;flex:none;width:30px;height:18px;margin:0;border-radius:9px;background:var(--border-strong);cursor:pointer;transition:background .15s}
+.lai-dialog input[type=checkbox]::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.lai-dialog input[type=checkbox]:checked{background:var(--accent)}.lai-dialog input[type=checkbox]:checked::after{transform:translateX(12px)}
+.lai-dialog input[type=checkbox]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.lai-dialog .lai-model button{height:32px}
+.lai-dialog details{font-size:12px}.lai-dialog summary{margin-bottom:8px}
+.lai-dialog [role=status]{padding:8px 12px;border-radius:8px;background:var(--bg-hover);color:var(--text-secondary)}
+.lai-dialog .lai-error{padding:8px 12px;border-radius:8px;background:color-mix(in srgb,var(--danger) 10%,transparent)}

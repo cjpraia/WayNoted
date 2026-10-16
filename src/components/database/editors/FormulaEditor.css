@@ -1,0 +1,51 @@
+/* Editor de fórmula (prefixo fx-). Realce por sobreposição: <pre> atrás de um textarea transparente. */
+.fx-editor { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.fx-field { position: relative; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); }
+.fx-field:focus-within { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.fx-overlay, .fx-input {
+  margin: 0; padding: 6px 8px; box-sizing: border-box; width: 100%; min-height: 76px;
+  font: 12.5px/18px var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; tab-size: 2;
+}
+.fx-overlay { position: absolute; inset: 0; overflow: hidden; pointer-events: none; color: var(--text); }
+.fx-input { position: relative; display: block; resize: vertical; border: 0; outline: 0; background: transparent; color: transparent; caret-color: var(--text); }
+.fx-input::placeholder { color: var(--text-tertiary); }
+.fx-input::selection { background: color-mix(in srgb, var(--accent) 28%, transparent); color: transparent; }
+.fx-string { color: var(--fx-green); }
+.fx-number { color: var(--fx-orange); }
+.fx-function { color: var(--fx-purple); font-weight: 600; }
+.fx-property { color: var(--fx-blue); font-weight: 600; }
+.fx-keyword { color: var(--fx-pink); }
+.fx-operator, .fx-paren { color: var(--text-secondary); }
+.fx-comment { color: var(--text-tertiary); font-style: italic; }
+.fx-unknown { color: var(--fx-red); }
+.fx-error-mark { text-decoration: wavy underline var(--fx-red); text-decoration-thickness: 1.5px; text-underline-offset: 3px; background: color-mix(in srgb, var(--fx-red) 12%, transparent); }
+
+.fx-suggestions { display: flex; flex-direction: column; max-height: 200px; overflow: auto; padding: 4px; border-radius: 8px; background: var(--bg-popover); box-shadow: var(--shadow-popover); }
+.fx-suggestion { display: flex; align-items: center; gap: 8px; min-height: 28px; padding: 0 8px; border-radius: 6px; text-align: left; color: var(--text); font-size: 13px; }
+.fx-suggestion.is-active { background: var(--bg-hover); }
+.fx-suggestion-label { font-family: var(--font-mono, ui-monospace, monospace); font-size: 12.5px; white-space: nowrap; }
+.fx-suggestion-detail { margin-left: auto; overflow: hidden; color: var(--text-tertiary); font-size: 11.5px; white-space: nowrap; text-overflow: ellipsis; }
+.fx-badge { flex: none; display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+.fx-badge--function { background: var(--opt-purple-bg); color: var(--opt-purple-text); }
+.fx-badge--property { background: var(--opt-blue-bg); color: var(--opt-blue-text); }
+.fx-badge--keyword { background: var(--opt-pink-bg); color: var(--opt-pink-text); }
+
+.fx-doc { display: flex; flex-direction: column; gap: 3px; padding: 8px; border-radius: 6px; background: var(--bg-hover); font-size: 12px; line-height: 16px; color: var(--text-secondary); }
+.fx-doc code { font-size: 11.5px; color: var(--text); }
+.fx-doc-example { color: var(--text-tertiary); }
+
+.fx-status { font-size: 12px; line-height: 16px; color: var(--text-secondary); overflow-wrap: anywhere; }
+.fx-status--error { color: var(--fx-red); }
+.fx-status-label { color: var(--text-tertiary); }
+.fx-result { color: var(--text); font-weight: 600; }
+.fx-row-pick { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-tertiary); }
+.fx-row-pick .np-select { flex: 1; min-width: 0; height: 26px; }
+
+.fx-browse-tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+.fx-browse-tabs button { height: 22px; padding: 0 8px; border-radius: 11px; font-size: 11.5px; color: var(--text-secondary); background: var(--bg-hover); }
+.fx-browse-tabs button.is-active { background: var(--accent); color: var(--on-accent); }
+.fx-browse-list { display: flex; flex-direction: column; max-height: 180px; overflow: auto; margin-top: 4px; }
+.fx-browse-list button { display: grid; grid-template-columns: 18px auto; column-gap: 8px; align-items: center; padding: 4px 6px; border-radius: 6px; text-align: left; font-family: var(--font-mono, ui-monospace, monospace); font-size: 12px; color: var(--text); }
+.fx-browse-list button:hover { background: var(--bg-hover); }
+.fx-browse-list small { grid-column: 2; font-family: var(--font, inherit); font-size: 11.5px; color: var(--text-tertiary); }

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE en-export [
+  <!ENTITY xxe SYSTEM "file:///etc/passwd">
+  <!ENTITY lol "lol">
+  <!ENTITY lol2 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;">
+]>
+<en-export>
+<note>
+<title>Nota &xxe; &lol2;</title>
+<created>20230115T101112Z</created>
+<content><![CDATA[<?xml version="1.0"?><!DOCTYPE en-note [<!ENTITY e SYSTEM "file:///etc/hosts">]><en-note><div>&e; texto</div></en-note>]]></content>
+</note>
+</en-export>

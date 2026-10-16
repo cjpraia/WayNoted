@@ -1,0 +1,146 @@
+{
+ "src/components/PagePeek.css": {
+  "small": 0,
+  "scale": 2
+ },
+ "src/components/database/csvImport.css": {
+  "small": 0,
+  "scale": 3
+ },
+ "src/components/database/editors/FormulaEditor.css": {
+  "small": 0,
+  "scale": 5
+ },
+ "src/components/database/propertyConfig.css": {
+  "small": 0,
+  "scale": 3
+ },
+ "src/components/database/settings/viewEffects.css": {
+  "small": 0,
+  "scale": 2
+ },
+ "src/components/database/table.css": {
+  "small": 0,
+  "scale": 3
+ },
+ "src/components/database/ui/ui.css": {
+  "small": 0,
+  "scale": 5
+ },
+ "src/components/database/views/ExtraViews.css": {
+  "small": 0,
+  "scale": 1
+ },
+ "src/components/database/views/GalleryView.css": {
+  "small": 0,
+  "scale": 5
+ },
+ "src/components/database/views/ListView.css": {
+  "small": 0,
+  "scale": 3
+ },
+ "src/components/database/views/TimelineView.css": {
+  "small": 0,
+  "scale": 4
+ },
+ "src/components/database/views/shared/shared.css": {
+  "small": 0,
+  "scale": 5
+ },
+ "src/components/dictation/dictation.css": {
+  "small": 0,
+  "scale": 5
+ },
+ "src/components/home/HomeView.css": {
+  "small": 0,
+  "scale": 5
+ },
+ "src/components/modals/AudioRecorder.css": {
+  "small": 0,
+  "scale": 2
+ },
+ "src/components/modals/ExportDialog.css": {
+  "small": 0,
+  "scale": 1
+ },
+ "src/components/modals/InboxModal.css": {
+  "small": 0,
+  "scale": 7
+ },
+ "src/components/modals/LocalAIModal.css": {
+  "small": 0,
+  "scale": 1
+ },
+ "src/components/modals/ImportDialog.css": {
+  "small": 0,
+  "scale": 1
+ },
+ "src/components/modals/SearchModal.css": {
+  "small": 0,
+  "scale": 1
+ },
+ "src/components/modals/SettingsModal.css": {
+  "small": 0,
+  "scale": 1
+ },
+ "src/components/page/editor.css": {
+  "small": 0,
+  "scale": 2
+ },
+ "src/components/page/page.css": {
+  "small": 0,
+  "scale": 4
+ },
+ "src/components/page/paste/paste.css": {
+  "small": 0,
+  "scale": 1
+ },
+ "src/components/page/topbar.css": {
+  "small": 0,
+  "scale": 7
+ },
+ "src/components/productivity/productivity.css": {
+  "small": 0,
+  "scale": 2
+ },
+ "src/components/query/query.css": {
+  "small": 0,
+  "scale": 1
+ },
+ "src/components/shortcuts/ShortcutList.css": {
+  "small": 0,
+  "scale": 4
+ },
+ "src/components/sidebar/move.css": {
+  "small": 0,
+  "scale": 5
+ },
+ "src/components/sidebar/sidebar.css": {
+  "small": 0,
+  "scale": 21
+ },
+ "src/daily/daily.css": {
+  "small": 0,
+  "scale": 1
+ },
+ "src/focus/focus.css": {
+  "small": 0,
+  "scale": 4
+ },
+ "src/quick/quick-settings.css": {
+  "small": 0,
+  "scale": 2
+ },
+ "src/quick/quick.css": {
+  "small": 0,
+  "scale": 1
+ },
+ "src/security/security.css": {
+  "small": 0,
+  "scale": 6
+ },
+ "src/tasks/tasks.css": {
+  "small": 0,
+  "scale": 2
+ }
+}

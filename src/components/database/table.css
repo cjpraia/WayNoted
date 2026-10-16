@@ -1,0 +1,417 @@
+/* Visualização em tabela. */
+.tb {
+  position: relative;
+  font-size: 14px;
+}
+.tb-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Espaço à esquerda para o "+" e a alça de arrastar das linhas. */
+  margin-left: -70px;
+  padding-left: 70px;
+  padding-bottom: 12px;
+  /* Barra de rolagem horizontal discreta: só aparece com o ponteiro sobre a tabela. */
+}
+.tb-scroll::-webkit-scrollbar-thumb {
+  background-color: transparent;
+}
+.tb:hover .tb-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--border-strong);
+}
+.tb-inner {
+  position: relative;
+  width: max-content;
+}
+
+/* ---------- Cabeçalho ---------- */
+.tb-head {
+  display: flex;
+  height: 34px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.tb-th {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 100%;
+  padding: 0 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  border-right: 1px solid var(--border);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s;
+}
+.tb-th:hover,
+.tb-th--open {
+  background: var(--bg-hover);
+}
+.tb-th-icon {
+  display: flex;
+  flex: none;
+  color: var(--icon);
+}
+.tb-th-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.tb-th-add {
+  width: 40px;
+  justify-content: center;
+  color: var(--icon);
+  border-right: 0;
+}
+.tb-th-more {
+  width: 36px;
+}
+.tb--readonly .tb-th:last-child {
+  border-right: 0;
+}
+.tb-resizer {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  width: 7px;
+  height: 100%;
+  z-index: 2;
+  cursor: col-resize;
+}
+.tb-resizer::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+.tb-resizer:hover::after,
+.tb-resizer--active::after {
+  opacity: 0.6;
+}
+body.tb-resizing,
+body.tb-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+.tb-drop-left {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.tb-drop-right {
+  box-shadow: inset -3px 0 0 var(--accent);
+}
+
+/* ---------- Linhas ---------- */
+.tb-row {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 34px;
+  border-bottom: 1px solid var(--border);
+}
+.tb-row--active .tb-cell {
+  background: var(--bg-hover);
+}
+.tb-drop-above {
+  box-shadow: inset 0 3px 0 var(--accent);
+}
+.tb-drop-below {
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+.tb-gutter {
+  position: absolute;
+  left: -70px;
+  top: 0;
+  width: 70px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  padding-right: 4px;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+.tb-row:hover .tb-gutter,
+.tb--selecting .tb-gutter,
+.tb-row--selected .tb-gutter,
+.tb-row--active .tb-gutter {
+  opacity: 1;
+}
+.tb-handle,
+.tb-row-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  color: var(--icon);
+  cursor: grab;
+}
+.tb-row-add {
+  width: 20px;
+  cursor: pointer;
+}
+.tb-handle:hover,
+.tb-row-add:hover {
+  background: var(--bg-hover);
+}
+.tb-handle--locked {
+  cursor: pointer;
+}
+
+.tb-cell {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  /* 33 px + 1 px de borda inferior da linha = linhas de 34 px, como no Export Bundle. */
+  min-height: 33px;
+  min-width: 0;
+  padding: 0 8px;
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tb-cell:last-child {
+  border-right: 0;
+}
+.tb--readonly .tb-cell {
+  cursor: default;
+}
+.tb-cell--editing {
+  box-shadow: inset 0 0 0 2px var(--accent-bg);
+}
+.tb-cell .db-chips {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.tb-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  flex: 1;
+}
+.tb-title-icon {
+  flex: none;
+  font-size: 16px;
+  line-height: 1;
+}
+.tb-title-text {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tb-title-text--empty {
+  color: var(--text-placeholder);
+}
+.tb-open {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--bg-popover);
+  box-shadow: 0 0 0 1px var(--border-strong), 0 1px 2px rgba(31, 26, 20, 0.08);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+.tb-row:hover .tb-open,
+.tb-row:focus-within .tb-open,
+.tb-open:focus-visible {
+  opacity: 1;
+}
+.tb-open:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.tb-open:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+:root[data-theme='dark'] .tb-open {
+  background: var(--bg-popover);
+}
+
+.tb-url-open {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-popover);
+  box-shadow: 0 0 0 1px var(--border-strong);
+  color: var(--icon);
+  opacity: 0;
+}
+.tb-cell:hover .tb-url-open {
+  opacity: 1;
+}
+
+/* ---------- Rodapé ---------- */
+.tb-new {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: var(--space-1);
+  height: 34px;
+  padding: 0 8px;
+  color: var(--text-tertiary);
+  text-align: left;
+}
+.tb-new:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+/* Linha de cálculos: sem bordas; células sem cálculo ficam vazias e mostram "Calcular" no hover. */
+.tb-foot {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 34px;
+  padding: 0;
+  font-size: 12px;
+}
+.tb-foot-cell{flex:none;min-width:0;height:34px;padding:0 8px;display:flex;align-items:center;justify-content:flex-end;gap:var(--space-1);color:var(--text-tertiary);font-size:12px;border-radius:var(--radius-sm);transition:background .12s,opacity .12s}
+.tb-foot-cell:not(:disabled):hover{background:var(--bg-hover)}
+.tb-foot-cell span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tb-foot-cell strong{color:var(--text-secondary);font-size:12px;font-weight:600}
+.tb-foot-cta{display:inline-flex;align-items:center;gap:4px;color:var(--text-tertiary)}
+.tb-foot-cell--empty .tb-foot-cta{opacity:0;transition:opacity .12s}
+.tb-foot:hover .tb-foot-cell--empty:not(:disabled) .tb-foot-cta,.tb-foot-cell--empty:focus-visible .tb-foot-cta{opacity:1}
+.tb-foot-cell--empty:disabled .tb-foot-cta{display:none}
+.tb-foot-label {
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 11px;
+}
+.tb-foot-value {
+  color: var(--text-secondary);
+}
+.tb-frozen-head,.tb-frozen-cell,.tb-frozen-foot{position:sticky;background:var(--bg);box-shadow:1px 0 0 var(--border)}
+.tb-frozen-head{z-index:5}.tb-frozen-cell{z-index:3}.tb-frozen-foot{z-index:4}.tb-row:hover .tb-frozen-cell,.tb-row--active .tb-frozen-cell{background:linear-gradient(var(--bg-hover),var(--bg-hover)),var(--bg)}
+/* O fundo da coluna congelada precisa ser OPACO (o --bg-hover é translúcido): senão as colunas que rolam por baixo aparecem através dela. */
+.tb-row.db-rule-gray .tb-cell{background:color-mix(in srgb,#8b9098 12%,var(--bg))}.tb-row.db-rule-red .tb-cell{background:color-mix(in srgb,#d65c5c 12%,var(--bg))}.tb-row.db-rule-orange .tb-cell{background:color-mix(in srgb,#d98a3f 12%,var(--bg))}.tb-row.db-rule-yellow .tb-cell{background:color-mix(in srgb,#d8b450 14%,var(--bg))}.tb-row.db-rule-green .tb-cell{background:color-mix(in srgb,#50a078 12%,var(--bg))}.tb-row.db-rule-blue .tb-cell{background:color-mix(in srgb,#3273b9 12%,var(--bg))}.tb-row.db-rule-purple .tb-cell{background:color-mix(in srgb,#9670b5 12%,var(--bg))}
+
+/* Wrapped cells determine the row height; neighbouring cells stretch with them. */
+.tb-cell--wrapped { white-space: normal; padding-top: 8px; padding-bottom: 8px; align-items: flex-start; }
+.tb-cell--wrapped .db-text, .tb-cell--wrapped .tb-title-text,
+.tb-cell--wrapped .db-chip-label, .tb-cell--wrapped .db-relation-link {
+  white-space: pre-wrap; overflow-wrap: anywhere; text-overflow: clip; overflow: visible;
+}
+.tb-cell--wrapped .db-chips { flex-wrap: wrap; }
+.tb-cell--wrapped .db-relation-values { flex-wrap: wrap; overflow: visible; }
+.tb-cell--wrapped .db-relation-title { white-space: normal; }
+.tb-cell--wrapped .db-chip { max-width: 100%; height: auto; }
+
+/* No título, "ABRIR" fica à esquerda do ícone de comentários da célula (sem sobreposição). */
+.tb-cell--title .tb-open { right: 28px; z-index: 1; background: var(--bg-popover); }
+/* Como no Export Bundle: ao passar o mouse, o texto do título reserva o espaço do botão e trunca antes dele
+   (nunca passa por baixo do "ABRIR"). Células com quebra de conteúdo quebram dentro da área livre. */
+.tb-row:hover .tb-cell--title .tb-title,
+.tb-cell--title:focus-within .tb-title { padding-right: 86px; }
+
+/* Seleção de linhas (como no Export Bundle): caixa logo à esquerda da 1ª coluna, no cabeçalho "selecionar
+   tudo"; aparece ao passar o mouse e fica visível enquanto houver seleção. Ver docs/DEVELOPMENT.md. */
+.tb-head { position: relative; }
+.tb-head-gutter { position: absolute; left: -30px; top: 0; width: 30px; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 4px; }
+.tb-gutter { opacity: 1; }
+.tb-gutter > * { opacity: 0; transition: opacity 0.1s; }
+.tb-row:hover .tb-gutter > *, .tb-row--active .tb-gutter > * { opacity: 1; }
+.tb--selecting .tb-gutter .tb-select, .tb-row--selected .tb-gutter .tb-select { opacity: 1; }
+.tb-head-gutter .tb-select { opacity: 0; transition: opacity 0.1s; }
+.tb-head:hover .tb-head-gutter .tb-select, .tb--selecting .tb-head-gutter .tb-select, .tb-select:focus-visible { opacity: 1; }
+.tb-select {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0 2px 0 4px;
+  border: 1.5px solid var(--icon);
+  border-radius: 3px;
+  background: var(--bg);
+  cursor: pointer;
+  outline: none;
+}
+.tb-select:hover { background: var(--bg-hover); }
+.tb-select:checked, .tb-select:indeterminate { border-color: var(--accent); background: var(--accent); }
+.tb-select:checked::after { content: ''; position: absolute; left: 4px; top: 1px; width: 4px; height: 8px; border: solid var(--on-accent); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.tb-select:indeterminate::after { content: ''; position: absolute; left: 2.5px; top: 5.5px; width: 8px; height: 2px; border-radius: 1px; background: var(--on-accent); }
+.tb-select:focus-visible { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px color-mix(in srgb, var(--accent) 70%, transparent); }
+.tb-row--selected, .tb-row--selected .tb-cell, .tb-row--selected .tb-frozen-cell { background: color-mix(in srgb, var(--accent) 12%, var(--bg)); }
+:root[data-theme='dark'] .tb-row--selected, :root[data-theme='dark'] .tb-row--selected .tb-cell, :root[data-theme='dark'] .tb-row--selected .tb-frozen-cell { background: color-mix(in srgb, var(--accent) 22%, var(--bg)); }
+.tb-row--selected .tb-cell { border-right-color: color-mix(in srgb, var(--accent) 18%, var(--border)); }
+.tb-row--selected { border-bottom-color: color-mix(in srgb, var(--accent) 18%, var(--border)); }
+/* Numeração de linhas */
+.tb-rownum, .tb-th-num { justify-content: flex-end; padding: 0 8px 0 0; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--text-tertiary); cursor: default; }
+
+/* Barra flutuante de seleção: "N selecionadas" | lixeira | ⋯ */
+.tb-bulk {
+  display: inline-flex;
+  align-items: stretch;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--bg-popover);
+  box-shadow: var(--shadow-popover);
+  font-size: 14px;
+  overflow: hidden;
+  pointer-events: auto;
+}
+.tb-bulk > * + * { border-left: 1px solid var(--border); }
+.tb-bulk-count { padding: 0 12px; color: var(--accent); font-weight: 500; white-space: nowrap; }
+.tb-bulk-count:hover, .tb-bulk-btn:hover:not(:disabled), .tb-bulk-btn.is-open { background: var(--bg-hover); }
+.tb-bulk-btn { display: inline-flex; align-items: center; justify-content: center; width: 34px; color: var(--text-secondary); }
+.tb-bulk-btn:disabled { opacity: 0.4; cursor: default; }
+/* Ação destrutiva: por último e afastada (≥ 16 px) das ações de uso frequente (Fitts, Proximidade). */
+.tb-bulk-btn--danger { margin-left: var(--space-4); border-left: 1px solid var(--border); }
+.tb-bulk-btn--danger:hover:not(:disabled) { color: var(--danger); background: var(--danger-bg, var(--bg-hover)); }
+.tb-bulk-count:focus-visible, .tb-bulk-btn:focus-visible { outline: none; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 60%, transparent); }
+.tb-bulk-dock--inline { position: sticky; left: 0; z-index: 6; margin-bottom: 8px; }
+
+/* ---------- Célula ativa (teclado) ---------- */
+.tb-inner:focus { outline: none; }
+.tb-cell { scroll-margin-top: 44px; scroll-margin-bottom: 24px; }
+/* Borda azul de 1,5 px por dentro da célula: não muda a altura nem desloca o conteúdo. */
+.tb-cell--active,
+.tb-frozen-cell.tb-cell--active { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 45%, transparent); }
+.tb-frozen-cell.tb-cell--active { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 45%, transparent), 1px 0 0 var(--border); }
+.tb-inner:focus .tb-cell--active,
+.tb--editing .tb-cell--active { box-shadow: inset 0 0 0 1.5px var(--accent); }
+.tb-inner:focus .tb-frozen-cell.tb-cell--active,
+.tb--editing .tb-frozen-cell.tb-cell--active { box-shadow: inset 0 0 0 1.5px var(--accent), 1px 0 0 var(--border); }
+.tb-cell--editing.tb-cell--active { box-shadow: inset 0 0 0 1.5px var(--accent); }
+.tb-note { position: sticky; left: 0; height: 0; overflow: visible; pointer-events: none; }
+.tb-note--on { position: absolute; right: 8px; bottom: 8px; height: auto; z-index: 7; padding: 4px var(--space-2); border-radius: var(--radius-sm); font-size: 12px; color: var(--text-secondary); background: var(--bg); box-shadow: 0 0 0 1px var(--border), 0 2px 8px rgba(0, 0, 0, 0.12); }
+@media (forced-colors: active) { .tb-cell--active { outline: 2px solid Highlight; outline-offset: -2px; } }
+
+/* Cabeçalho e rodapé congelados também precisam de fundo opaco no hover. */
+.tb-frozen-head:hover, .tb-th--open.tb-frozen-head { background: linear-gradient(var(--bg-hover), var(--bg-hover)), var(--bg); }
+.tb-foot-cell.tb-frozen-foot:not(:disabled):hover { background: linear-gradient(var(--bg-hover), var(--bg-hover)), var(--bg); }

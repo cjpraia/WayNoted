@@ -1,0 +1,14 @@
+.csvp-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:16px}
+.csvp{background:var(--bg-popover,var(--bg));color:var(--text-primary,var(--text));border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 12px 40px rgba(0,0,0,.25);width:min(960px,100%);max-height:90vh;display:flex;flex-direction:column;padding:16px;gap:10px;outline:none}
+.csvp header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.csvp h2{margin:0;font-size:16px}.csvp header span{color:var(--text-secondary);font-size:12px}
+.csvp-hint,.csvp-warn{margin:0;font-size:12px;color:var(--text-secondary)}.csvp-warn{padding:6px 8px;border-radius:var(--radius-sm);background:var(--bg-hover);color:var(--text-primary,var(--text))}
+.csvp-scroll{overflow:auto;border:1px solid var(--border);border-radius:var(--radius-sm);min-height:0}
+.csvp table{border-collapse:collapse;font-size:12px;width:max-content;min-width:100%}
+.csvp th,.csvp td{border-bottom:1px solid var(--border);border-right:1px solid var(--border);padding:6px 8px;text-align:left;vertical-align:top;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.csvp th{background:var(--bg-hover);font-weight:500;position:sticky;top:0}
+.csvp-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
+.csvp .np-select{display:flex;width:100%;min-width:0;height:var(--hit-min);font-size:12px}
+.csvp-fixed,.csvp small{display:block;color:var(--text-secondary);font-weight:400;margin-top:2px}.csvp-off{opacity:.4;text-decoration:line-through}
+.csvp .csvp-bad,.csvp-bad{color:#d44c47}
+.csvp footer{display:flex;align-items:center;gap:var(--space-4);justify-content:flex-end;flex-wrap:wrap}.csvp footer span{margin-right:auto;font-size:12px;color:var(--text-secondary)}
+

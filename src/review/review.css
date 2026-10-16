@@ -1,0 +1,43 @@
+/* Revisão espaçada (rv-): tela, cartão do Meu dia e sessão em tela cheia. Cores e espaços só por tokens. */
+.rv-lead { margin: 0 0 var(--space-4); color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
+.rv-h { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-5) 0 var(--space-2); font-size: 14px; font-weight: 600; color: var(--text); }
+.rv-home-text { margin: var(--space-2) var(--space-1); font-size: 13px; color: var(--text-secondary); }
+.rv-stats { display: flex; flex-wrap: wrap; gap: var(--space-3); margin: 0 0 var(--space-3); }
+.rv-stats > div { flex: 1 1 120px; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-3); background: var(--bg); }
+.rv-stats dt { font-size: 12px; color: var(--text-tertiary); }
+.rv-stats dd { margin: var(--space-1) 0 0; font-size: 22px; font-weight: 600; color: var(--text); }
+.rv-forecast { display: flex; align-items: flex-end; gap: var(--space-2); height: 96px; }
+.rv-bar { position: relative; flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; gap: var(--space-1); }
+.rv-bar-fill { display: block; width: 100%; min-height: var(--space-1); background: var(--accent-bg-strong); border-radius: var(--radius-sm); }
+.rv-bar-n { font-size: 12px; color: var(--text-secondary); }
+.rv-bar-d { font-size: 11px; color: var(--text-tertiary); }
+.rv-prefs { display: flex; flex-wrap: wrap; gap: var(--space-4); font-size: 13px; color: var(--text-secondary); }
+.rv-prefs label { display: inline-flex; align-items: center; gap: var(--space-2); }
+.rv-list { list-style: none; margin: 0; padding: 0; }
+.rv-item { display: flex; align-items: center; gap: var(--space-2); min-height: 36px; border-radius: var(--radius); }
+.rv-item:hover { background: var(--bg-hover); }
+.rv-item-main { flex: 1; min-width: 0; text-align: left; font: inherit; font-size: 14px; color: var(--text); background: none; border: 0; padding: var(--space-1); cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rv-item-due { font-size: 12px; color: var(--text-tertiary); }
+
+.rv-overlay { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; background: var(--bg); color: var(--text); }
+.rv-top { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border); }
+.rv-progress { flex: 1; min-width: 0; }
+.rv-stage { flex: 1; min-height: 0; overflow-y: auto; display: flex; align-items: center; justify-content: center; padding: var(--space-5) var(--space-4); }
+.rv-card { width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: var(--space-4); }
+.rv-meta { display: flex; align-items: center; gap: var(--space-2); font-size: 12px; color: var(--text-tertiary); }
+.rv-source { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rv-front { font-size: 28px; line-height: 1.3; font-weight: 600; overflow-wrap: anywhere; }
+.rv-back { border-top: 1px solid var(--border); padding-top: var(--space-4); font-size: 16px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text); }
+.rv-reveal { align-self: flex-start; }
+.rv-reveal kbd, .rv-grade kbd { margin-left: var(--space-2); padding: 0 var(--space-1); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); font: inherit; font-size: 11px; color: var(--text-tertiary); }
+.rv-grades { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--space-2); padding: var(--space-3) var(--space-4) var(--space-5); border-top: 1px solid var(--border); }
+.rv-grade { flex: 0 1 160px; flex-direction: column; align-items: center; height: auto; padding: var(--space-2) var(--space-3); }
+.rv-grade-label { font-weight: 600; }
+.rv-grade-when { font-size: 12px; color: var(--text-tertiary); }
+.rv-grade--1 .rv-grade-label { color: var(--danger); }
+.rv-grade--4 .rv-grade-label { color: var(--accent-text); }
+.rv-done { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); text-align: center; }
+.rv-done h2 { margin: 0; font-size: 28px; }
+.rv-done p { margin: 0; color: var(--text-secondary); }
+.rv-error { color: var(--danger); font-size: 13px; }
+@media (max-width: 640px) { .rv-front { font-size: 22px; } .rv-grade { flex-basis: 40%; } }

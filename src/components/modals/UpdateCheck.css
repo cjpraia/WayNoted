@@ -1,0 +1,7 @@
+.uc { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-4); max-width: 560px; }
+.uc-title { font-size: 14px; font-weight: 600; }
+.uc-input { max-width: none; width: 100%; }
+.uc-actions { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.uc-result { display: flex; flex-direction: column; gap: var(--space-2); font-size: 13px; }
+.uc-notes { margin: 0; padding: var(--space-3); border-radius: 8px; background: var(--bg-input); font: inherit; font-size: 12px; white-space: pre-wrap; max-height: 180px; overflow: auto; user-select: text; }
+.uc-error { color: var(--danger); }

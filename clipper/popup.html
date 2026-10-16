@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Workspace Clipper</title>
+<link rel="stylesheet" href="ui.css">
+</head>
+<body class="popup">
+<main>
+  <h1 id="title">Recortar para o Workspace</h1>
+  <p id="page" class="muted" aria-live="polite"></p>
+  <div id="setup" hidden>
+    <p>Pareie a extensão com o Workspace antes do primeiro uso.</p>
+    <button id="open-options" class="primary">Abrir opções</button>
+  </div>
+  <form id="form" hidden>
+    <label class="check"><input type="radio" name="mode" value="page" checked> <span id="l-page">Página (texto limpo)</span></label>
+    <label class="check"><input type="radio" name="mode" value="selection"> <span id="l-selection">Só a seleção</span> <small id="sel-info" class="muted"></small></label>
+    <label class="check"><input type="checkbox" id="markdown" checked> <span id="l-markdown">Preservar formatação (Markdown)</span></label>
+    <label class="check"><input type="checkbox" id="image" checked> <span id="l-image">Incluir link da imagem destaque</span></label>
+    <button id="send" class="primary" type="submit">Enviar</button>
+  </form>
+  <p id="status" role="status" aria-live="polite"></p>
+</main>
+<script src="identity.js"></script>
+<script src="api.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>

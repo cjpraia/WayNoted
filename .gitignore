@@ -1,0 +1,28 @@
+node_modules
+dist
+release
+.DS_Store
+build/native
+electron/gen
+release-test
+docs/reference-source/
+
+# Local credentials, profiles and generated publication artifacts
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.log
+coverage/
+.workspace/
+data/
+user-data/
+api-token.json
+credentials.json
+# Local reports and screenshots do not belong in source documentation.
+/.artifacts/
+# Editor configuration is local to this checkout.
+/.claude/

@@ -1,0 +1,131 @@
+/* Visualização Galeria (prefixo gl-). */
+
+.gl {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  padding: 4px 1px 16px;
+}
+
+.gl-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--bg);
+  box-shadow: var(--gl-card-shadow);
+  cursor: pointer;
+  transition: background 100ms, box-shadow 100ms;
+}
+.gl {
+  --gl-card-shadow: 0 0 0 1px rgba(31, 26, 20, 0.08), 0 1px 2px rgba(31, 26, 20, 0.04);
+  --gl-card-shadow-hover: 0 0 0 1px rgba(31, 26, 20, 0.1), 0 2px 6px rgba(31, 26, 20, 0.07);
+}
+:root[data-theme='dark'] .gl {
+  --gl-card-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 1px 2px rgba(0, 0, 0, 0.25);
+  --gl-card-shadow-hover: 0 0 0 1px rgba(255, 255, 255, 0.11), 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+:root[data-theme='dark'] .gl-card {
+  background: var(--bg-popover);
+}
+.gl-card:hover {
+  background: color-mix(in srgb, var(--bg) 97%, var(--text));
+  box-shadow: var(--gl-card-shadow-hover);
+}
+:root[data-theme='dark'] .gl-card:hover {
+  background: color-mix(in srgb, var(--bg-popover) 92%, var(--text));
+}
+.gl-card.is-active {
+  box-shadow: 0 0 0 2px var(--accent-bg), var(--gl-card-shadow);
+}
+
+.gl-preview {
+  flex: none;
+  height: 148px;
+  border-bottom: 1px solid var(--border);
+}
+.gl-cover {
+  background-color: var(--bg-hover);
+}
+.gl-snippet {
+  position: relative;
+  overflow: hidden;
+  padding: 14px 16px 0;
+  background: var(--bg-sidebar);
+}
+.gl-snippet::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 36px;
+  background: linear-gradient(to bottom, transparent, var(--bg-sidebar));
+}
+.gl-snippet-text {
+  font-size: 10px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.gl-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 8px 10px 10px;
+}
+.gl-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.gl-title .vw-inline-input {
+  height: 20px;
+}
+.gl-prop {
+  display: flex;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 18px;
+}
+.gl-prop .db-chips {
+  gap: 4px;
+}
+.gl-prop .db-chip {
+  height: 18px;
+  font-size: 12px;
+  line-height: 18px;
+}
+.gl-prop .db-text {
+  color: var(--text-secondary);
+}
+
+.gl-new {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 120px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--border);
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+:root[data-theme='dark'] .gl-new {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.gl-new:hover {
+  background: var(--bg-hover);
+  box-shadow: inset 0 0 0 1px var(--border);
+  color: var(--text-secondary);
+}
+:root[data-theme='dark'] .gl-new:hover {
+  background: var(--bg-hover);
+}

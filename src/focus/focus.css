@@ -1,0 +1,66 @@
+/* Modo foco: só o texto. Ativado por html.np-focus (ver FocusMode.tsx). */
+html.np-focus .sb,
+html.np-focus .shell-tabs,
+html.np-focus .pg-topbar,
+html.np-focus .bn-side-menu,
+html.np-focus .pg-controls,
+html.np-focus .pg-layout-nav,
+html.np-focus .pg-backlinks,
+html.np-focus .pg-cover-actions { display: none !important; }
+
+/* Mantém espaço para os botões de janela e uma faixa arrastável no topo. */
+html.np-focus .app-main { position: relative; }
+html.np-focus .app-main::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 36px; -webkit-app-region: drag; z-index: 1; }
+html.np-focus .app-content { padding-top: 56px; scroll-behavior: auto; }
+html.np-focus .pg-root:not(.pg-full) .pg-frame { margin-inline: auto; }
+html.np-focus .pg-cover { max-height: 120px; opacity: 0.75; }
+
+/* Destacar só o parágrafo atual. */
+html.np-focus-dim .pg-root .bn-block-content,
+html.np-focus-dim .pg-root .pg-title { opacity: 0.22; transition: opacity 0.18s ease; }
+html.np-focus-dim .pg-root .pg-title:focus { opacity: 1; }
+/* A regra do bloco atual é injetada por FocusLayer.tsx (#np-focus-current). */
+
+/* Máquina de escrever: espaço para a primeira e a última linha chegarem ao centro. */
+html.np-focus-typewriter .app-content { padding-bottom: 50vh; }
+html.np-focus-typewriter .pg-root { padding-top: calc(50vh - 200px); }
+
+.np-focus-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 4px 3px 12px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-popover);
+  box-shadow: var(--shadow-popover);
+  font-size: 12px;
+  color: var(--text-secondary);
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+  z-index: 50;
+}
+.np-focus-bar:hover, .np-focus-bar:focus-within { opacity: 1; }
+.np-focus-words { font-variant-numeric: tabular-nums; padding-right: 6px; white-space: nowrap; }
+.np-focus-sep { width: 1px; height: 16px; background: var(--border); margin: 0 4px; }
+.np-focus-bar button { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 8px; border-radius: var(--radius); color: var(--text-secondary); white-space: nowrap; }
+.np-focus-bar button:hover { background: var(--bg-hover); color: var(--text); }
+.np-focus-bar button.is-on { background: var(--accent-bg); color: var(--accent); }
+@media print { .np-focus-bar { display: none; } }
+
+/* Atalho exibido no item "Modo foco" do menu ⋯ da página. */
+.pg-menu-kbd { margin-left: auto; font-size: 12px; color: var(--text-tertiary); letter-spacing: 0.04em; }
+
+/* Linha de banco: propriedades, subitens e comentários recuam para o texto ser o protagonista.
+   Voltam ao normal ao passar o mouse ou ao editar (focus-within). */
+html.np-focus .pg-root .dbv-rowprops-main,
+html.np-focus .pg-root .pg-row-comments { opacity: 0.4; transition: opacity 0.18s ease; }
+html.np-focus-dim .pg-root .dbv-rowprops-main,
+html.np-focus-dim .pg-root .pg-row-comments { opacity: 0.22; }
+html.np-focus .pg-root .dbv-rowprops-main:hover,
+html.np-focus .pg-root .dbv-rowprops-main:focus-within,
+html.np-focus .pg-root .pg-row-comments:hover,
+html.np-focus .pg-root .pg-row-comments:focus-within { opacity: 1; }

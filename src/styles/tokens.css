@@ -1,0 +1,353 @@
+/* Tokens de tema do Workspace. Única fonte de cores/medidas: use sempre var(--…). */
+/* Identidade visual: docs/DEVELOPMENT.md. Destaque "Maré" (verde-azulado), neutros quentes de papel,
+   escalas de espaço/raio/movimento/elevação. Contrastes verificados em tests/design-tokens.test.mts. */
+:root {
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Display', 'Segoe UI', Helvetica,
+    'Apple Color Emoji', Arial, sans-serif;
+  --font-serif: Lyon-Text, Georgia, ui-serif, serif;
+  --font-mono: iawriter-mono, Nitti, Menlo, Courier, monospace;
+  /* Fonte de caráter dos títulos (Newsreader, OFL, embutida em src/styles/identity.css). Configurações → Aparência
+     → "Fonte dos títulos: Sistema" troca para a fonte do sistema (:root[data-title-font='system']). */
+  --font-display: 'Newsreader Variable', 'Newsreader', 'New York', ui-serif, Georgia, serif;
+
+  /* Neutros quentes ("papel") */
+  --bg: #fffdfa;
+  --bg-sidebar: #f6f3ee;
+  --bg-popover: #fffefc;
+  --bg-raised: #ffffff;
+  --bg-hover: rgba(70, 56, 40, 0.06);
+  --bg-active: rgba(70, 56, 40, 0.1);
+  --bg-input: rgba(240, 235, 227, 0.6);
+  --bg-overlay: rgba(28, 24, 18, 0.5);
+  --text: #26231f;
+  --text-secondary: #5f584f;
+  --text-tertiary: #766e64;
+  --text-placeholder: #a39c92;
+  --icon: #857d73;
+  --border: #e7e1d8;
+  --border-strong: rgba(70, 56, 40, 0.2);
+
+  /* Destaque "Maré" e derivados — um destaque primário por tela (Von Restorff). */
+  --accent: #0f766e;
+  --accent-hover: #0b5f58;
+  --accent-active: #094d47;
+  --accent-bg: rgba(15, 118, 110, 0.1);
+  --accent-bg-strong: rgba(15, 118, 110, 0.16);
+  --accent-text: #0d6d65;
+  --on-accent: #ffffff;
+  --link: var(--accent-text);
+  --selection: rgba(15, 118, 110, 0.2);
+  --focus-ring: rgba(15, 118, 110, 0.45);
+  /* Anel de foco do teclado (src/styles/a11y.css): cor sólida, espessura e afastamento. Alto contraste engrossa. */
+  --focus-outline: var(--border-strong);
+  --focus-width: 2px;
+  --focus-offset: 2px;
+
+  /* Estados semânticos: vermelho só para perigo. */
+  --danger: #c4382e;
+  --danger-hover: #a92f26;
+  --danger-bg: rgba(196, 56, 46, 0.1);
+  --success: #2f7d4f;
+  --warning: #a16207;
+  --disabled-opacity: 0.45;
+  /* Avisos flutuantes (toast) escuros nos dois temas. */
+  --toast-bg: #2b2722;
+  --toast-text: #f6f2ec;
+  --toast-action: #6fd0c2;
+
+  /* Elevação (3 níveis) com sombras levemente quentes. */
+  --shadow-1: 0 0 0 1px rgba(43, 32, 20, 0.06), 0 1px 2px rgba(43, 32, 20, 0.06), 0 4px 12px rgba(43, 32, 20, 0.06);
+  --shadow-popover: 0 0 0 1px rgba(43, 32, 20, 0.07), 0 4px 8px rgba(43, 32, 20, 0.08), 0 12px 28px rgba(43, 32, 20, 0.14);
+  --shadow-modal: 0 0 0 1px rgba(43, 32, 20, 0.07), 0 8px 16px rgba(43, 32, 20, 0.1), 0 24px 56px rgba(43, 32, 20, 0.22);
+  --shadow-2: var(--shadow-popover);
+  --shadow-3: var(--shadow-modal);
+
+  /* Raios: 4 (chips, caixas de seleção) · 6 (botões, itens de menu) · 8 (campos) · 12 (cartões, popovers) · 16 (modais). */
+  --radius-xs: 4px;
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 999px;
+
+  /* Espaçamento 4/8/12/16/24/32 (Proximidade / Região comum). */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* Alvos mínimos (Fitts) e tamanhos de ícone. */
+  --hit-min: 28px;
+  --hit-primary: 32px;
+  --icon-xs: 14px;
+  --icon-sm: 16px;
+  --icon-md: 18px;
+  --icon-lg: 20px;
+
+  /* Movimento (Doherty: tudo ≤ 220 ms). */
+  --dur-1: 80ms;
+  --dur-2: 140ms;
+  --dur-3: 220ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --topbar-height: 44px;
+  /* Faixa de abas no topo da janela; o topo da barra lateral usa a mesma altura. */
+  --tabs-height: 38px;
+  /* Espaço reservado aos botões de janela do macOS (semáforo). */
+  --traffic-lights-width: 78px;
+  --page-width: 720px;
+  --page-padding: 96px;
+}
+
+:root[data-theme='dark'] {
+  --bg: #1c1a17;
+  --bg-sidebar: #23201c;
+  --bg-popover: #2a2723;
+  --bg-raised: #24211d;
+  --bg-hover: rgba(255, 240, 220, 0.06);
+  --bg-active: rgba(255, 240, 220, 0.1);
+  --bg-input: rgba(255, 240, 220, 0.06);
+  --bg-overlay: rgba(10, 8, 6, 0.72);
+  --text: #f2eee8;
+  --text-secondary: #b5ada2;
+  --text-tertiary: #9a9287;
+  --text-placeholder: #7f776d;
+  --icon: #8f877c;
+  --border: #38332d;
+  --border-strong: rgba(255, 240, 220, 0.16);
+
+  --accent: #4fc1b1;
+  --accent-hover: #6fd0c2;
+  --accent-active: #3aa898;
+  --accent-bg: rgba(79, 193, 177, 0.15);
+  --accent-bg-strong: rgba(79, 193, 177, 0.24);
+  --accent-text: #5ccbbb;
+  --on-accent: #06201d;
+  --selection: rgba(79, 193, 177, 0.28);
+  --focus-ring: rgba(79, 193, 177, 0.5);
+  --focus-outline: var(--border-strong);
+
+  --danger: #f27d74;
+  --danger-hover: #f48b82;
+  --danger-bg: rgba(240, 113, 103, 0.14);
+  --success: #57b98a;
+  --warning: #e0a84e;
+
+  --shadow-1: 0 0 0 1px rgba(255, 240, 220, 0.07), 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-popover: 0 0 0 1px rgba(255, 240, 220, 0.09), 0 4px 8px rgba(0, 0, 0, 0.25), 0 12px 28px rgba(0, 0, 0, 0.45);
+  --shadow-modal: 0 0 0 1px rgba(255, 240, 220, 0.09), 0 8px 16px rgba(0, 0, 0, 0.3), 0 24px 56px rgba(0, 0, 0, 0.55);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  user-select: none;
+  cursor: default;
+}
+
+::selection {
+  background: var(--selection);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app {
+  display: flex;
+  height: 100%;
+}
+.app-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+.app-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+:root[data-title-font='system'] { --font-display: var(--font-sans); }
+
+/* Native PDF: export only the selected page, independent of open dialogs/peek. */
+@media print {
+  @page { margin: 16mm 14mm; }
+  .np-print-ancestor > :not(.np-print-ancestor):not(.np-print-target) { display: none !important; }
+  html.np-print-ancestor, body.np-print-ancestor, .np-print-ancestor, .np-print-target {
+    display: block !important;
+    position: static !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    transform: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: white !important;
+    color: #222 !important;
+  }
+  .np-print-target { --bg: white; --bg-popover: white; --text: #222; --text-secondary: #555; --border: #ddd; --page-padding: 0px; print-color-adjust: exact; }
+  .np-print-target .pg-frame, .np-print-target .pg-body, .np-print-target .bn-editor,
+  .np-print-target .dbv-body { max-width: none !important; width: auto !important; padding-inline: 0 !important; overflow: visible !important; }
+  .np-print-target .pg-controls, .np-print-target .pg-cover-actions, .np-print-target .pg-cover-hint,
+  .np-print-target .pg-bottom-space, .np-print-target .bn-side-menu, .np-print-target .bn-formatting-toolbar,
+  .np-print-target .dbv-tools, .np-print-target .dbv-tab-add, .np-print-target .dbv-footer,
+  .np-print-target .pg-editor-tools, .np-print-target .pg-editor-status { display: none !important; }
+  .np-print-target textarea, .np-print-target input { border: 0 !important; background: transparent !important; color: #222 !important; }
+  .np-print-target .bn-editor { background: transparent !important; color: #222 !important; }
+  .np-print-target img, .np-print-target canvas, .np-print-target video { max-width: 100% !important; break-inside: avoid; }
+  .np-print-target h1, .np-print-target h2, .np-print-target h3 { break-after: avoid; }
+  .np-print-target .bn-block-outer { break-inside: auto; }
+}
+
+/* Sistema de ícones (src/components/ui/icons, docs/DEVELOPMENT.md):
+   tons de ícone por cor de opção — traço (--icon-tint-*) e fundo suave de ladrilho (--icon-tint-*-bg). */
+:root {
+  --icon-tint-default: rgba(70, 56, 40, 0.74); --icon-tint-default-bg: rgba(70, 56, 40, 0.06);
+  --icon-tint-gray: #7d7a75;    --icon-tint-gray-bg: rgba(125, 122, 117, 0.12);
+  --icon-tint-brown: #9f6b53;   --icon-tint-brown-bg: rgba(159, 107, 83, 0.12);
+  --icon-tint-orange: #d9730d;  --icon-tint-orange-bg: rgba(217, 115, 13, 0.11);
+  --icon-tint-yellow: #c29343;  --icon-tint-yellow-bg: rgba(203, 145, 47, 0.13);
+  --icon-tint-green: #448361;   --icon-tint-green-bg: rgba(68, 131, 97, 0.11);
+  --icon-tint-blue: #337ea9;    --icon-tint-blue-bg: rgba(51, 126, 169, 0.11);
+  --icon-tint-purple: #9065b0;  --icon-tint-purple-bg: rgba(144, 101, 176, 0.11);
+  --icon-tint-pink: #c14c8a;    --icon-tint-pink-bg: rgba(193, 76, 138, 0.11);
+  --icon-tint-red: #d44c47;     --icon-tint-red-bg: rgba(212, 76, 71, 0.11);
+}
+:root[data-theme='dark'] {
+  --icon-tint-default: rgba(255, 245, 230, 0.74); --icon-tint-default-bg: rgba(255, 240, 220, 0.07);
+  --icon-tint-gray: #9b9a97;    --icon-tint-gray-bg: rgba(155, 154, 151, 0.16);
+  --icon-tint-brown: #ba856f;   --icon-tint-brown-bg: rgba(186, 133, 111, 0.16);
+  --icon-tint-orange: #d9864a;  --icon-tint-orange-bg: rgba(217, 134, 74, 0.16);
+  --icon-tint-yellow: #d3a54f;  --icon-tint-yellow-bg: rgba(211, 165, 79, 0.16);
+  --icon-tint-green: #5ba37c;   --icon-tint-green-bg: rgba(91, 163, 124, 0.16);
+  --icon-tint-blue: #4b9fd6;    --icon-tint-blue-bg: rgba(75, 159, 214, 0.16);
+  --icon-tint-purple: #a87bd6;  --icon-tint-purple-bg: rgba(168, 123, 214, 0.17);
+  --icon-tint-pink: #d4689f;    --icon-tint-pink-bg: rgba(212, 104, 159, 0.16);
+  --icon-tint-red: #e26a63;     --icon-tint-red-bg: rgba(226, 106, 99, 0.16);
+}
+.np-icon { flex: none; }
+.np-page-icon { display: inline-flex; align-items: center; justify-content: center; line-height: 0; vertical-align: middle; }
+.np-page-icon > svg { display: block; }
+.np-page-icon--glyph { color: var(--icon-tint-default); }
+.np-page-icon--default { color: var(--icon); }
+
+/* ---------- Acessibilidade (docs/USAGE.md) ---------- */
+/* Alto contraste (Ajustes do Sistema → Acessibilidade → Monitor → Aumentar contraste): texto mais escuro, bordas
+   fortes, anel de foco de 3 px. Pares críticos verificados (AAA 7:1 no texto) em tests/a11y-contrast.test.mts. */
+@media (prefers-contrast: more) {
+  :root {
+    --text: #14110e;
+    --text-secondary: #38322b;
+    --text-tertiary: #473f37;
+    --text-placeholder: #625a50;
+    --icon: #4d453c;
+    --border: #6b6358;
+    --border-strong: rgba(38, 35, 31, 0.7);
+    --accent: #0a5c55;
+    --accent-hover: #084a44;
+    --accent-active: #063a35;
+    --accent-text: #0a5c55;
+    --accent-bg: rgba(15, 118, 110, 0.14);
+    --danger: #8f2119;
+    --danger-hover: #741a14;
+    --success: #1c5a37;
+    --warning: #6e4204;
+    --focus-ring: rgba(10, 92, 85, 0.8);
+    --focus-width: 3px;
+    --disabled-opacity: 0.6;
+  }
+  :root[data-theme='dark'] {
+    --text: #ffffff;
+    --text-secondary: #e2dbd0;
+    --text-tertiary: #cfc7ba;
+    --text-placeholder: #a9a195;
+    --icon: #cfc7ba;
+    --border: #9a9285;
+    --border-strong: rgba(255, 245, 230, 0.55);
+    --accent: #7fe0d0;
+    --accent-hover: #a2eadf;
+    --accent-active: #5cd0be;
+    --accent-text: #8fe6d7;
+    --accent-bg: rgba(79, 193, 177, 0.24);
+    --danger: #ffa59d;
+    --danger-hover: #ffbbb5;
+    --success: #7fd9a8;
+    --warning: #f2c36f;
+    --focus-ring: rgba(127, 224, 208, 0.9);
+  }
+}
+@media (prefers-contrast: more) {
+  input, textarea, select { border-color: var(--border-strong); }
+  hr { border-color: var(--border); }
+}
+/* Menos transparência: sem desfoque de fundo e véu de modal mais opaco. */
+@media (prefers-reduced-transparency: reduce) {
+  :root { --bg-overlay: rgba(28, 24, 18, 0.88); }
+  :root[data-theme='dark'] { --bg-overlay: rgba(10, 8, 6, 0.94); }
+  *, *::before, *::after { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+}
+/* Menos movimento: nenhuma animação ou transição não essencial (indicadores de progresso param no primeiro quadro). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+}

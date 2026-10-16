@@ -1,0 +1,139 @@
+/* Painel de Produtividade — só tokens do tema (claro/escuro). */
+.pd-root {
+  --pd-l0: var(--bg-hover);
+  --pd-l1: color-mix(in srgb, var(--accent) 24%, transparent);
+  --pd-l2: color-mix(in srgb, var(--accent) 46%, transparent);
+  --pd-l3: color-mix(in srgb, var(--accent) 72%, transparent);
+  --pd-l4: var(--accent);
+  --pd-panel: color-mix(in srgb, var(--text) 3%, var(--bg));
+  --pd-card: var(--bg);
+  height: 100%;
+  overflow-y: auto;
+  user-select: text;
+}
+:root[data-theme='dark'] .pd-root { --pd-l0: rgba(255, 240, 220, 0.07); --pd-panel: var(--bg-sidebar); --pd-card: var(--bg-raised); }
+.pd-inner { max-width: 980px; margin: 0 auto; padding: 48px 40px 80px; }
+.pd-header { display: flex; align-items: center; flex-wrap: wrap; gap: 4px var(--space-3); margin-bottom: 20px; }
+.pd-title { display: flex; align-items: center; gap: var(--space-2); margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
+.pd-title svg { color: var(--accent); }
+.pd-sub { flex: 1 1 260px; margin: 0; color: var(--text-secondary); font-size: 13px; }
+.pd-ghost, .pd-link { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--text-secondary); font-size: 13px; padding: var(--space-1) 8px; border-radius: var(--radius); }
+.pd-ghost:hover, .pd-link:hover { background: var(--bg-hover); color: var(--text); }
+.pd-link { padding: 4px 0; margin-top: 8px; color: var(--accent); }
+.pd-link:hover { background: none; text-decoration: underline; color: var(--accent); }
+.pd-btn { height: 30px; padding: 0 12px; border-radius: var(--radius); background: var(--accent); color: var(--on-accent); font-weight: 500; font-size: 13px; }
+.pd-btn:hover { background: var(--accent-hover); }
+
+.pd-panel { background: var(--pd-panel); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+.pd-off { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); font-size: 13px; color: var(--text-secondary); }
+.pd-off strong { color: var(--text); }
+.pd-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: var(--space-3); }
+.pd-seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: 8px; background: var(--bg-hover); }
+.pd-seg button { padding: 4px var(--space-2); border-radius: 6px; font-size: 13px; color: var(--text-secondary); }
+.pd-seg button:hover { color: var(--text); }
+.pd-seg button.is-on { background: var(--pd-card); color: var(--text); font-weight: 500; box-shadow: 0 0 0 1px var(--border); }
+.pd-note { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: var(--space-1) var(--space-2); margin-bottom: 12px; border-radius: var(--radius); background: var(--accent-bg); font-size: 12px; color: var(--text-secondary); }
+.pd-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: var(--radius-sm); color: var(--icon); }
+.pd-icon-btn:hover:not(:disabled) { background: var(--bg-hover); color: var(--text); }
+.pd-icon-btn:disabled { opacity: 0.35; cursor: default; }
+
+.pd-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.pd-card { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: var(--space-2) 12px; border-radius: 10px; background: var(--pd-card); box-shadow: 0 0 0 1px var(--border); }
+.pd-card-label { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pd-card-value { font-size: 20px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pd-card-hint { font-size: 11px; color: var(--text-tertiary); }
+.pd-est { margin: 8px 2px 0; font-size: 12px; color: var(--text-tertiary); }
+
+.pd-h2 { display: flex; align-items: center; gap: var(--space-1); margin: 0; font-size: 13px; font-weight: 600; color: var(--text); }
+.pd-muted { color: var(--text-tertiary); font-weight: 400; }
+.pd-small { font-size: 12px; margin: 8px 0 0; }
+.pd-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.pd-select { height: 26px; padding: 0 var(--space-1); border-radius: var(--radius); border: 1px solid var(--border); background: var(--pd-card); color: var(--text); font: inherit; font-size: 12px; }
+
+.pd-heat { position: relative; margin-top: var(--space-4); padding: 12px; border-radius: 10px; background: var(--pd-card); box-shadow: 0 0 0 1px var(--border); }
+.pd-heat-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: var(--space-2); }
+.pd-heat-tools { display: flex; align-items: center; gap: 8px; }
+.pd-year { display: inline-flex; align-items: center; gap: 2px; }
+.pd-year-label { min-width: 112px; text-align: center; font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.pd-heat-scroll { overflow-x: auto; padding-bottom: 4px; container-type: inline-size; }
+.pd-heat-body { --cell: clamp(7px, calc((100cqw - 36px) / 53 - 3px), 14px); --gap: 3px; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: var(--space-1); row-gap: 4px; width: max-content; margin: 0 auto; }
+.pd-heat-months { grid-column: 2; display: grid; grid-template-columns: repeat(53, var(--cell)); column-gap: var(--gap); font-size: 10px; color: var(--text-tertiary); height: 13px; }
+.pd-heat-months span { white-space: nowrap; overflow: visible; text-transform: capitalize; }
+.pd-heat-days { grid-column: 1; grid-row: 2; display: grid; grid-template-rows: repeat(7, var(--cell)); row-gap: var(--gap); font-size: 10px; color: var(--text-tertiary); line-height: var(--cell); text-transform: capitalize; }
+.pd-heat-grid { grid-column: 2; grid-row: 2; display: grid; grid-template-columns: repeat(53, var(--cell)); column-gap: var(--gap); border-radius: 4px; }
+.pd-heat-grid:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.pd-heat-col { display: grid; grid-template-rows: repeat(7, var(--cell)); row-gap: var(--gap); }
+.pd-cell { display: block; width: var(--cell, 10px); height: var(--cell, 10px); border-radius: 3px; background: var(--pd-l0); }
+.pd-cell.pd-l1 { background: var(--pd-l1); }
+.pd-cell.pd-l2 { background: var(--pd-l2); }
+.pd-cell.pd-l3 { background: var(--pd-l3); }
+.pd-cell.pd-l4 { background: var(--pd-l4); }
+.pd-cell.is-out { background: transparent; }
+.pd-cell.is-est { outline: 1px dashed color-mix(in srgb, var(--text) 22%, transparent); outline-offset: -1px; }
+.pd-cell.is-today { box-shadow: 0 0 0 1px var(--text-secondary); }
+.pd-cell.is-active { box-shadow: 0 0 0 2px var(--text); }
+.pd-heat-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; font-size: 12px; color: var(--text-secondary); min-height: 18px; }
+.pd-bubble { position: absolute; z-index: 5; transform: translate(-50%, -100%); max-width: 260px; padding: var(--space-1) var(--space-2); border-radius: var(--radius); background: var(--bg-popover); box-shadow: var(--shadow-popover); color: var(--text); font-size: 12px; line-height: 1.4; pointer-events: none; text-wrap: balance; text-align: center; }
+.pd-tip { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pd-legend { display: inline-flex; align-items: center; gap: 4px; flex: none; color: var(--text-tertiary); font-size: 11px; }
+.pd-legend .pd-cell { --cell: 10px; }
+
+.pd-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+.pd-box { padding: 12px; border-radius: 10px; background: var(--pd-card); box-shadow: 0 0 0 1px var(--border); min-width: 0; }
+.pd-span { grid-column: 1 / -1; }
+.pd-hours { display: grid; grid-template-columns: repeat(24, 1fr); gap: 2px; align-items: end; height: 110px; margin-top: 12px; }
+.pd-hour { height: 100%; display: flex; align-items: flex-end; }
+.pd-hour i { display: block; width: 100%; border-radius: 2px 2px 0 0; background: var(--pd-l2); }
+.pd-hour.is-peak i { background: var(--pd-l4); }
+.pd-hours-axis { display: flex; justify-content: space-between; margin-top: 4px; font-size: 10px; color: var(--text-tertiary); }
+.pd-week-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; }
+.pd-week { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.pd-week th, .pd-week td { padding: var(--space-1) 4px; text-align: right; border-bottom: 1px solid var(--border); }
+.pd-week th[scope='row'], .pd-week thead th:first-child { text-align: left; font-weight: 400; color: var(--text-secondary); }
+.pd-week thead th { font-size: 11px; font-weight: 500; color: var(--text-tertiary); }
+.pd-week tr:last-child th, .pd-week tr:last-child td { border-bottom: 0; }
+.pd-up { color: var(--accent); }
+.pd-down { color: var(--text-secondary); }
+.pd-goal { position: relative; width: 56px; height: 56px; flex: none; }
+.pd-goal circle { fill: none; stroke-width: 5; }
+.pd-goal-track { stroke: var(--pd-l0); }
+.pd-goal-value { stroke: var(--pd-l4); stroke-linecap: round; transition: stroke-dasharray 0.3s; }
+.pd-goal-pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--text); }
+.pd-fun { display: flex; align-items: center; gap: var(--space-1); margin: var(--space-3) 2px 0; font-size: 13px; color: var(--text-secondary); }
+.pd-fun svg { color: var(--icon); flex: none; }
+
+.pd-list { list-style: none; margin: 8px 0 0; padding: 0; }
+.pd-list button { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 32px; padding: 4px var(--space-1); border-radius: var(--radius); text-align: left; }
+.pd-list button:hover { background: var(--bg-hover); }
+.pd-list-icon { width: 18px; display: flex; align-items: center; justify-content: center; color: var(--icon); flex: none; }
+.pd-list-title { flex: 1 1 auto; min-width: 0; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pd-list-meta { flex: none; font-size: 12px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+
+/* Cartão "Esta semana" da página inicial */
+.pd-home { display: flex; align-items: center; gap: 24px; width: 100%; padding: var(--space-3) 16px; border-radius: 12px; text-align: left; box-shadow: inset 0 0 0 1px var(--border); background: var(--bg); transition: background 0.12s, box-shadow 0.12s; }
+.pd-home:hover { box-shadow: inset 0 0 0 1px var(--border-strong); background: color-mix(in srgb, var(--bg-hover) 50%, var(--bg)); }
+.pd-home-icon { color: var(--accent); flex: none; }
+.pd-home-stats { display: flex; flex-wrap: wrap; gap: var(--space-1) 28px; flex: 1; min-width: 0; }
+.pd-home-stat { display: flex; flex-direction: column; gap: 1px; }
+.pd-home-stat strong { font-size: 18px; line-height: 1.2; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.pd-home-stat span { font-size: 11.5px; color: var(--text-tertiary); }
+.pd-home-week { display: flex; flex-direction: column; gap: 4px; flex: none; }
+.pd-home-bars { display: grid; grid-template-columns: repeat(7, 10px); gap: var(--space-1); align-items: end; height: 30px; flex: none; }
+.pd-home-bars i { display: block; border-radius: 3px; background: color-mix(in srgb, var(--accent) 38%, transparent); }
+.pd-home-bars i.is-today { background: var(--accent); }
+.pd-home-bars i.is-zero { background: var(--bg-active); }
+.pd-home-days { display: grid; grid-template-columns: repeat(7, 10px); gap: var(--space-1); }
+.pd-home-days b { font-size: 9.5px; font-weight: 500; text-align: center; color: var(--text-tertiary); text-transform: uppercase; }
+.pd-home-days b.is-today { color: var(--text); }
+.pd-home-link { flex: none; display: inline-flex; align-items: center; gap: var(--space-1); font-size: 12px; color: var(--text-secondary); }
+.pd-home:hover .pd-home-link { color: var(--text); }
+
+.pd-inner { container-type: inline-size; }
+@container (max-width: 680px) {
+  .pd-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pd-two { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .pd-inner { padding: 32px 16px 64px; }
+  .pd-home-week, .pd-home-link { display: none; }
+}

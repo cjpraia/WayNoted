@@ -1,0 +1,58 @@
+/* Integração com o Calendário do macOS: painel de permissão, sobreposição e bloco Agenda de hoje. */
+.npcal-panel { display: flex; flex-direction: column; gap: var(--space-2); }
+.npcal-panel.is-compact { padding: 4px var(--space-2) var(--space-2); gap: 8px; }
+.npcal-label { display: block; font-size: 14px; font-weight: 500; color: var(--text); }
+.npcal-panel.is-compact .npcal-label { font-size: 13px; }
+.npcal-hint { display: block; margin: 0; font-size: 12px; line-height: 1.45; color: var(--text-secondary); }
+.npcal-error, .npcal-menu-error { margin: 0; font-size: 12px; line-height: 1.4; color: var(--danger); }
+.npcal-menu-error { padding: 4px var(--space-2) var(--space-1); max-width: 260px; }
+.npcal-switch-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; cursor: pointer; }
+.npcal-switch-row.is-menu { padding: var(--space-1) var(--space-2); font-size: 13px; }
+.npcal-switch-row input[type='checkbox'] { flex: none; width: 30px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+.npcal-status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); }
+.npcal-status strong { color: var(--text); font-weight: 500; }
+.npcal-status[data-state='denied'] strong, .npcal-status[data-state='restricted'] strong { color: var(--danger); }
+.npcal-status > svg { color: var(--icon); flex: none; }
+.npcal-list { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow: auto; }
+.npcal-source-title { padding: 2px 0 4px; font-size: 11.5px; font-weight: 500; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.02em; }
+.npcal-calendar { display: flex; align-items: center; gap: 8px; min-height: 28px; padding: 0 var(--space-1); border-radius: 6px; font-size: 13px; cursor: pointer; }
+.npcal-calendar:hover { background: var(--bg-hover); }
+.npcal-calendar input { accent-color: var(--accent); }
+.npcal-calendar-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.npcal-tag { font-size: 11px; color: var(--text-tertiary); }
+.npcal-dot { flex: none; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--npcal-color, var(--accent)); }
+.npcal-field { display: flex; flex-direction: column; gap: var(--space-1); }
+.npcal-field .np-select { max-width: 320px; }
+
+/* Botão no cabeçalho da visualização */
+.npcal-overlay-btn.is-on { color: var(--accent); }
+
+/* Eventos sobrepostos (somente leitura) */
+.cal-event.npcal-event { cursor: default; box-shadow: none; background: color-mix(in srgb, var(--npcal-color) 12%, var(--bg)); color: var(--text); }
+.cal-event.npcal-event:hover { background: color-mix(in srgb, var(--npcal-color) 18%, var(--bg)); }
+.cal-event.npcal-event.is-all-day { background: color-mix(in srgb, var(--npcal-color) 22%, var(--bg)); }
+:root[data-theme='dark'] .cal-event.npcal-event { background: color-mix(in srgb, var(--npcal-color) 22%, var(--bg)); }
+:root[data-theme='dark'] .cal-event.npcal-event:hover { background: color-mix(in srgb, var(--npcal-color) 30%, var(--bg)); }
+.npcal-event .cal-event-title { display: flex; align-items: center; gap: var(--space-1); min-width: 0; }
+.npcal-event .npcal-dot { width: 6px; height: 6px; }
+.npcal-time { flex: none; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.npcal-event-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Bloco Agenda de hoje */
+.npcal-agenda { width: 100%; padding: var(--space-2) 12px; border-radius: 8px; box-shadow: 0 0 0 1px var(--border); background: var(--bg); user-select: none; }
+.npcal-agenda-head { display: flex; align-items: center; gap: 8px; margin-bottom: var(--space-1); font-size: 14px; font-weight: 600; color: var(--text); }
+.npcal-agenda-head svg { color: var(--icon); flex: none; }
+.npcal-agenda-date { font-weight: 400; color: var(--text-secondary); font-size: 13px; }
+.npcal-agenda-head .np-icon-btn { margin-left: auto; }
+.npcal-agenda-list { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.npcal-agenda-item { display: grid; grid-template-columns: 8px 92px 1fr; align-items: baseline; gap: var(--space-2); padding: var(--space-1) 4px; border-radius: 6px; font-size: 13.5px; line-height: 1.4; }
+.npcal-agenda-item:hover { background: var(--bg-hover); }
+.npcal-agenda-item .npcal-dot { align-self: center; }
+.npcal-agenda-time { color: var(--text-secondary); font-variant-numeric: tabular-nums; font-size: 12.5px; }
+.npcal-agenda-title { min-width: 0; color: var(--text); overflow-wrap: anywhere; }
+.npcal-agenda-meta { color: var(--text-tertiary); font-size: 12px; }
+.npcal-agenda-empty { padding: var(--space-1) 4px; font-size: 13px; color: var(--text-secondary); }
+.npcal-agenda-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: var(--space-1); }
+.npcal-panel.is-compact .npcal-status { display: grid; grid-template-columns: 14px 1fr; align-items: start; column-gap: 8px; row-gap: var(--space-1); line-height: 1.4; }
+.npcal-panel.is-compact .npcal-status > svg { margin-top: 2px; }
+.npcal-panel.is-compact .npcal-status > .np-btn { grid-column: 1 / -1; justify-self: start; }

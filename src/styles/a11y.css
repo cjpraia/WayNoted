@@ -1,0 +1,57 @@
+/* Acessibilidade (docs/USAGE.md): anel de foco do teclado, skip link, texto só para leitor de tela. */
+
+/* Anel de foco único para todo controle interativo. Vence os ~97 `outline: none` herdados dos componentes
+   (por isso `!important`): quem precisa de outro indicador (cartão, célula ativa) soma sombra/fundo, nunca remove o anel.
+   Exceções documentadas, na lista `:not(...)` abaixo (e espelhada em tests/a11y-focus.test.mts):
+   · campos de título e de texto livre em que o cursor de texto já é o indicador (.pg-title, .dbv-title, .cv-title, .ot-name…);
+   · anfitriões `grid`/`menu`/`listbox` com `aria-activedescendant` (tabela, mapa de calor, menus): o indicador fica no descendente ativo.
+     Campos e botões com `aria-activedescendant` (busca ⌘K, Select) mantêm o anel.
+   `[tabindex='-1']` fica de fora: é foco programático (caixas de diálogo); papéis com foco móvel entram pelo `[role]`. */
+:root :is(
+  a[href], button, summary, select, input:not([type='hidden']), textarea,
+  [tabindex]:not([tabindex='-1']),
+  [role='button'], [role='link'], [role='menuitem'], [role='menuitemcheckbox'], [role='menuitemradio'], [role='option'],
+  [role='tab'], [role='treeitem'], [role='row'], [role='gridcell'], [role='switch'], [role='checkbox'], [role='radio'],
+  [role='slider'], [role='separator'][tabindex]
+):focus-visible:not(
+  .pg-title, .dbv-title, .cv-title, .cv-text-editor, .cv-layer-rename, .fx-input, .ot-name, .ot-desc,
+  .pg-video-caption, .qn-title, .qn-body, [role='grid'][aria-activedescendant], [role='menu'][aria-activedescendant], [role='listbox'][aria-activedescendant]
+) {
+  outline: var(--focus-width, 2px) solid var(--focus-outline, var(--accent)) !important;
+  outline-offset: var(--focus-offset, 2px) !important;
+}
+/* Dentro de contêineres com overflow oculto (campos, itens de lista, células, abas) o anel vai por dentro. */
+:root:root:root :is(input, textarea, select, .cv-surface, .gr-canvas, [role='option'], [role='menuitem'], [role='menuitemcheckbox'], [role='menuitemradio'], [role='tab'], [role='treeitem'], [role='row'], [role='gridcell']):focus-visible:not(.pg-title, .dbv-title, .cv-title, .cv-text-editor, .cv-layer-rename, .fx-input, .ot-name, .ot-desc, .pg-video-caption, .qn-title, .qn-body, [role='grid'][aria-activedescendant], [role='menu'][aria-activedescendant], [role='listbox'][aria-activedescendant]) {
+  outline-offset: calc(var(--focus-width, 2px) * -1) !important;
+}
+/* Estilo Export Bundle: campos de texto, busca e o editor não ganham anel colorido — o cursor já indica o foco.
+   Campos de busca/entrada em popovers: anel fino na cor de destaque. Botões e itens: anel neutro só no teclado. */
+:root:root:root:root :is(input, textarea, select, [contenteditable], [role='textbox'], .ProseMirror):focus-visible {
+  outline-width: 0 !important;
+}
+:root:root :is(.dbv-input, .sb-input, .vs-input, .sec-input, .db-dsp-search, .ed-fmt-link-input):focus,
+:root:root :is(.lsp-search, .fx-field):focus-within {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent), 0 0 0 1px var(--accent);
+  outline: 0 solid transparent !important;
+}
+@media (forced-colors: active) {
+  :root :is(a, button, summary, select, input, textarea, [tabindex], [role]):focus-visible { outline-color: Highlight !important; }
+}
+
+/* Texto só para leitores de tela (contagens, anúncios). */
+.np-sr-only {
+  position: absolute !important; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+/* Skip link: primeiro item na ordem de foco; aparece só com o foco do teclado. */
+.np-skip-link {
+  position: fixed; top: var(--space-2); left: var(--space-2); z-index: 10000;
+  padding: var(--space-2) var(--space-4); min-height: var(--hit-min); display: inline-flex; align-items: center;
+  border-radius: var(--radius); background: var(--accent); color: var(--on-accent);
+  font-size: 13px; font-weight: 600; text-decoration: none; box-shadow: var(--shadow-popover);
+  transform: translateY(-200%);
+}
+.np-skip-link:focus, .np-skip-link:focus-visible { transform: none; }
+.app-main:focus { outline: none; }

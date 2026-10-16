@@ -1,0 +1,29 @@
+.exd-overlay{position:fixed;inset:0;z-index:1300;background:var(--bg-overlay);display:flex;align-items:center;justify-content:center;padding:32px}
+.exd-dialog{width:480px;max-width:100%;max-height:88vh;overflow:auto;background:var(--bg-popover);color:var(--text);border-radius:12px;padding:20px 24px 24px;box-shadow:var(--shadow-modal);display:flex;flex-direction:column;gap:16px;outline:none}
+.exd-dialog header{display:flex;align-items:center;gap:8px}
+.exd-dialog header>svg{color:var(--icon);flex:none}
+.exd-dialog header h2{font-size:16px;font-weight:600;margin:0;flex:1}
+.exd-dialog header button{width:var(--hit-min);height:var(--hit-min);display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:6px;color:var(--icon);background:none}
+.exd-dialog header button:hover{background:var(--bg-hover)}
+.exd-dialog fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+.exd-dialog legend{font-size:12px;color:var(--text-secondary);margin-bottom:var(--space-1);padding:0}
+.exd-segment{display:flex;padding:2px;border-radius:8px;background:var(--bg-hover);gap:2px}
+.exd-segment button{flex:1;height:28px;border:0;border-radius:6px;background:none;color:var(--text-secondary);font-size:13px}
+.exd-segment button.is-on{background:var(--bg-popover);color:var(--text);box-shadow:0 0 0 1px var(--border-strong),0 1px 2px rgba(0,0,0,.08);font-weight:500}
+.exd-segment.exd-small{margin-top:4px}
+.exd-hint{margin:0;font-size:12px;line-height:1.45;color:var(--text-secondary)}
+.exd-radio{display:flex;align-items:center;gap:var(--space-2);font-size:14px;cursor:pointer;padding:4px 0}
+.exd-radio.is-disabled{opacity:.45;cursor:default}
+.exd-radio input{accent-color:var(--accent);margin:0;width:15px;height:15px}
+.exd-switch{display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:14px;cursor:pointer}
+.exd-dialog input:focus-visible,.exd-dialog button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.exd-progress{display:flex;flex-direction:column;gap:var(--space-1)}
+.exd-progress>div{height:6px;border-radius:3px;background:var(--bg-hover);overflow:hidden}
+.exd-progress>div>span{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .15s}
+.exd-progress small{font-size:12px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.exd-error{margin:0;padding:8px 12px;border-radius:8px;font-size:13px;color:var(--danger);background:color-mix(in srgb,var(--danger) 10%,transparent)}
+.exd-done{display:flex;flex-direction:column;align-items:center;text-align:center;gap:var(--space-1)}
+.exd-done>svg{color:var(--accent)}
+.exd-done p{margin:0;font-size:14px;color:var(--text-secondary)}.exd-done p strong{color:var(--text);font-size:15px}
+.exd-done .exd-path{font-size:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:rtl}
+.exd-done .exd-done-actions{margin-top:var(--space-3);align-self:stretch;justify-content:center}

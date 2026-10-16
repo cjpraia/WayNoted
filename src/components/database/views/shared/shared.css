@@ -1,0 +1,217 @@
+/* Peças comuns às visualizações Quadro/Calendário/Lista/Galeria (prefixo vw-). */
+
+.vw-popover {
+  position: fixed;
+  z-index: 1000;
+  min-width: 180px;
+  max-width: calc(100vw - 16px);
+  max-height: min(480px, calc(100vh - 16px));
+  overflow-y: auto;
+  padding: 6px 0;
+  border-radius: var(--radius);
+  background: var(--bg-popover);
+  box-shadow: var(--shadow-popover);
+  color: var(--text);
+  font-size: 14px;
+  animation: vw-pop-in 90ms ease-out;
+}
+@keyframes vw-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px) scale(0.985);
+  }
+}
+
+.vw-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: calc(100% - 8px);
+  min-height: 28px;
+  margin: 0 4px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  line-height: 1.2;
+  color: var(--text);
+}
+.vw-menu-item:hover {
+  background: var(--bg-hover);
+}
+.vw-menu-icon {
+  display: inline-flex;
+  flex: none;
+  width: 20px;
+  justify-content: center;
+  color: var(--icon);
+}
+.vw-menu-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vw-menu-hint {
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+.vw-menu-check {
+  flex: none;
+  color: var(--text);
+}
+.vw-menu-danger:hover,
+.vw-menu-danger:hover .vw-menu-icon {
+  color: var(--danger);
+}
+.vw-menu-sep {
+  height: 1px;
+  margin: 6px 0;
+  background: var(--border);
+}
+.vw-menu-section {
+  padding: 6px 12px 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.vw-menu-input {
+  display: block;
+  width: calc(100% - 16px);
+  height: 28px;
+  margin: 2px 8px 4px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: var(--bg-input);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+  font-size: 14px;
+  user-select: text;
+}
+.vw-menu-input:focus {
+  box-shadow: inset 0 0 0 1px var(--accent), 0 0 0 2px var(--accent-bg);
+}
+.vw-color-swatch {
+  display: inline-block;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: var(--c-bg);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+/* Linha / título */
+.vw-row-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  color: var(--icon);
+  line-height: 1;
+}
+.vw-row-emoji {
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
+}
+.vw-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vw-untitled {
+  color: var(--text-tertiary);
+}
+.vw-inline-input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-weight: inherit;
+  color: var(--text);
+  user-select: text;
+  cursor: text;
+}
+.vw-inline-input::placeholder {
+  color: var(--text-placeholder);
+}
+
+.vw-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.vw-check-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* Arraste */
+.vw-drag-ghost {
+  z-index: 2000;
+  pointer-events: none;
+  opacity: 0.92;
+  box-shadow: var(--shadow-popover) !important;
+  transition: none !important;
+  will-change: transform;
+}
+body.vw-dragging,
+body.vw-dragging * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+
+/* Estado vazio */
+.vw-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 180px;
+  padding: 32px 16px;
+  border-radius: var(--radius);
+  background: var(--bg-hover);
+  text-align: center;
+  color: var(--text-secondary);
+}
+.vw-empty-icon {
+  color: var(--icon);
+  margin-bottom: 4px;
+}
+.vw-empty-title {
+  font-weight: 500;
+  color: var(--text);
+}
+.vw-empty-text {
+  max-width: 380px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* ---------- Teclado e edição rápida nos cartões (quadro, galeria, lista) ---------- */
+.bd-card, .gl-card, .ls-row { outline: none; }
+.bd-card:focus-visible, .gl-card:focus-visible, .ls-row:focus-visible { box-shadow: 0 0 0 1.5px var(--accent); }
+.ls-row:focus-visible { border-radius: var(--radius-sm); }
+.bd-card { position: relative; }
+.bd-card .vw-select { right: 6px; left: auto; top: 6px; }
+.bd-card:hover .vw-select { opacity: 1; }
+.bd-card.is-selected { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 70%, transparent); background: color-mix(in srgb, var(--accent) 8%, var(--bd-card-bg, var(--bg))); }
+.bd-card.is-selected:focus-visible, .gl-card.is-selected:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.vw-rename {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; margin-left: 4px; padding: 0; border: 0; border-radius: var(--radius-sm);
+  background: transparent; color: var(--icon); cursor: pointer; opacity: 0; transition: opacity 0.1s;
+}
+.vw-rename:hover { background: var(--bg-hover); }
+.bd-card:hover .vw-rename, .gl-card:hover .vw-rename, .ls-row:hover .vw-rename,
+.bd-card:focus-visible .vw-rename, .gl-card:focus-visible .vw-rename, .ls-row:focus-visible .vw-rename, .vw-rename:focus-visible { opacity: 1; }
+[data-prop-id] { cursor: pointer; }

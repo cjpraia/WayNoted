@@ -1,0 +1,7 @@
+{"accounts":[{"id":"x-coredata://AAAA/ICAccount/p1","name":"iCloud"},{"id":"x-coredata://AAAA/ICAccount/p2","name":"No meu Mac"}],
+ "folders":[
+  {"id":"x-coredata://AAAA/ICFolder/p10","name":"Notas","accountId":"x-coredata://AAAA/ICAccount/p1","parentId":null,"notes":3,"locked":1},
+  {"id":"x-coredata://AAAA/ICFolder/p11","name":"Receitas","accountId":"x-coredata://AAAA/ICAccount/p1","parentId":"x-coredata://AAAA/ICFolder/p10","notes":1,"locked":0},
+  {"id":"x-coredata://AAAA/ICFolder/p12","name":"Apagadas recentemente","accountId":"x-coredata://AAAA/ICAccount/p1","parentId":null,"notes":2,"locked":0},
+  {"id":"x-coredata://AAAA/ICFolder/p20","name":"Local","accountId":"x-coredata://AAAA/ICAccount/p2","parentId":null,"notes":1,"locked":0}
+ ]}

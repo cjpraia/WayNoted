@@ -1,0 +1,172 @@
+/* Cores de opções e estilos de exibição de valores dos bancos de dados. */
+:root {
+  --opt-default-bg: rgba(227, 226, 224, 0.5);
+  --opt-gray-bg: rgb(227, 226, 224);
+  --opt-brown-bg: rgb(238, 224, 218);
+  --opt-orange-bg: rgb(250, 222, 201);
+  --opt-yellow-bg: rgb(249, 228, 188);
+  --opt-green-bg: rgb(219, 237, 219);
+  --opt-blue-bg: rgb(211, 229, 239);
+  --opt-purple-bg: rgb(232, 222, 238);
+  --opt-pink-bg: rgb(245, 224, 233);
+  --opt-red-bg: rgb(255, 226, 221);
+  --opt-default-text: rgb(50, 48, 44);
+  --opt-gray-text: rgb(50, 48, 44);
+  --opt-brown-text: rgb(68, 42, 30);
+  --opt-orange-text: rgb(73, 41, 14);
+  --opt-yellow-text: rgb(64, 44, 27);
+  --opt-green-text: rgb(28, 56, 41);
+  --opt-blue-text: rgb(24, 51, 71);
+  --opt-purple-text: rgb(65, 36, 84);
+  --opt-pink-text: rgb(76, 35, 55);
+  --opt-red-text: rgb(93, 23, 21);
+  --opt-default-dot: rgb(145, 145, 142);
+  --opt-gray-dot: rgb(145, 145, 142);
+  --opt-brown-dot: rgb(187, 132, 108);
+  --opt-orange-dot: rgb(215, 129, 58);
+  --opt-yellow-dot: rgb(203, 148, 51);
+  --opt-green-dot: rgb(108, 155, 125);
+  --opt-blue-dot: rgb(91, 151, 189);
+  --opt-purple-dot: rgb(167, 130, 195);
+  --opt-pink-dot: rgb(205, 116, 159);
+  --opt-red-dot: rgb(225, 111, 100);
+}
+
+:root[data-theme='dark'] {
+  --opt-default-bg: rgba(255, 255, 255, 0.094);
+  --opt-gray-bg: rgb(90, 90, 90);
+  --opt-brown-bg: rgb(96, 59, 44);
+  --opt-orange-bg: rgb(133, 76, 29);
+  --opt-yellow-bg: rgb(137, 99, 42);
+  --opt-green-bg: rgb(43, 89, 63);
+  --opt-blue-bg: rgb(40, 69, 108);
+  --opt-purple-bg: rgb(73, 47, 100);
+  --opt-pink-bg: rgb(105, 49, 76);
+  --opt-red-bg: rgb(110, 54, 48);
+  --opt-default-text: rgba(255, 255, 255, 0.81);
+  --opt-gray-text: rgba(255, 255, 255, 0.88);
+  --opt-brown-text: rgba(255, 255, 255, 0.88);
+  --opt-orange-text: rgba(255, 255, 255, 0.88);
+  --opt-yellow-text: rgba(255, 255, 255, 0.88);
+  --opt-green-text: rgba(255, 255, 255, 0.88);
+  --opt-blue-text: rgba(255, 255, 255, 0.88);
+  --opt-purple-text: rgba(255, 255, 255, 0.88);
+  --opt-pink-text: rgba(255, 255, 255, 0.88);
+  --opt-red-text: rgba(255, 255, 255, 0.88);
+}
+
+.db-color-default { --c-bg: var(--opt-default-bg); --c-text: var(--opt-default-text); --c-dot: var(--opt-default-dot); }
+.db-color-gray { --c-bg: var(--opt-gray-bg); --c-text: var(--opt-gray-text); --c-dot: var(--opt-gray-dot); }
+.db-color-brown { --c-bg: var(--opt-brown-bg); --c-text: var(--opt-brown-text); --c-dot: var(--opt-brown-dot); }
+.db-color-orange { --c-bg: var(--opt-orange-bg); --c-text: var(--opt-orange-text); --c-dot: var(--opt-orange-dot); }
+.db-color-yellow { --c-bg: var(--opt-yellow-bg); --c-text: var(--opt-yellow-text); --c-dot: var(--opt-yellow-dot); }
+.db-color-green { --c-bg: var(--opt-green-bg); --c-text: var(--opt-green-text); --c-dot: var(--opt-green-dot); }
+.db-color-blue { --c-bg: var(--opt-blue-bg); --c-text: var(--opt-blue-text); --c-dot: var(--opt-blue-dot); }
+.db-color-purple { --c-bg: var(--opt-purple-bg); --c-text: var(--opt-purple-text); --c-dot: var(--opt-purple-dot); }
+.db-color-pink { --c-bg: var(--opt-pink-bg); --c-text: var(--opt-pink-text); --c-dot: var(--opt-pink-dot); }
+.db-color-red { --c-bg: var(--opt-red-bg); --c-text: var(--opt-red-text); --c-dot: var(--opt-red-dot); }
+
+.db-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 20px;
+  white-space: nowrap;
+  background: var(--c-bg);
+  color: var(--c-text);
+}
+.db-chip-status {
+  border-radius: 10px;
+  padding: 0 7px 0 5px;
+}
+.db-chip-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c-dot);
+}
+.db-chip-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+}
+.db-icon-value {
+  display: inline-flex;
+  align-items: center;
+  font-size: 18px;
+  line-height: 1;
+}
+.db-chip-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.db-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  max-width: 100%;
+}
+.db-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.db-url {
+  color: inherit; /* <a mailto:/tel:> não pode herdar o azul padrão do navegador (ilegível no tema escuro) */
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 2px;
+}
+.db-check {
+  display: inline-block;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1.5px var(--text-tertiary);
+}
+.db-check-on {
+  background: var(--accent)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.3l2.6 2.6L12 5.4' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center / 100% no-repeat;
+  box-shadow: none;
+}
+
+/* Lugar: alfinete em traço cinza antes do nome. */
+.db-place{display:inline-flex;align-items:center;gap:4px;min-width:0}
+.db-place-pin{flex:none;color:var(--icon)}
+
+/* Data recorrente: ↻ discreto ao lado do valor (tabela, quadro, lista, galeria, calendário). */
+.db-recur-mark {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 0.92em;
+  line-height: 1;
+  color: var(--text-tertiary);
+}
+
+/* Cor livre de opção: variáveis calculadas em customColors.ts com contraste ≥ 4,5:1 nos dois temas. */
+.db-color-custom { --c-bg: var(--cc-light-bg); --c-text: var(--cc-light-text); --c-dot: var(--cc-dot); }
+:root[data-theme='dark'] .db-color-custom { --c-bg: var(--cc-dark-bg); --c-text: var(--cc-dark-text); }
+
+/* Texto estilizado por style() nas fórmulas: cores legíveis nos dois temas. */
+:root {
+  --fx-gray: rgb(120, 119, 116); --fx-brown: rgb(159, 107, 83); --fx-orange: rgb(196, 98, 18); --fx-yellow: rgb(166, 120, 20);
+  --fx-green: rgb(68, 131, 97); --fx-blue: rgb(51, 126, 169); --fx-purple: rgb(144, 101, 176); --fx-pink: rgb(193, 76, 138); --fx-red: rgb(212, 76, 71);
+}
+:root[data-theme='dark'] {
+  --fx-gray: rgb(155, 155, 155); --fx-brown: rgb(186, 133, 111); --fx-orange: rgb(199, 125, 72); --fx-yellow: rgb(202, 152, 73);
+  --fx-green: rgb(82, 158, 114); --fx-blue: rgb(94, 135, 201); --fx-purple: rgb(157, 104, 211); --fx-pink: rgb(209, 87, 150); --fx-red: rgb(230, 91, 80);
+}
+.db-formula-value { display: inline; min-width: 0; }
+.db-formula-value a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.db-formula-run--bg { border-radius: 3px; padding: 0 2px; }
+.db-rich-value a { color: inherit; text-decoration: underline; text-decoration-color: var(--border-strong); }
+.db-rich-value code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; background: var(--bg-hover); border-radius: 3px; padding: 0 3px; }

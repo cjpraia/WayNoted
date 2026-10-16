@@ -1,0 +1,11 @@
+.ani-overlay{position:fixed;inset:0;z-index:1300;background:var(--bg-overlay);display:flex;align-items:center;justify-content:center;padding:var(--space-4)}
+.ani-dialog{width:560px;max-width:100%;max-height:88vh;overflow:auto;background:var(--bg-popover);color:var(--text);border-radius:12px;padding:var(--space-3) var(--space-4) var(--space-4);box-shadow:var(--shadow-modal);display:flex;flex-direction:column;gap:var(--space-2);outline:none}
+.ani-dialog header{display:flex;align-items:center;gap:var(--space-2)}
+.ani-dialog header h2{font-size:16px;font-weight:600;margin:0;flex:1}
+.ani-dialog p{margin:0;color:var(--text-secondary);font-size:13px;line-height:1.45}
+.ani-dialog footer{display:flex;justify-content:flex-end;gap:var(--space-2);margin-top:var(--space-1);flex-wrap:wrap}
+.ani-dialog .nid-error{padding:var(--space-2) var(--space-2)}
+.ani-mark{color:var(--icon);flex:none}
+.ani-tree{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--space-2);max-height:280px;overflow:auto}
+.ani-tree>li{display:flex;flex-direction:column;gap:var(--space-1)}
+.ani-folder{padding-left:calc(var(--depth,0) * var(--space-3))}

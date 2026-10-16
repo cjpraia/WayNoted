@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Ícone do Workspace (docs/DEVELOPMENT.md): ladrilho "Maré" com o sol nascendo sobre a linha
+       do horizonte — o dia no centro (plano) apoiado em linhas de texto (notas). Desenho original. -->
+  <defs>
+    <linearGradient id="tide" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#16897f"/>
+      <stop offset="1" stop-color="#0a5a53"/>
+    </linearGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffc98a"/>
+      <stop offset="1" stop-color="#f4a259"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.16"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="above"><rect x="0" y="0" width="1024" height="560"/></clipPath>
+  </defs>
+  <!-- squircle (margem de 100 px, padrão macOS) -->
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#tide)"/>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#sheen)"/>
+  <!-- halo suave do amanhecer -->
+  <circle cx="512" cy="560" r="250" fill="#ffd9a8" opacity="0.12" clip-path="url(#above)"/>
+  <!-- sol nascente -->
+  <circle cx="512" cy="560" r="170" fill="url(#sun)" clip-path="url(#above)"/>
+  <!-- horizonte e linhas de nota -->
+  <g stroke-linecap="round" fill="none">
+    <line x1="268" y1="560" x2="756" y2="560" stroke="#fbf6ec" stroke-width="40"/>
+    <line x1="340" y1="664" x2="684" y2="664" stroke="#fbf6ec" stroke-width="36" opacity="0.72"/>
+    <line x1="400" y1="752" x2="624" y2="752" stroke="#fbf6ec" stroke-width="36" opacity="0.45"/>
+  </g>
+</svg>

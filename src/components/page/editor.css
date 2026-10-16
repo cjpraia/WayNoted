@@ -1,0 +1,1201 @@
+/* Overrides do BlockNote para ficar com cara de Export Bundle (prefixo pg-). */
+
+/* Variáveis do BlockNote apontando para os tokens do app (vale também para menus em portal). */
+html .bn-root.bn-root,
+html .bn-root.bn-root[data-color-scheme] {
+  --bn-colors-editor-text: var(--text);
+  --bn-colors-editor-background: transparent;
+  --bn-colors-menu-text: var(--text);
+  --bn-colors-menu-background: var(--bg-popover);
+  --bn-colors-tooltip-text: #fff;
+  --bn-colors-tooltip-background: rgba(31, 26, 20, 0.92);
+  --bn-colors-hovered-text: var(--text);
+  --bn-colors-hovered-background: var(--bg-hover);
+  --bn-colors-selected-text: var(--on-accent);
+  --bn-colors-selected-background: var(--accent);
+  --bn-colors-disabled-text: var(--text-tertiary);
+  --bn-colors-disabled-background: var(--bg-hover);
+  --bn-colors-shadow: rgba(31, 26, 20, 0.15);
+  --bn-colors-border: var(--border);
+  --bn-colors-side-menu: var(--icon);
+  --bn-font-family: var(--pg-font, var(--font-sans));
+  --bn-border-radius: 6px;
+  --bn-shadow-medium: var(--shadow-popover);
+  --bn-shadow-light: var(--shadow-popover);
+  --bn-border: 0;
+  --pg-code-bg: rgba(135, 131, 120, 0.15);
+  --pg-code-color: #eb5757;
+  --pg-codeblock-bg: rgb(247, 246, 243);
+
+  --bn-colors-highlights-gray-text: rgb(120, 119, 116);
+  --bn-colors-highlights-gray-background: rgb(241, 241, 239);
+  --bn-colors-highlights-brown-text: rgb(159, 107, 83);
+  --bn-colors-highlights-brown-background: rgb(244, 238, 238);
+  --bn-colors-highlights-red-text: rgb(212, 76, 71);
+  --bn-colors-highlights-red-background: rgb(253, 235, 236);
+  --bn-colors-highlights-orange-text: rgb(217, 115, 13);
+  --bn-colors-highlights-orange-background: rgb(251, 236, 221);
+  --bn-colors-highlights-yellow-text: rgb(203, 145, 47);
+  --bn-colors-highlights-yellow-background: rgb(251, 243, 219);
+  --bn-colors-highlights-green-text: rgb(68, 131, 97);
+  --bn-colors-highlights-green-background: rgb(237, 243, 236);
+  --bn-colors-highlights-blue-text: rgb(51, 126, 169);
+  --bn-colors-highlights-blue-background: rgb(231, 243, 248);
+  --bn-colors-highlights-purple-text: rgb(144, 101, 176);
+  --bn-colors-highlights-purple-background: rgb(244, 240, 247);
+  --bn-colors-highlights-pink-text: rgb(193, 76, 138);
+  --bn-colors-highlights-pink-background: rgb(249, 238, 243);
+}
+
+html[data-theme='dark'] .bn-root.bn-root,
+html[data-theme='dark'] .bn-root.bn-root[data-color-scheme] {
+  --bn-colors-shadow: rgba(0, 0, 0, 0.4);
+  --pg-code-bg: rgba(135, 131, 120, 0.15);
+  --pg-code-color: #ff7369;
+  --pg-codeblock-bg: rgba(255, 255, 255, 0.03);
+
+  --bn-colors-highlights-gray-text: rgb(155, 155, 155);
+  --bn-colors-highlights-gray-background: rgb(47, 47, 47);
+  --bn-colors-highlights-brown-text: rgb(186, 133, 111);
+  --bn-colors-highlights-brown-background: rgb(74, 50, 40);
+  --bn-colors-highlights-red-text: rgb(223, 84, 82);
+  --bn-colors-highlights-red-background: rgb(82, 46, 42);
+  --bn-colors-highlights-orange-text: rgb(199, 125, 72);
+  --bn-colors-highlights-orange-background: rgb(92, 59, 35);
+  --bn-colors-highlights-yellow-text: rgb(202, 152, 73);
+  --bn-colors-highlights-yellow-background: rgb(86, 67, 40);
+  --bn-colors-highlights-green-text: rgb(82, 158, 114);
+  --bn-colors-highlights-green-background: rgb(36, 61, 48);
+  --bn-colors-highlights-blue-text: rgb(94, 135, 201);
+  --bn-colors-highlights-blue-background: rgb(20, 58, 78);
+  --bn-colors-highlights-purple-text: rgb(157, 104, 211);
+  --bn-colors-highlights-purple-background: rgb(60, 45, 73);
+  --bn-colors-highlights-pink-text: rgb(209, 87, 150);
+  --bn-colors-highlights-pink-background: rgb(78, 44, 60);
+}
+
+/* ------------------------------------------------------------ Editor */
+.pg-editor.bn-container {
+  background: transparent;
+}
+.pg-editor .bn-editor {
+  padding-inline: 0;
+  padding-block: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--pg-font);
+  font-size: var(--pg-body-size);
+  line-height: 1.5;
+  border-radius: 0;
+  user-select: text;
+  cursor: text;
+  caret-color: var(--text);
+}
+.pg-locked .pg-editor .bn-editor {
+  cursor: default;
+}
+.pg-editor .bn-editor ::selection {
+  background: var(--selection);
+}
+.pg-editor .bn-block-outer {
+  margin-top: 1px;
+  margin-bottom: 1px;
+}
+.pg-editor .bn-block-content {
+  padding: 2px 2px;
+}
+
+/* Títulos */
+.pg-editor [data-content-type='heading'] {
+  --level: 1.875em;
+  font-weight: 600 !important;
+  line-height: 1.3;
+  /* Ritmo do Export Bundle: 2em / 1.4em / 1em (da fonte do corpo) acima de H1/H2/H3 + 3px de padding. */
+  padding-top: calc(var(--pg-body-size) * 2 + 3px);
+  padding-bottom: 2px;
+}
+.pg-editor [data-content-type='heading'][data-level='2'] {
+  --level: 1.5em;
+  padding-top: calc(var(--pg-body-size) * 1.4 + 3px);
+}
+.pg-editor [data-content-type='heading'][data-level='3'] {
+  --level: 1.25em;
+  padding-top: calc(var(--pg-body-size) + 3px);
+}
+.pg-editor [data-content-type='heading'][data-level='4'],
+.pg-editor [data-content-type='heading'][data-level='5'],
+.pg-editor [data-content-type='heading'][data-level='6'] {
+  --level: 1.0625em;
+  padding-top: 0.5em;
+}
+.pg-editor [data-prev-level='1'] {
+  --prev-level: 1.875em;
+}
+.pg-editor [data-prev-level='2'] {
+  --prev-level: 1.5em;
+}
+.pg-editor [data-prev-level='3'] {
+  --prev-level: 1.25em;
+}
+.pg-editor .bn-block-outer[data-prev-type='heading'] > .bn-block > .bn-block-content,
+.pg-editor .bn-block-outer:not([data-prev-type]) > .bn-block > .bn-block-content[data-content-type='heading'] {
+  font-weight: 600;
+}
+.pg-editor .bn-block-group > .bn-block-outer:first-child > .bn-block > .bn-block-content[data-content-type='heading'] {
+  padding-top: 2px;
+}
+
+/* Placeholders */
+.pg-editor .bn-block-content:has(.ProseMirror-trailingBreak:only-child)::after {
+  color: var(--text-placeholder) !important;
+  font-style: normal !important;
+}
+/* Como no Export Bundle: a dica "Escreva algo…" só aparece na linha com o cursor, e só com o editor
+   focado (página vazia não mostra nada até receber foco). Dicas por tipo (Título, Lista…) seguem. */
+.pg-editor .bn-editor:not(:focus) .bn-block-content[data-content-type='paragraph']:has(.ProseMirror-trailingBreak:only-child)::after,
+.pg-editor .bn-editor:not(:focus) .bn-block-content:is([data-content-type='bulletListItem'], [data-content-type='numberedListItem']):has(.ProseMirror-trailingBreak:only-child)::after,
+.pg-editor .bn-block-content:is([data-content-type='bulletListItem'], [data-content-type='numberedListItem']):not([data-is-empty-and-focused]):has(.ProseMirror-trailingBreak:only-child)::after {
+  content: none !important;
+}
+
+/* Código inline */
+.pg-editor .bn-inline-content code {
+  font-family: var(--font-mono);
+  font-size: 85%;
+  color: var(--pg-code-color);
+  background: var(--pg-code-bg);
+  border-radius: 4px;
+  padding: 0.2em 0.4em;
+  line-height: normal;
+}
+
+/* Bloco de código */
+.pg-editor .bn-block-content[data-content-type='codeBlock'] {
+  background: var(--pg-codeblock-bg);
+  color: var(--text);
+  border-radius: 4px;
+  margin: 4px 0;
+  padding: 0;
+}
+.pg-editor .bn-block-content[data-content-type='codeBlock'] > pre {
+  /* Export Bundle: ~32px no topo (faixa da linguagem), 16px nas laterais, 32px na base. */
+  padding: 32px 16px var(--space-5);
+  font-family: var(--font-mono);
+  font-size: 85%;
+  line-height: 1.6;
+}
+.pg-editor .bn-block-content[data-content-type='codeBlock'] > pre,
+.pg-editor .bn-block-content[data-content-type='codeBlock'] > pre span {
+  color: var(--shiki-light, var(--text));
+}
+html[data-theme='dark'] .pg-editor .bn-block-content[data-content-type='codeBlock'] > pre,
+html[data-theme='dark'] .pg-editor .bn-block-content[data-content-type='codeBlock'] > pre span {
+  color: var(--shiki-dark, var(--text));
+}
+/* Linguagem: canto superior esquerdo, discreta, só no hover/foco. */
+.pg-editor .bn-block-content[data-content-type='codeBlock'] > div > select {
+  top: 6px;
+  left: 10px;
+  height: 22px;
+  padding: 0 var(--space-4) 0 var(--space-1);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2.5 4l2.5 2.5L7.5 4' fill='none' stroke='%23918f8a' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") right 4px center / 10px no-repeat;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 22px;
+  transition: opacity 120ms ease, background-color 100ms ease;
+  transition-delay: 0s;
+}
+.pg-editor .bn-block-content[data-content-type='codeBlock']:hover > div > select,
+.pg-editor .bn-block-content[data-content-type='codeBlock'] > div > select:focus {
+  opacity: 1;
+  transition-delay: 0s;
+}
+.pg-editor .bn-block-content[data-content-type='codeBlock'] > div > select:hover {
+  background-color: var(--bg-hover);
+}
+.pg-editor .bn-block-content[data-content-type='codeBlock'] > div > select:disabled {
+  cursor: default;
+}
+.pg-editor .bn-block-content[data-content-type='codeBlock'] > div > select > option {
+  color: initial;
+}
+/* Copiar: canto superior direito, no hover. */
+.pg-editor .pg-code-copy {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 var(--space-1);
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  opacity: 0;
+  transition: opacity 120ms ease, background-color 100ms ease;
+}
+.pg-editor .bn-block-content[data-content-type='codeBlock']:hover > .pg-code-copy,
+.pg-editor .pg-code-copy:focus-visible,
+.pg-editor .pg-code-copy[data-copied] {
+  opacity: 1;
+}
+.pg-editor .pg-code-copy:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+/* Citação */
+.pg-editor [data-content-type='quote'] blockquote {
+  color: inherit;
+  border-left: 3px solid currentColor;
+  padding-left: var(--space-3);
+  margin: 0;
+  font-size: 1em;
+}
+
+/* Divisor */
+.pg-editor [data-content-type='divider'] hr {
+  border-top: 1px solid var(--border-strong);
+  margin: var(--space-1) 0;
+}
+
+/* Listas */
+.pg-editor .bn-block-content[data-content-type='bulletListItem']::before,
+.pg-editor .bn-block-content[data-content-type='numberedListItem']::before {
+  min-width: 24px;
+  text-align: center;
+  margin-right: 2px;
+}
+/* Marcador do Export Bundle: disco maior que o glifo padrão, centrado na primeira linha. */
+.pg-editor .bn-block-content[data-content-type='bulletListItem']::before {
+  font-size: 1.5em;
+  line-height: 1;
+  height: 1em;
+  padding-right: 0;
+  margin-right: 2px;
+  align-self: flex-start;
+  /* 1.5em × 1em de altura = 24px; centra o disco nos 24px da 1ª linha. */
+  margin-top: calc((var(--pg-body-size) * 1.5 - 1em) / 2);
+}
+/* Sem a linha-guia vertical de aninhamento (o Export Bundle não mostra). */
+.pg-editor .bn-block-group .bn-block-group > .bn-block-outer::before {
+  border-left-color: transparent !important;
+}
+
+/* To-do */
+.pg-editor .bn-block-content[data-content-type='checkListItem'] > div > input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  margin: 4px 8px 0 4px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--text-secondary);
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  transition: background 80ms;
+}
+.pg-editor .bn-block-content[data-content-type='checkListItem'] > div > input:hover {
+  background: var(--bg-hover);
+}
+.pg-editor .bn-block-content[data-content-type='checkListItem'] > div > input:checked {
+  background: var(--accent)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M3 7.2l2.6 2.6L11 4.4' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center / 12px no-repeat;
+  border-color: var(--accent);
+}
+.pg-editor .bn-block-content[data-content-type='checkListItem'] > div:has(> input) {
+  height: auto;
+  align-self: flex-start;
+}
+.pg-editor .bn-block-content[data-content-type='checkListItem'][data-checked='true'] .bn-inline-content {
+  color: var(--text-tertiary);
+  text-decoration: line-through;
+  text-decoration-color: var(--text-tertiary);
+}
+
+/* Toggle */
+.pg-editor .bn-toggle-button {
+  color: var(--text);
+  border-radius: 4px;
+}
+.pg-editor .bn-toggle-button svg {
+  width: 20px;
+  height: 20px;
+}
+.pg-editor .bn-toggle-button:hover {
+  background: var(--bg-hover);
+}
+
+/* Links */
+.pg-editor .bn-inline-content a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--text-placeholder);
+  text-underline-offset: 2px;
+  opacity: 0.85;
+}
+.pg-editor .bn-inline-content a:hover {
+  text-decoration-color: currentColor;
+}
+
+/* Tabelas */
+.pg-editor .bn-block-content[data-content-type='table'] table td,
+.pg-editor .bn-block-content[data-content-type='table'] table th {
+  border-color: var(--border);
+}
+
+/* Imagens / arquivos */
+/* Estado vazio ("Adicionar imagem"): faixa cinza discreta com ícone de linha, como no Export Bundle. */
+.pg-editor [data-file-block] .bn-add-file-button {
+  gap: var(--space-2);
+  min-height: 46px;
+  padding: 12px var(--space-6) 12px 12px;
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  border-radius: 4px;
+  font-family: var(--font-sans);
+  transition: background 100ms ease;
+}
+.pg-editor.bn-container [data-file-block] .bn-add-file-button:hover {
+  background: var(--bg-active);
+}
+.pg-editor [data-file-block] .bn-add-file-button-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--icon);
+}
+.pg-editor [data-content-type='image'] .bn-add-file-button-icon svg {
+  display: none;
+}
+.pg-editor [data-content-type='image'] .bn-add-file-button-icon {
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='1.5' stroke-linejoin='round'%3E%3Crect x='2.75' y='3.75' width='14.5' height='12.5' rx='2'/%3E%3Ccircle cx='7' cy='8' r='1.4'/%3E%3Cpath d='M3 14l4.2-3.8 3 2.6 2.6-2.4L17 14' stroke-linecap='round'/%3E%3C/svg%3E") center / 20px no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='1.5' stroke-linejoin='round'%3E%3Crect x='2.75' y='3.75' width='14.5' height='12.5' rx='2'/%3E%3Ccircle cx='7' cy='8' r='1.4'/%3E%3Cpath d='M3 14l4.2-3.8 3 2.6 2.6-2.4L17 14' stroke-linecap='round'/%3E%3C/svg%3E") center / 20px no-repeat;
+}
+.pg-editor [data-file-block] .bn-add-file-button-text {
+  margin: 0;
+  font-size: 14px;
+}
+/* Imagem: cantos levemente arredondados, legenda 14px cinza. */
+.pg-editor [data-file-block] .bn-visual-media {
+  border-radius: 4px;
+}
+.pg-editor [data-file-block] .bn-file-caption {
+  padding: var(--space-1) 2px 2px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.4;
+}
+.pg-editor [data-file-block] .bn-file-caption:empty {
+  padding: 0;
+}
+/* Alças de redimensionar: barras verticais finas, centradas, só no hover. */
+.pg-editor [data-file-block] .bn-resize-handle {
+  top: 50% !important;
+  width: 6px;
+  height: min(48px, 50%);
+  transform: translateY(-50%);
+  background: rgba(31, 26, 20, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  box-shadow: 0 0 0 1px rgba(31, 26, 20, 0.08);
+}
+.pg-editor [data-file-block] .bn-resize-handle[style*='left'] {
+  left: 8px !important;
+}
+.pg-editor [data-file-block] .bn-resize-handle[style*='right'] {
+  right: 8px !important;
+}
+
+/* Colunas próprias (src/components/page/columns): gutter de 48px (como no Export Bundle), texto alinhado às bordas
+   da coluna da página, sem divisórias permanentes; a alça de redimensionar aparece no hover/foco da divisória. */
+.pg-editor .pg-columns {
+  position: relative;
+  container: pgcols / inline-size;
+  width: 100%;
+}
+.pg-editor .bn-block-column {
+  min-width: 0;
+  padding: 0 var(--space-5);
+}
+.pg-editor .bn-block-column:first-child {
+  padding-left: 0;
+}
+.pg-editor .bn-block-column:last-child {
+  padding-right: 0;
+}
+.pg-editor .pg-column-handles {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  pointer-events: none;
+}
+.pg-editor .pg-column-spacer {
+  position: relative;
+  min-width: 0;
+}
+.pg-editor .pg-column-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: var(--space-3);
+  transform: translateX(50%);
+  pointer-events: auto;
+  cursor: col-resize;
+  outline: none;
+}
+.pg-editor .pg-column-handle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--border-strong);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.pg-editor .pg-columns:hover > .pg-column-handles .pg-column-handle::after {
+  opacity: 0.45;
+}
+.pg-editor .pg-column-handle:hover::after,
+.pg-editor .pg-column-handle:focus-visible::after,
+.pg-editor .pg-columns.is-resizing .pg-column-handle::after {
+  opacity: 1;
+  background: var(--accent);
+}
+.pg-editor .bn-editor:not([contenteditable='true']) .pg-column-handle {
+  display: none;
+}
+/* Estreito (< 640px de largura do conteúdo): as colunas empilham, sem alças. */
+@container pgcols (max-width: 640px) {
+  .pg-editor .pg-columns-row {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  .pg-editor .pg-columns-row > .bn-block-column {
+    flex: none !important;
+    width: 100%;
+    padding: 0;
+  }
+  .pg-editor .pg-column-handles {
+    display: none;
+  }
+}
+
+/* Seleção de nó (ex.: bloco de página selecionado) */
+.pg-editor .bn-block-content.ProseMirror-selectednode > :after,
+.pg-editor .ProseMirror-selectednode > .bn-block-content > :after {
+  background-color: var(--selection);
+  box-shadow: none;
+  border-radius: 3px;
+}
+
+/* ------------------------------------------------------------ Bloco de subpágina */
+.pg-pageblock {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  min-height: 30px;
+  padding: 2px 2px;
+  margin: -1px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  line-height: 1.3;
+  transition: background 20ms ease-in;
+}
+.pg-pageblock:hover {
+  background: var(--bg-hover);
+}
+.pg-pageblock-icon {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--icon);
+  flex-shrink: 0;
+}
+.pg-pageblock-emoji {
+  font-size: 18px;
+  line-height: 1;
+}
+.pg-pageblock-title {
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: var(--text-placeholder);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pg-pageblock.is-dead {
+  cursor: default;
+  opacity: 0.45;
+}
+.pg-pageblock.is-dead:hover {
+  background: transparent;
+}
+.pg-pageblock.is-dead .pg-pageblock-title {
+  text-decoration: line-through;
+}
+
+/* ------------------------------------------------------------ Menus / toolbar do BlockNote */
+.bn-root .bn-suggestion-menu,
+.bn-root .bn-toolbar,
+.bn-root .mantine-Menu-dropdown,
+.bn-root .bn-menu-dropdown,
+.bn-root .bn-panel,
+.bn-root .bn-grid-suggestion-menu {
+  background: var(--bg-popover) !important;
+  box-shadow: var(--shadow-popover) !important;
+  border: 0 !important;
+  color: var(--text);
+}
+.bn-root .bn-suggestion-menu {
+  /* Medidas calibradas pelo texto de 14px (as capturas do Export Bundle estão em zoom ~109%). */
+  width: 328px;
+  min-width: 0;
+  max-width: calc(100vw - 24px);
+  max-height: min(520px, 70vh);
+  overflow-y: auto;
+  border-radius: 12px !important;
+  padding: var(--space-1) !important;
+  font-family: var(--font-sans);
+}
+.bn-root .bn-suggestion-menu.pg-slash-menu {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0 !important;
+  /* Respeita o espaço calculado pelo posicionador (sem cortar o rodapé fora da janela). */
+  max-height: inherit;
+}
+.bn-root .pg-slash-menu-scroll {
+  min-height: 0;
+  /* ~380px no total com o rodapé, como o menu do Export Bundle em 100%. */
+  max-height: 340px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-1);
+}
+.bn-root .pg-slash-menu-footer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-popover);
+  color: var(--text);
+  font-size: 14px;
+  text-align: left;
+}
+.bn-root .pg-slash-menu-footer:hover { background: var(--bg-hover); }
+.bn-root .pg-slash-menu-footer:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.bn-root .pg-slash-menu-footer kbd { color: var(--text-secondary); font: inherit; font-size: 12px; }
+.bn-root .bn-suggestion-menu-label {
+  color: var(--text-secondary) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 12px 10px 6px !important;
+}
+.bn-root .bn-suggestion-menu-item {
+  border-radius: 8px !important;
+  min-height: 33px !important;
+  height: auto !important;
+  padding: 5px 8px !important;
+  gap: 8px;
+}
+.bn-root .bn-suggestion-menu-item[aria-selected='true'],
+.bn-root .bn-suggestion-menu-item:hover {
+  background: var(--bg-hover) !important;
+}
+.bn-root .bn-suggestion-menu-item .bn-mt-suggestion-menu-item-section[data-position='left'] {
+  background: transparent !important;
+  border: 0;
+  color: var(--text) !important;
+  border-radius: 4px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  flex: 0 0 24px;
+  justify-content: center;
+}
+.bn-root .bn-suggestion-menu-item .bn-mt-suggestion-menu-item-body {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+/* Atalho Markdown à direita, em cinza (sem pílula). */
+.bn-root .bn-suggestion-menu-item .bn-mt-suggestion-menu-item-section[data-position='right'] {
+  margin-left: auto;
+  padding-right: var(--space-1);
+}
+.bn-root .bn-suggestion-menu-item [data-position='right'] .mantine-Badge-root {
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.bn-root .bn-mt-suggestion-menu-item-title {
+  color: var(--text) !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+}
+.bn-root .bn-mt-suggestion-menu-item-subtitle {
+  color: var(--text-tertiary) !important;
+  font-size: 12px !important;
+}
+.bn-root .pg-slash-menu--filtered .bn-mt-suggestion-menu-item-body {
+  flex-direction: row;
+  align-items: baseline;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.bn-root .pg-slash-menu--filtered .bn-mt-suggestion-menu-item-subtitle:not(:empty) {
+  font-size: 14px !important;
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* O título nunca encolhe por causa do subtexto (quebrava letra por letra). */
+.bn-root .pg-slash-menu--filtered .bn-mt-suggestion-menu-item-title { flex: none; max-width: 100%; }
+.bn-root .pg-slash-menu--filtered .bn-mt-suggestion-menu-item-subtitle:not(:empty)::before { content: '·'; margin-right: var(--space-1); }
+.pg-paste-url-menu {
+  z-index: 60;
+  display: grid;
+  width: 220px;
+  max-width: calc(100vw - 24px);
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-popover);
+  box-shadow: var(--shadow-popover);
+  color: var(--text);
+  font-family: var(--font-sans);
+}
+.pg-paste-url-menu strong { padding: 8px 12px 4px; color: var(--text-secondary); font-size: 14px; font-weight: 500; }
+.pg-paste-url-menu button { display: flex; align-items: center; min-height: 32px; padding: 4px 12px; border: 0; border-radius: 8px; background: transparent; color: var(--text); font: inherit; font-size: 16px; font-weight: 400; line-height: 24px; text-align: left; cursor: pointer; }
+.pg-paste-url-menu button:hover,.pg-paste-url-menu button:focus-visible,.pg-paste-url-menu button[data-selected] { background: var(--bg-hover); outline: none; }
+.pg-paste-url-menu:focus { outline: none; }
+.bn-root .pg-block-menu { width: 320px; max-height: min(560px, 75vh); overflow-y: auto; padding: 8px !important; border-radius: 12px !important; }
+.bn-root .pg-block-menu-search { width: 100%; height: 40px; padding: 8px 12px; margin-bottom: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-popover); color: var(--text); font: inherit; font-size: 14px; }
+.bn-root .pg-block-menu-search:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+.bn-root .pg-block-menu-type { padding: 8px 12px; color: var(--text-secondary); font-size: 12px; font-weight: 600; }
+.bn-root .pg-block-menu-row,.bn-root .pg-block-menu-back,.bn-root .pg-block-menu-item { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 36px; padding: 8px 12px !important; border: 0; border-radius: 8px; background: transparent; color: var(--text); font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.bn-root .pg-block-menu-row:hover,.bn-root .pg-block-menu-back:hover,.bn-root .pg-block-menu-item:hover { background: var(--bg-hover); }
+.bn-root .pg-block-menu-label { display: inline-flex; align-items: center; gap: 12px; min-width: 0; }
+.bn-root .pg-block-menu-label svg { flex: none; color: var(--text-secondary); }
+.bn-root .pg-block-menu kbd { margin-left: 12px; color: var(--text-tertiary); font: inherit; font-size: 12px; white-space: nowrap; }
+.bn-root .pg-block-menu-row:disabled,.bn-root .pg-block-menu-item.is-disabled { opacity: .4; cursor: default; }
+.bn-root .pg-block-menu-item small { color: var(--text-tertiary); font-size: 12px; }
+.bn-root .pg-block-menu hr { height: 1px; margin: 8px 0; border: 0; background: var(--border); }
+.bn-root .pg-block-menu-results { max-height: 320px; overflow-y: auto; }
+.bn-root .pg-block-menu-footer { display: grid; gap: 4px; padding: 12px; border-top: 1px solid var(--border); color: var(--text-tertiary); font-size: 12px; }
+.bn-root .pg-block-menu-empty { padding: 12px; color: var(--text-tertiary); font-size: 14px; }
+.bn-root .bn-toolbar {
+  border-radius: 8px !important;
+  padding: 2px !important;
+}
+.bn-root .bn-toolbar .mantine-Button-root,
+.bn-root .bn-toolbar .mantine-ActionIcon-root {
+  border-radius: 6px !important;
+}
+.bn-root .bn-toolbar .mantine-Button-root,
+.bn-root .bn-toolbar .mantine-ActionIcon-root,
+.bn-root .bn-toolbar button {
+  color: var(--text) !important;
+}
+.bn-root .bn-toolbar .mantine-Button-root:hover,
+.bn-root .bn-toolbar .mantine-ActionIcon-root:hover,
+.bn-root .bn-toolbar button:hover,
+.bn-root .bn-toolbar button[data-selected] {
+  background: var(--bg-hover) !important;
+}
+/* Barra de formatação estilo Export Bundle: 32px de altura, botões 28px, ícones de linha. */
+.bn-root .bn-formatting-toolbar.pg-formatting-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  height: 36px;
+  padding: 4px !important;
+  border-radius: 8px !important;
+  box-shadow: var(--shadow-popover) !important;
+  font-family: var(--font-sans);
+  overflow: visible;
+}
+.bn-root .pg-formatting-toolbar .mantine-ActionIcon-root {
+  width: 28px !important;
+  min-width: 28px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 0;
+  border-radius: 6px !important;
+  background: transparent;
+  transition: background 100ms ease;
+}
+.bn-root .pg-formatting-toolbar .mantine-ActionIcon-root svg {
+  width: 16px;
+  height: 16px;
+}
+.bn-root .pg-formatting-toolbar .mantine-ActionIcon-root[data-selected],
+.bn-root .pg-formatting-toolbar button[data-selected] {
+  background: transparent !important;
+  color: var(--accent) !important;
+}
+.bn-root .pg-formatting-toolbar .mantine-ActionIcon-root[data-selected]:hover {
+  background: var(--bg-hover) !important;
+}
+/* Seletor de tipo de bloco: só o rótulo ("Texto ⌄"), como no Export Bundle. */
+.bn-root .pg-ft-blocktype-anchor {
+  display: inline-flex;
+}
+.bn-root .pg-formatting-toolbar .pg-ft-blocktype {
+  height: 28px !important;
+  padding: 0 var(--space-1) 0 8px !important;
+  border-radius: 6px !important;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 400;
+}
+.bn-root .pg-formatting-toolbar .pg-ft-blocktype .mantine-Button-label {
+  gap: 4px;
+}
+.bn-root .pg-formatting-toolbar .pg-ft-blocktype svg {
+  color: var(--text-tertiary);
+}
+.bn-root .pg-formatting-toolbar .pg-ft-blocktype[aria-expanded='true'] {
+  background: var(--bg-hover) !important;
+}
+.pg-ft-blocktype-menu {
+  position: fixed;
+  z-index: 1100;
+  width: 240px;
+  max-height: min(420px, calc(100vh - 16px));
+  overflow-y: auto;
+  padding: var(--space-1);
+  border-radius: 10px;
+  background: var(--bg-popover);
+  box-shadow: var(--shadow-popover);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  user-select: none;
+  animation: pg-pop 90ms ease-out;
+}
+.pg-ft-blocktype-label {
+  padding: var(--space-1) 8px 4px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+}
+.pg-ft-blocktype-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pg-ft-blocktype-item.is-active {
+  background: var(--bg-hover);
+}
+.pg-ft-blocktype-icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--text-secondary);
+}
+.pg-ft-blocktype-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pg-ft-blocktype-check {
+  flex: none;
+  color: var(--text-secondary);
+}
+.bn-root .pg-ft-divider {
+  flex: none;
+  width: 1px;
+  height: 20px;
+  margin: 0 2px;
+  background: var(--border);
+}
+/* Link: ícone próprio de linha (o botão nativo do BlockNote traz um glifo preenchido). */
+.bn-root .pg-formatting-toolbar [data-test='createLink'] svg {
+  display: none;
+}
+.bn-root .pg-formatting-toolbar [data-test='createLink']::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round'%3E%3Cpath d='M6.6 9.4a2.6 2.6 0 0 0 3.7 0l2.3-2.3a2.6 2.6 0 0 0-3.7-3.7l-.8.8'/%3E%3Cpath d='M9.4 6.6a2.6 2.6 0 0 0-3.7 0L3.4 8.9a2.6 2.6 0 0 0 3.7 3.7l.8-.8'/%3E%3C/svg%3E") center / 16px no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round'%3E%3Cpath d='M6.6 9.4a2.6 2.6 0 0 0 3.7 0l2.3-2.3a2.6 2.6 0 0 0-3.7-3.7l-.8.8'/%3E%3Cpath d='M9.4 6.6a2.6 2.6 0 0 0-3.7 0L3.4 8.9a2.6 2.6 0 0 0 3.7 3.7l.8-.8'/%3E%3C/svg%3E") center / 16px no-repeat;
+}
+/* Cor: "A" sublinhado com a cor atual, como no Export Bundle. */
+.bn-root .pg-formatting-toolbar [data-test='colors'] .bn-color-icon {
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 4px;
+  font-size: 14px !important;
+  font-weight: 500;
+  line-height: 18px !important;
+  box-shadow: none;
+}
+.bn-root .pg-formatting-toolbar .pg-ft-ai {
+  color: var(--accent) !important;
+}
+/* Menus abertos pela barra (tipo de bloco, cores, link). */
+.bn-root .bn-color-picker-dropdown {
+  min-width: 220px;
+  max-height: min(420px, 70vh);
+  overflow-y: auto;
+  padding: var(--space-1) !important;
+  border-radius: 10px !important;
+}
+.bn-root .bn-color-picker-dropdown .mantine-Menu-item {
+  min-height: 28px;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.bn-root .bn-color-picker-dropdown .mantine-Menu-label {
+  padding: 8px 8px 4px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+}
+.bn-root .bn-color-picker-dropdown .bn-color-icon {
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.bn-root .bn-form-popover {
+  padding: var(--space-1) !important;
+  border-radius: 10px !important;
+  background: var(--bg-popover) !important;
+  box-shadow: var(--shadow-popover) !important;
+  border: 0 !important;
+}
+.bn-root .bn-side-menu .mantine-UnstyledButton-root,
+.bn-root .bn-side-menu button {
+  color: var(--icon) !important;
+}
+.bn-root .bn-side-menu .mantine-UnstyledButton-root:hover,
+.bn-root .bn-side-menu button:hover {
+  background: var(--bg-hover) !important;
+}
+/* Alças laterais finas como no Export Bundle: "+" 24px com glifo 16px, ⋮⋮ estreita (18px). */
+.bn-root .bn-side-menu {
+  padding-right: 2px;
+  gap: 1px;
+}
+.bn-root .bn-side-menu .mantine-ActionIcon-root {
+  border-radius: 4px !important;
+}
+.bn-root .bn-side-menu svg[data-test='dragHandleAdd'] {
+  width: 16px;
+  height: 16px;
+}
+.bn-root .bn-side-menu .mantine-ActionIcon-root:has(svg[data-test='dragHandle']) {
+  width: 18px !important;
+  min-width: 18px !important;
+}
+.bn-root .bn-side-menu svg[data-test='dragHandle'] {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.bn-root .mantine-Menu-item {
+  font-size: 14px;
+}
+.bn-root .mantine-Tooltip-tooltip,
+.bn-root .bn-tooltip {
+  background: rgba(31, 26, 20, 0.92) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
+.pg-callout {
+  display: flex;
+  width: 100%;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 16px 16px 16px 12px;
+  margin: 4px 0;
+  border-radius: var(--radius);
+  background: var(--bn-colors-highlights-gray-background, var(--bg-sidebar));
+  color: var(--text);
+}
+.pg-callout-icon { flex: 0 0 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 20px; line-height: 1; }
+.pg-callout-content { flex: 1; min-width: 0; min-height: 24px; user-select: text; }
+.pg-toc {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 12px 16px;
+  margin: var(--space-1) 0;
+  border-radius: var(--radius);
+  background: var(--bg-sidebar);
+}
+.pg-toc-title { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 4px; }
+.pg-toc-link { text-align: left; padding: 2px 0; color: var(--text-secondary); cursor: pointer; }
+.pg-toc-link:hover { color: var(--text); text-decoration: underline; }
+.pg-toc-empty { color: var(--text-tertiary); font-size: 14px; }
+.pg-editor-tools { display: flex; justify-content: flex-end; margin: 0 0 4px; }
+.pg-editor-tools button { display: inline-flex; align-items: center; gap: var(--space-1); padding: 4px var(--space-2); border-radius: var(--radius-sm); color: var(--text-tertiary); font-size: 12px; }
+.pg-editor-tools button:hover { background: var(--bg-hover); color: var(--text); }
+.pg-find { margin: 0 0 12px; padding: var(--space-2); border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-sidebar); }
+.pg-find-line { display: flex; align-items: center; gap: var(--space-1); min-height: 30px; }
+.pg-find-line + .pg-find-line { margin-top: var(--space-1); }
+.pg-find-line input, .pg-find-line .np-select { flex: 1; min-width: 0; padding: var(--space-1) var(--space-2); background: var(--bg); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); font-size: 13px; }
+.pg-find-line span { color: var(--text-secondary); font-size: 11px; white-space: nowrap; }
+.pg-find-line button:not(.np-select) { padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); color: var(--text-secondary); font-size: 12px; white-space: nowrap; }
+.pg-find-line button:not(.np-select):hover:not(:disabled) { background: var(--bg-hover); color: var(--text); }
+.pg-find-line button:not(.np-select):disabled { opacity: .4; cursor: default; }
+.pg-editor-feedback { padding: 2px var(--space-2) 8px; color: var(--text-secondary); font-size: 12px; }
+
+/* Blocos locais usados pelos comandos avançados do menu /. */
+.pg-html-sandbox,
+.pg-tabs,
+.pg-mermaid,
+.pg-ai-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  margin: 4px 0;
+  border-radius: 8px;
+  background: var(--bg-sidebar);
+  box-shadow: inset 0 0 0 1px var(--border);
+  color: var(--text);
+  font-size: 14px;
+}
+.pg-html-sandbox small,
+.pg-mermaid small { color: var(--text-secondary); font-size: 12px; }
+.pg-html-sandbox textarea,
+.pg-tabs textarea,
+.pg-mermaid textarea,
+.pg-ai-block textarea,
+.pg-ai-block input,
+.pg-ai-block .np-select,
+.pg-tabs input,
+.pg-tabs input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--bg-popover);
+  color: var(--text);
+  font: inherit;
+  user-select: text;
+}
+.pg-html-sandbox textarea,
+.pg-mermaid textarea { min-height: 80px; font-family: var(--font-mono); font-size: 12px; }
+.pg-tabs textarea,
+.pg-ai-block textarea { min-height: 72px; resize: vertical; }
+.pg-html-sandbox iframe {
+  display: block;
+  width: 100%;
+  min-height: 180px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: white;
+}
+.pg-mermaid svg { width: 100%; max-height: 360px; overflow: auto; color: var(--text-secondary); }
+.pg-tabs-bar { display: flex; gap: 2px; border-bottom: 1px solid var(--border); }
+.pg-tabs-bar button,
+.pg-tabs > button,
+.pg-ai-block button {
+  flex: none;
+  padding: var(--space-1) var(--space-2);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+.pg-tabs-bar button[aria-selected='true'] { color: var(--text); box-shadow: inset 0 -2px var(--text); }
+.pg-tabs-bar button:hover,
+.pg-tabs > button:hover,
+.pg-ai-block button:hover:not(:disabled) { background: var(--bg-hover); color: var(--text); }
+.pg-ai-block button { align-self: flex-start; background: var(--bg-popover); box-shadow: inset 0 0 0 1px var(--border-strong); }
+.pg-ai-block button:disabled { opacity: .5; cursor: default; }
+.pg-ai-block p,
+.pg-tabs p { margin: 0; white-space: pre-wrap; }
+.pg-ai-block [role='alert'],
+.pg-mermaid [role='alert'] { color: var(--danger); }
+.pg-external-card { width: 100%; max-width: 768px; overflow: hidden; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--bg-popover); color: var(--text); }
+.pg-external-card-main { display: flex; min-height: 168px; }
+.pg-external-card-image { flex: 0 0 32%; width: 32%; max-height: 256px; object-fit: cover; background: var(--bg-sidebar); }
+.pg-external-card-body { display: flex; flex: 1; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; padding: 24px; }
+.pg-external-card-heading { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 24px; }
+.pg-external-card-icon { width: 24px; height: 24px; border-radius: 4px; object-fit: contain; }
+.pg-external-card-fallback { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 4px; background: var(--text); color: var(--bg); font-size: 14px; font-weight: 600; }
+.pg-external-card-controls { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }
+.pg-external-card-controls button { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; color: var(--text-secondary); }
+.pg-external-card-controls button:hover:not(:disabled) { background: var(--bg-hover); color: var(--text); }
+.pg-external-card-controls button:disabled { opacity: .4; }
+.pg-external-card-title { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-size: 18px; line-height: 24px; font-weight: 500; }
+.pg-external-card-description { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; margin: 0; font-size: 14px; line-height: 20px; }
+.pg-external-card-url { overflow: hidden; width: 100%; margin-top: auto; color: var(--text-secondary); font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.pg-external-card-body small { color: var(--text-secondary); font-size: 12px; }
+.pg-external-card-open { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; padding: 4px 8px; border-radius: 8px; color: var(--text); font-size: 14px; font-weight: 500; }
+.pg-external-card-open:hover { background: var(--bg-hover); }
+.pg-external-card-edit { display: grid; gap: 12px; padding: 16px 24px 24px; border-top: 1px solid var(--border); font-size: 14px; }
+.pg-external-card-edit label { display: grid; gap: 4px; }
+.pg-external-card-edit input,.pg-external-card-edit textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--bg-popover); color: var(--text); font: inherit; user-select: text; }
+.pg-external-card-edit > button { justify-self: start; min-height: 32px; padding: 4px 12px; border-radius: 8px; background: var(--bg-hover); }
+@media (max-width: 640px) { .pg-external-card-main { flex-direction: column; } .pg-external-card-image { flex-basis: auto; width: 100%; height: 192px; } .pg-external-card-body { padding: 16px; } }
+.pg-breadcrumb-block { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; color: var(--text-secondary); font-size: 13px; padding: var(--space-1) 0; }
+.pg-breadcrumb-block button:hover { text-decoration: underline; text-underline-offset: 2px; }
+.pg-local-button { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 4px 0; }
+.pg-local-button > button:not(.np-select) { padding: var(--space-1) var(--space-3); border-radius: var(--radius-sm); background: var(--text); color: var(--bg); font-size: 13px; font-weight: 600; }
+.pg-local-button > button:disabled { opacity: .45; cursor: default; }
+.pg-local-button-settings { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.pg-local-button-settings input, .pg-local-button-settings .np-select { max-width: 170px; padding: 4px var(--space-1); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--bg); color: var(--text-secondary); font-size: 12px; }
+.pg-local-button-action { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 2px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.pg-local-button-action button:not(.np-select), .pg-local-button-settings > button:not(.np-select) { padding: 4px var(--space-2); border-radius: var(--radius-sm); color: var(--text-secondary); font-size: 12px; }
+.pg-local-button-action button:not(.np-select):hover, .pg-local-button-settings > button:not(.np-select):hover { background: var(--bg-hover); }
+.pg-local-button-error { width: 100%; color: var(--danger); font-size: 12px; }
+.pg-pdf-preview { max-width: 720px; padding: var(--space-2); border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-sidebar); }
+.pg-pdf-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; }
+.pg-pdf-toolbar strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-pdf-toolbar span { white-space: nowrap; color: var(--text-secondary); }
+.pg-pdf-toolbar button { padding: 1px var(--space-1); border-radius: var(--radius-sm); }
+.pg-pdf-toolbar button:hover:not(:disabled) { background: var(--bg-hover); }
+.pg-pdf-toolbar button:disabled { opacity: .4; }
+.pg-pdf-preview canvas { display: block; max-width: 100%; height: auto; margin: 0 auto; background: white; }
+.pg-pdf-preview > a { display: inline-block; margin-top: 8px; color: var(--accent); font-size: 12px; }
+.pg-local-attachment { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: var(--space-1) 0; padding: var(--space-2) 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-sidebar); font-size: 13px; }
+.pg-local-attachment span { overflow-wrap: anywhere; }
+.pg-local-attachment a { color: var(--accent); font-weight: 600; font-size: 12px; }
+.pg-equation { margin: var(--space-1) 0; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-sidebar); text-align: center; }
+.pg-equation input { display: block; width: min(100%, 520px); margin: 8px auto 0; padding: var(--space-1) var(--space-2); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--bg); font-family: var(--font-mono); font-size: 12px; text-align: left; }
+.pg-synced { margin: 8px 0; padding: 8px 12px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--bg); }
+.pg-synced-label { margin-bottom: var(--space-1); color: var(--text-tertiary); font-size: 11px; font-weight: 600; }
+.pg-synced-missing { padding: 8px 12px; color: var(--text-tertiary); font-size: 13px; }
+.pg-date-mention { display: inline-flex; align-items: center; position: relative; }
+.pg-date-mention > button { color: var(--accent); border-radius: var(--radius-sm); padding: 0 2px; }
+.pg-date-mention > button:hover { background: var(--bg-hover); }
+.pg-date-mention-panel { position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; display: flex; align-items: center; gap: var(--space-1); padding: var(--space-2); min-width: 310px; background: var(--bg); border: 1px solid var(--border-strong); border-radius: var(--radius); box-shadow: var(--shadow-popover); }
+.pg-date-mention-panel input { min-width: 0; font-size: 12px; }
+.pg-date-field { display: inline-flex; align-items: center; gap: var(--space-1); font-size: 11px; color: var(--text-secondary); }
+.pg-date-mention-panel button { padding: 4px var(--space-1); border-radius: var(--radius-sm); color: var(--text-secondary); }
+.pg-date-mention-panel button:hover { background: var(--bg-hover); }
+.pg-date-mention-panel [role='alert'] { color: var(--danger); font-size: 11px; }
+.pg-inline-equation { display: inline-flex; vertical-align: middle; }
+.pg-inline-equation button { padding: 1px 2px; border-radius: var(--radius-sm); }
+.pg-inline-equation button:hover { background: var(--bg-hover); }
+.pg-inline-equation input { min-width: 70px; width: 150px; padding: 2px 4px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--bg); font-family: var(--font-mono); font-size: 12px; }
+.pg-bookmark { position: relative; border: 1px solid var(--border-strong); border-radius: 10px; margin: 4px 0; overflow: hidden; }
+.pg-bookmark-preview small { display: block; margin-top: 4px; }
+.pg-bookmark button.pg-bookmark-edit { position: absolute; top: 8px; right: 8px; display: none; place-items: center; width: 26px; height: 26px; padding: 0; border-radius: 6px; background: var(--bg-popover); border: 1px solid var(--border); }
+.pg-bookmark:hover .pg-bookmark-edit, .pg-bookmark:focus-within .pg-bookmark-edit { display: grid; }
+.pg-bookmark-preview { display: flex; min-height: 84px; justify-content: space-between; }
+.pg-bookmark-preview > div { padding: var(--space-3) 16px; min-width: 0; }
+.pg-bookmark-preview a { color: inherit; text-decoration: none; font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
+.pg-bookmark-preview p { margin: var(--space-1) 0; font-size: 12px; color: var(--text-secondary); white-space: pre-wrap; }
+.pg-bookmark small { font-size: 11px; color: var(--text-secondary); }
+.pg-bookmark-preview img { width: 30%; max-height: 180px; object-fit: cover; }
+.pg-bookmark button { font: inherit; font-size: 12px; padding: 4px 8px; border: 0; background: transparent; color: var(--text-secondary); cursor: pointer; }
+.pg-bookmark button:hover { background: var(--bg-hover); }
+.pg-bookmark-fields { border-top: 1px solid var(--border); padding: 12px 16px; display: grid; gap: 8px; }
+.pg-bookmark-fields label { font-size: 12px; display: grid; gap: 2px; }
+.pg-bookmark-fields input, .pg-bookmark-fields textarea { font: inherit; padding: var(--space-1) var(--space-2); width: 100%; border: 1px solid var(--border); border-radius: 3px; color: var(--text); background: var(--bg); }
+
+/* Menção de data em texto livre (src/nlp): "amanhã às 9h" → Entendi: … */
+.pg-date-mention-panel { flex-wrap: wrap; }
+.pg-date-natural { flex: 1 0 100%; display: flex; flex-direction: column; gap: 4px; }
+.pg-date-natural input { width: 100%; padding: 4px var(--space-1); font-size: 13px; color: var(--text); background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); outline: none; }
+.pg-date-natural input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-bg); }
+.pg-date-natural-hint { font-size: 12px; color: var(--text-secondary); }
+.pg-date-natural-hint mark, .ed-date-natural mark { background: var(--accent-bg); color: var(--text); border-radius: 3px; padding: 0 2px; }
+.pg-date-natural-hint small { color: var(--text-tertiary); }
+/* Soltar como primeiro filho de um bloco sem filhos (toggle vazio, callout, citação): linha azul recuada. */
+/* Linha vertical de soltar ao lado de um bloco (cria/expande colunas). */
+.prosemirror-dropcursor-vertical {
+  background-color: var(--accent) !important;
+  border-radius: 2px;
+}
+html[data-pg-drop-child] .prosemirror-dropcursor-block-horizontal { clip-path: inset(0 0 0 26px); }
+
+/* Vídeo/áudio online incorporado (OnlineVideoBlock.tsx) */
+.pg-video-block { display: flex; flex-direction: column; width: 100%; margin: 4px 0; }
+.pg-video-block[data-align='center'] { align-items: center; }
+.pg-video-block[data-align='left'] { align-items: flex-start; }
+.pg-video { position: relative; width: 100%; max-width: 100%; }
+.pg-video-frame { position: relative; width: 100%; overflow: hidden; border-radius: 10px; background: #0f0f0f; }
+.pg-video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.pg-video-slow { position: absolute; left: 8px; right: 8px; bottom: 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: var(--space-1) var(--space-2); border-radius: 8px; background: var(--bg-popover); color: var(--text); font-size: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.25); }
+.pg-video-slow button, .pg-video-card-actions button { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-2); border: 1px solid var(--border-strong); border-radius: 8px; background: transparent; color: var(--text); font: inherit; font-size: 13px; cursor: pointer; }
+.pg-video-slow button:hover, .pg-video-card-actions button:hover { background: var(--bg-hover); }
+.pg-video-card-actions .pg-video-primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+.pg-video-card-actions .pg-video-primary:hover { opacity: .88; background: var(--text); }
+.pg-video-toolbar { position: absolute; top: 8px; right: 8px; z-index: 3; display: none; gap: 2px; padding: 2px; border-radius: 9px; background: var(--bg-popover); border: 1px solid var(--border); box-shadow: 0 2px 10px rgba(0,0,0,.2); }
+.pg-video:hover .pg-video-toolbar, .pg-video:focus-within .pg-video-toolbar { display: inline-flex; }
+.pg-video-toolbar button { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 6px; background: transparent; color: var(--text-secondary); cursor: pointer; }
+.pg-video-toolbar button:hover, .pg-video-toolbar button[aria-pressed='true'] { background: var(--bg-hover); color: var(--text); }
+.pg-video-handle { position: absolute; top: 50%; z-index: 3; width: 8px; height: 56px; margin-top: -24px; border-radius: 4px; background: rgba(30,30,30,.55); border: 1px solid rgba(255,255,255,.7); cursor: col-resize; opacity: 0; transition: opacity .12s; }
+.pg-video-handle[data-side='left'] { left: 6px; }
+.pg-video-handle[data-side='right'] { right: 6px; }
+.pg-video:hover .pg-video-handle, .pg-video-handle:focus-visible, .pg-video[data-resizing] .pg-video-handle { opacity: 1; }
+.pg-video-status { position: absolute; left: 8px; top: 8px; z-index: 3; padding: 2px 8px; border-radius: 6px; background: var(--bg-popover); color: var(--text); font-size: 12px; box-shadow: 0 1px 6px rgba(0,0,0,.2); }
+.pg-video-caption { width: 100%; margin-top: var(--space-1); border: 0; background: transparent; color: var(--text-secondary); font: inherit; font-size: 14px; text-align: inherit; outline: none; }
+.pg-video-block[data-align='center'] .pg-video-caption { text-align: center; }
+.pg-video-edit { display: grid; gap: 8px; width: 100%; max-width: 560px; margin-top: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-popover); }
+.pg-video-edit label { display: grid; gap: 2px; font-size: 12px; }
+.pg-video-edit input { padding: var(--space-1) 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font: inherit; font-size: 14px; }
+.pg-video-edit small { color: var(--text-secondary); font-size: 12px; }
+.pg-video-edit small[role='alert'] { color: var(--danger); }
+.pg-video-edit div { display: flex; gap: 8px; }
+.pg-video-edit button { padding: var(--space-1) 12px; border: 1px solid var(--border-strong); border-radius: 8px; background: transparent; color: var(--text); font: inherit; font-size: 13px; cursor: pointer; }
+.pg-video-edit button[type='submit'] { background: var(--text); color: var(--bg); border-color: var(--text); }
+.pg-video-edit button:disabled { opacity: .4; cursor: default; }
+.pg-video-card { display: flex; gap: 16px; align-items: flex-start; width: 100%; padding: var(--space-4); border: 1px solid var(--border-strong); border-radius: 10px; background: var(--bg-popover); color: var(--text); }
+.pg-video-card-icon { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 10px; background: var(--bg-hover); color: var(--text-secondary); }
+.pg-video-card-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pg-video-card-title { font-size: 16px; line-height: 22px; font-weight: 500; overflow-wrap: anywhere; }
+.pg-video-card-domain { font-size: 13px; color: var(--text-secondary); }
+.pg-video-card-note { font-size: 12px; color: var(--text-secondary); }
+.pg-video-card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.bn-root .pg-block-menu-item.is-danger, .bn-root .pg-block-menu-item.is-danger svg { color: var(--danger); }
+
+/* Com um diálogo aberto, a alça lateral do editor não pode aparecer por cima do véu (ficava "solta" sobre o diálogo). */
+body:has(.lai-overlay, .exd-overlay, .st-overlay, .sm-overlay, .inbox-overlay, .rec-overlay, .nid-overlay, .move-dialog, [role='dialog']) .bn-side-menu { display: none !important; }

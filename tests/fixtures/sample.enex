@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE en-export SYSTEM "http://xml.archive.com/pub/archive-export4.dtd">
+<en-export export-date="20260105T120000Z" application="ENEX Archive" version="10.0">
+<note>
+<title>Plano da viagem &amp; lista</title>
+<created>20230115T101112Z</created>
+<updated>20230220T083000Z</updated>
+<tag>viagem</tag>
+<tag>ideias boas</tag>
+<note-attributes>
+<author>Marcelo</author>
+<source>web.clip</source>
+<source-url>https://example.com/artigo</source-url>
+</note-attributes>
+<content><![CDATA[<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE en-note SYSTEM "http://xml.archive.com/pub/enml2.dtd">
+<en-note><h1>Roteiro</h1><div>Texto com <b>negrito</b>, <i>itálico</i>, <span style="text-decoration: underline;">sublinhado</span> e <a href="https://example.com">um link</a>.</div><div><br/></div><ul><li>Item um<ul><li>Subitem</li></ul></li><li>Item dois</li></ul><ol><li>Primeiro</li><li>Segundo</li></ol><div><en-todo checked="true"/>Comprar passagens</div><div><en-todo/>Reservar hotel</div><table><tr><th>Dia</th><th>Local</th></tr><tr><td>1</td><td>Lisboa</td></tr></table><div><en-media hash="2cd8bde463f5d82aae0f0cec061d6b8f" type="image/png"/></div><pre>linha 1
+linha 2</pre><en-crypt hint="dica">AAAA</en-crypt></en-note>
+]]></content>
+<resource>
+<data encoding="base64">iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==</data>
+<mime>image/png</mime>
+<width>1</width>
+<height>1</height>
+<resource-attributes><file-name>pixel.png</file-name></resource-attributes>
+</resource>
+</note>
+<note>
+<title>Segunda nota</title>
+<created>20230301T000000Z</created>
+<content><![CDATA[<?xml version="1.0" encoding="UTF-8"?><en-note><div>Só texto.</div></en-note>]]></content>
+</note>
+</en-export>

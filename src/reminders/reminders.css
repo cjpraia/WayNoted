@@ -1,0 +1,8 @@
+/* Lembretes do macOS (rm-): mensagens e registro de sincronização. Só tokens. */
+.rm-error { margin: 0; color: var(--danger); font-size: 13px; }
+.rm-log summary { cursor: pointer; font-size: 13px; color: var(--text-secondary); }
+.rm-log ul { list-style: none; margin: var(--space-2) 0 0; padding: 0; max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-1); font-size: 12px; }
+.rm-log li { color: var(--text-secondary); line-height: 1.4; overflow-wrap: anywhere; }
+.rm-log time { color: var(--text-tertiary); }
+.rm-log-error strong, .rm-log-conflict strong { color: var(--danger); }
+.rm-detail { color: var(--text-tertiary); }

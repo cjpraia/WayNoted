@@ -1,0 +1,159 @@
+/* Popovers, menus e controles compartilhados dos bancos de dados. */
+.dbv-popover {
+  position: fixed;
+  z-index: 1000;
+  background: var(--bg-popover);
+  box-shadow: var(--shadow-popover);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 14px;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  user-select: none;
+}
+
+.dbv-menu {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0;
+  min-width: 220px;
+}
+.dbv-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 4px;
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.2;
+  color: var(--text);
+  white-space: nowrap;
+  outline: none;
+}
+.dbv-menu-item:hover:not(:disabled),
+.dbv-menu-item:focus-visible,
+.dbv-menu-item--active {
+  background: var(--bg-hover);
+}
+.dbv-menu-item:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.dbv-menu-item--danger:hover:not(:disabled) {
+  color: var(--danger);
+}
+.dbv-menu-item--danger.dbv-menu-item--active,
+.dbv-menu-item--danger.dbv-menu-item--active .dbv-menu-icon,
+.dbv-menu-item--danger:hover:not(:disabled) .dbv-menu-icon {
+  color: var(--danger);
+}
+.dbv-menu-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  flex: none;
+  color: var(--icon);
+}
+.dbv-menu-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dbv-menu-hint {
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+.dbv-menu-check {
+  flex: none;
+  color: var(--text);
+}
+.dbv-menu-sep {
+  height: 1px;
+  margin: 5px 0;
+  background: var(--border);
+}
+.dbv-menu-section {
+  padding: 6px 12px 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.dbv-input {
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  border: 0;
+  background: var(--bg-input);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+  outline: none;
+  font-size: 14px;
+  user-select: text;
+}
+.dbv-input:focus {
+  box-shadow: inset 0 0 0 1px var(--accent), 0 0 0 2px var(--accent-bg);
+}
+.dbv-input-wrap {
+  padding: 4px 10px 6px;
+}
+
+.dbv-dropdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 14px;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.dbv-dropdown:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+.dbv-dropdown-icon {
+  display: flex;
+  color: var(--icon);
+}
+.dbv-dropdown-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dbv-dropdown-caret {
+  flex: none;
+  color: var(--icon);
+}
+
+.dbv-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--hit-min);
+  height: var(--hit-min);
+  border-radius: var(--radius-sm);
+  color: var(--icon);
+  flex: none;
+}
+.dbv-icon-btn:hover {
+  background: var(--bg-hover);
+}
+
+/* Anel de foco discreto (teclado) em vez do contorno padrão do navegador. */
+.dbv button:focus,
+.dbv-popover button:focus,
+.dbv-rowprops button:focus {
+  outline: none;
+}
+.dbv button:focus-visible,
+.dbv-popover button:focus-visible,
+.dbv-rowprops button:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent-bg);
+}

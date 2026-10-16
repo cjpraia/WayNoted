@@ -1,0 +1,25 @@
+/* Modelos com variáveis: diálogo de perguntas e seletor "Inserir variável". docs/USAGE.md */
+.tpl-overlay { position: fixed; inset: 0; z-index: 950; display: flex; align-items: center; justify-content: center; background: var(--bg-overlay); padding: var(--space-4); }
+.tpl-dialog { width: min(440px, 100%); background: var(--bg); color: var(--text); border-radius: var(--radius-lg); box-shadow: var(--shadow-modal); padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); font-size: 14px; }
+.tpl-dialog h3 { margin: 0; font-size: 15px; }
+.tpl-hint { margin: 0; color: var(--text-secondary); font-size: 13px; }
+.tpl-field { display: flex; flex-direction: column; gap: var(--space-1); font-size: 13px; }
+.tpl-input { height: var(--hit-min); padding: 0 var(--space-3); border: 0; border-radius: var(--radius-md); background: var(--bg-input); box-shadow: inset 0 0 0 1px var(--border-strong); color: var(--text); font: inherit; font-size: 14px; }
+.tpl-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.tpl-picker { position: relative; display: inline-block; }
+.tpl-picker-panel { position: fixed; z-index: 960; width: min(380px, 80vw); max-height: 360px; overflow: auto; background: var(--bg); color: var(--text); border-radius: var(--radius-lg); box-shadow: var(--shadow-modal); padding: var(--space-2); display: flex; flex-direction: column; gap: var(--space-1); }
+.tpl-picker-panel > header { padding: var(--space-1) var(--space-2); font-size: 12px; color: var(--text-secondary); }
+.tpl-var { flex: none; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); width: 100%; padding: var(--space-2) var(--space-3); min-height: var(--hit-min); border: 0; border-radius: var(--radius-md); background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.tpl-var:hover, .tpl-var:focus-visible { background: var(--bg-hover); }
+.tpl-var:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.tpl-var-head { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
+.tpl-var-token { font-family: var(--font-mono, ui-monospace, monospace); font-size: 12px; color: var(--accent); }
+.tpl-var-name { font-size: 13px; font-weight: 600; }
+.tpl-var-desc { font-size: 12px; color: var(--text-secondary); }
+.tpl-var-preview { font-size: 12px; color: var(--text-secondary); }
+.tpl-var-preview b { color: var(--text); font-weight: 500; }
+.tpl-var-tag { font-size: 11px; color: var(--text-secondary); }
+
+.tpl-banner { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--bg-hover); color: var(--text-secondary); font-size: 13px; }
+.pg-template-vars { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); padding: 0 var(--space-3); color: var(--text-secondary); font-size: 12px; }

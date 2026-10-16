@@ -1,0 +1,20 @@
+.xf-overlay{position:fixed;inset:0;z-index:1300;background:var(--bg-overlay);display:flex;align-items:center;justify-content:center;padding:var(--space-4)}
+.xf-dialog{width:min(900px,100%);height:min(720px,100%);display:flex;flex-direction:column;gap:var(--space-2);background:var(--bg-popover);color:var(--text);border-radius:12px;padding:var(--space-3);box-shadow:var(--shadow-modal);outline:none}
+.xf-dialog.xf-small{height:auto;width:min(420px,100%)}
+.xf-banner{display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap}
+.xf-banner>svg{color:var(--icon);flex:none}
+.xf-file{display:flex;flex-direction:column;min-width:0;flex:1 1 200px}
+.xf-file strong{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.xf-path{font-size:12px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.xf-actions{display:flex;gap:var(--space-1);flex-wrap:wrap;justify-content:flex-end}
+.xf-note{margin:0;font-size:12px;color:var(--text-secondary)}
+.xf-warn{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);flex-wrap:wrap;padding:var(--space-2) var(--space-2);border-radius:8px;font-size:13px;background:color-mix(in srgb,var(--warning,#d9730d) 12%,transparent)}
+.xf-tabs{display:flex;gap:var(--space-1)}
+.xf-tabs .np-btn[aria-pressed=true]{background:var(--bg-hover);color:var(--text)}
+.xf-editor{flex:1;min-height:0;resize:none;width:100%;box-sizing:border-box;padding:var(--space-2);font:13px/1.55 var(--font-mono,ui-monospace,Menlo,monospace);color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:8px}
+.xf-editor:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.xf-preview{flex:1;min-height:0;overflow:auto;padding:var(--space-2) var(--space-3);border:1px solid var(--border);border-radius:8px;font-size:14px;line-height:1.6}
+.xf-preview img{max-width:100%}
+.xf-ok,.xf-error{margin:0;font-size:13px}
+.xf-ok{color:var(--text-secondary)}
+.xf-error{color:var(--danger)}

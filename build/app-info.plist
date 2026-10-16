@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>NSMicrophoneUsageDescription</key><string>WayNoted uses the microphone only when you choose to record audio or dictate. Recordings stay on this Mac.</string>
+<key>NSSpeechRecognitionUsageDescription</key><string>WayNoted transcribes your dictation on this Mac using on-device speech recognition. Audio is never sent to servers.</string>
+<key>NSAppleEventsUsageDescription</key><string>WayNoted reads your notes in the Notes app only when you choose Import from Apple Notes. Nothing is changed in Notes and nothing leaves this Mac.</string>
+<key>NSCalendarsFullAccessUsageDescription</key><string>WayNoted shows events from the calendars you choose and adds events you create from your pages. Everything stays on this Mac.</string>
+<key>NSCalendarsUsageDescription</key><string>WayNoted shows events from the calendars you choose and adds events you create from your pages. Everything stays on this Mac.</string>
+<key>NSCalendarsWriteOnlyAccessUsageDescription</key><string>WayNoted adds events you create from your pages to your calendar.</string>
+<key>NSRemindersFullAccessUsageDescription</key><string>WayNoted mirrors the tasks you choose into a Reminders list named WayNoted and reads their completion back. Everything stays on this Mac.</string>
+<key>NSRemindersUsageDescription</key><string>WayNoted mirrors the tasks you choose into a Reminders list named WayNoted and reads their completion back. Everything stays on this Mac.</string>
+<key>CFBundleDocumentTypes</key><array>
+<dict>
+<key>CFBundleTypeName</key><string>Markdown document</string>
+<key>CFBundleTypeRole</key><string>Editor</string>
+<key>LSHandlerRank</key><string>Alternate</string>
+<key>LSItemContentTypes</key><array><string>net.daringfireball.markdown</string><string>public.markdown</string></array>
+<key>CFBundleTypeExtensions</key><array><string>md</string><string>markdown</string><string>mdown</string><string>mkd</string></array>
+</dict>
+<dict>
+<key>CFBundleTypeName</key><string>Plain text document</string>
+<key>CFBundleTypeRole</key><string>Editor</string>
+<key>LSHandlerRank</key><string>Alternate</string>
+<key>LSItemContentTypes</key><array><string>public.plain-text</string></array>
+<key>CFBundleTypeExtensions</key><array><string>txt</string></array>
+</dict>
+</array>
+<key>CFBundleURLTypes</key><array><dict><key>CFBundleURLName</key><string>WayNoted</string><key>CFBundleURLSchemes</key><array><string>workspace</string></array></dict></array>
+</dict></plist>

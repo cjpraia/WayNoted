@@ -1,0 +1,25 @@
+.sc-list { display: flex; flex-direction: column; gap: 14px; }
+.sc-search { width: 100%; height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius-sm, 6px); background: var(--bg-input, transparent); color: var(--text); font: inherit; font-size: 13px; }
+.sc-search:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+.sc-empty { margin: 0; font-size: 13px; color: var(--text-secondary); }
+.sc-area { margin: 0 0 4px; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.sc-group dl { margin: 0; }
+.sc-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 36px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.sc-row:last-child { border-bottom: 0; }
+.sc-row dt { min-width: 0; }
+.sc-row dd { margin: 0; text-align: right; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+.sc-keys kbd { display: inline-block; min-width: 20px; height: 20px; line-height: 20px; padding: 0 6px; border-radius: 4px; font: inherit; font-size: 12px; font-weight: 500; text-align: center; background: var(--bg-hover); color: var(--text-secondary); }
+.sc-list.is-compact .sc-row { min-height: 28px; font-size: 12px; }
+.sc-toolbar { display: flex; align-items: center; gap: var(--space-2); }
+.sc-toolbar .sc-search { flex: 1; min-width: 0; }
+.sc-help { margin: 0; font-size: 12px; color: var(--text-secondary); }
+.sc-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.sc-row { flex-wrap: wrap; }
+.sc-badge { margin-left: var(--space-2); padding: 0 var(--space-1); border-radius: var(--radius-sm); background: var(--accent-soft, var(--bg-hover)); color: var(--accent); font-size: 11px; }
+.sc-key { display: inline-block; min-width: 20px; height: 24px; padding: 0 var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-hover); color: var(--text); font: inherit; font-size: 12px; font-weight: 500; cursor: pointer; }
+.sc-key:hover { border-color: var(--border-strong); }
+.sc-key:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.sc-key.is-recording { border-color: var(--accent); background: var(--bg); color: var(--accent); }
+.sc-message { flex-basis: 100%; display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-1) 0 var(--space-2); font-size: 12px; color: var(--danger); }
+.sc-confirm { display: inline-flex; gap: var(--space-1); }
+.sc-reset { margin-left: var(--space-1); }

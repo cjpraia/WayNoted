@@ -1,0 +1,54 @@
+/* Tela Tarefas (tk-) e cartão "Hoje" da página inicial. Cores só por tokens. */
+.tk-root { height: 100%; overflow-y: auto; position: relative; }
+.tk-inner { max-width: 820px; margin: 0 auto; padding: 40px 48px 120px; }
+.tk-header { display: flex; align-items: center; gap: 12px; margin-bottom: var(--space-4); }
+.tk-header h1 { flex: 1; display: flex; align-items: center; gap: var(--space-2); margin: 0; font-size: 28px; font-weight: 700; color: var(--text); }
+.tk-header h1 svg { color: var(--icon); }
+.tk-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: var(--space-2); overflow-x: auto; }
+.tk-tab { font: inherit; font-size: 14px; color: var(--text-secondary); background: none; border: 0; border-bottom: 2px solid transparent; padding: var(--space-1) var(--space-2) 8px; cursor: pointer; display: inline-flex; align-items: center; gap: var(--space-1); white-space: nowrap; }
+.tk-tab:hover { color: var(--text); }
+.tk-tab.is-active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
+.tk-badge { font-size: 11px; font-weight: 500; line-height: 16px; color: var(--text-secondary); background: var(--bg-hover); border-radius: 999px; padding: 0 var(--space-1); }
+.tk-badge.is-overdue { color: var(--danger); background: color-mix(in srgb, var(--danger) 13%, transparent); }
+.tk-toolbar { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; font-size: 12.5px; color: var(--text-secondary); margin-bottom: 8px; }
+.tk-indexing { color: var(--text-tertiary); }
+.tk-error { color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent); border-radius: var(--radius); padding: var(--space-1) var(--space-2); font-size: 13px; margin: var(--space-1) 0; }
+.tk-group { display: flex; align-items: center; gap: 8px; height: 34px; padding: var(--space-2) var(--space-1) 4px; font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: none; border-bottom: 1px solid var(--border); box-sizing: border-box; }
+.tk-group.is-overdue { color: var(--danger); }
+.tk-group-count { font-weight: 500; color: var(--text-tertiary); }
+.tk-item { display: flex; align-items: center; gap: 2px; min-height: 38px; border-radius: var(--radius); }
+.tk-item:hover { background: var(--bg-hover); }
+.tk-item.is-pending { opacity: 0.45; }
+.tk-item.is-pending .tk-title { text-decoration: line-through; }
+.tk-check { position: relative; display: inline-flex; padding: var(--space-1); color: var(--icon); background: none; border: 0; cursor: pointer; border-radius: var(--radius-sm); }
+.tk-check:hover { color: var(--accent); }
+.tk-main { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); text-align: left; font: inherit; color: var(--text); background: none; border: 0; cursor: pointer; padding: var(--space-1) var(--space-1) var(--space-1) 0; }
+.tk-title { flex: 1 1 160px; min-width: 0; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tk-meta { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 2px 8px; flex: 0 1 auto; max-width: 100%; font-size: 12px; color: var(--text-tertiary); overflow: hidden; }
+.tk-meta > span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.tk-due, .tk-range { color: var(--text-secondary); }
+.tk-due.is-overdue, .tk-range.is-overdue { color: var(--danger); }
+.tk-repeat { max-width: 100%; }
+.tk-source { max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+.tk-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 48px 0; color: var(--text-tertiary); text-align: center; font-size: 13px; }
+.tk-card-counts { display: inline-flex; gap: var(--space-1); margin-left: 8px; }
+.tk-card-body { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-1) 8px var(--space-2); background: var(--bg); }
+.tk-link { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; }
+.tk-link:hover { text-decoration: underline; }
+.tk-card-empty { margin: 8px var(--space-1); font-size: 13px; color: var(--text-tertiary); }
+.tk-card-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: var(--space-1); padding: 0 4px; }
+@media (max-width: 640px) { .tk-inner { padding: 24px 16px 96px; } .tk-meta { flex-basis: 100%; } .tk-source { display: none !important; } }
+/* Fechamento do dia: cartão discreto quando todas as tarefas de hoje foram feitas (docs/DEVELOPMENT.md → Peak-End). */
+.tk-day-done { display: flex; align-items: center; gap: 16px; margin: 4px 2px 8px; padding: var(--space-2) var(--space-3) var(--space-2) var(--space-1); border-radius: var(--radius-lg); background: var(--accent-bg); animation: np-fade-in var(--dur-3) var(--ease-out); }
+.tk-day-done-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tk-day-done-text strong { font-size: 20px; line-height: 1.2; color: var(--text); }
+.tk-day-done-text span { font-size: 13px; color: var(--text-secondary); }
+.tk-card-body { background: var(--bg-raised); box-shadow: var(--shadow-1); border-color: transparent; padding: 8px var(--space-2) 12px; }
+
+.tk-check::before { content: ''; position: absolute; inset: -2px; }
+/* Agendar no Calendário (E2): botão na linha e linha arrastável. */
+.tk-item[draggable="true"] { cursor: grab; }
+.tk-sched { display: inline-flex; align-items: center; justify-content: center; min-width: var(--hit-min); min-height: var(--hit-min); padding: 0; color: var(--text-tertiary); background: none; border: 0; border-radius: var(--radius-sm); cursor: pointer; opacity: 0; }
+.tk-item:hover .tk-sched, .tk-item:focus-within .tk-sched, .tk-sched.is-on { opacity: 1; }
+.tk-sched:hover, .tk-sched.is-on { color: var(--accent); }
+.tk-sched:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }

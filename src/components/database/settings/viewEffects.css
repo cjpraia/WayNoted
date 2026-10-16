@@ -1,0 +1,59 @@
+/* Efeito visual das opções do painel "Configurações da visualização" (classes de viewBodyClasses
+   em settings/model.ts, aplicadas em .dbv-body) e da seleção de linhas fora da tabela. */
+
+/* Ícone da página desligado */
+.dbv-body--no-icons .vw-row-icon { display: none; }
+
+/* Quebrar todo o conteúdo */
+.dbv-body--wrap .ls-row { height: auto; min-height: 32px; padding-top: 6px; padding-bottom: 6px; align-items: flex-start; }
+.dbv-body--wrap .ls-main .vw-title, .dbv-body--wrap .ls-main { white-space: normal; overflow-wrap: anywhere; }
+.dbv-body--wrap .bd-card-title .vw-title { -webkit-line-clamp: unset; display: block; }
+.dbv-body--wrap .gl-title { height: auto; align-items: flex-start; }
+.dbv-body--wrap .gl-title .vw-title { white-space: normal; overflow-wrap: anywhere; }
+.dbv-body--wrap .gl-prop, .dbv-body--wrap .bd-card-prop { white-space: normal; }
+
+/* Tabela sem linhas verticais */
+.dbv-body--no-vlines .tb-cell, .dbv-body--no-vlines .tb-th { border-right-color: transparent; }
+
+/* Quadro sem cor nas colunas */
+.dbv-body--plain-columns .bd-col, :root[data-theme='dark'] .dbv-body--plain-columns .bd-col { background: transparent; }
+
+/* Contagem dos grupos desligada */
+.dbv-body--no-group-count .bd-col-count, .dbv-body--no-group-count .dbv-group-section > header > small { display: none; }
+
+/* Tamanho do cartão: quadro (largura da coluna) e galeria (largura mínima da grade) */
+.dbv-body--card-small .bd-col { width: 200px; }
+.dbv-body--card-large .bd-col { width: 320px; }
+.dbv-body--card-small .gl { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.dbv-body--card-large .gl { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+.dbv-body--card-small .gl-preview { height: 100px; }
+.dbv-body--card-large .gl-preview { height: 200px; }
+
+/* Layout do cartão compacto: propriedades lado a lado */
+.dbv-body--card-compact .bd-card-props { flex-direction: row; flex-wrap: wrap; gap: 4px 8px; }
+.dbv-body--card-compact .gl-body { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.dbv-body--card-compact .gl-title { flex-basis: 100%; }
+
+/* Calendário: sem fins de semana (colunas de largura zero) e números de semana */
+.cal--no-weekends .cal-weekdays, .cal--no-weekends .cal-week { grid-template-columns: 0 repeat(5, minmax(0, 1fr)) 0; }
+.cal--no-weekends .cal-weekday:first-child, .cal--no-weekends .cal-weekday:last-child,
+.cal--no-weekends .cal-weekend { visibility: hidden; overflow: hidden; padding: 0; border: 0; }
+.cal--no-weekends .cal-event { min-width: 0; overflow: hidden; }
+.cal-weeknum { position: absolute; left: 6px; bottom: 4px; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--text-tertiary); pointer-events: none; }
+
+/* Barra flutuante da seleção: acima das abas, fixa ao rolar */
+.dbv-bulk-dock { position: sticky; top: 52px; z-index: 30; height: 0; }
+.dbv-bulk-dock > .tb-bulk { position: absolute; left: 0; bottom: 8px; }
+
+.dbv-notice-undo { margin-left: auto; padding: 2px 8px; border-radius: var(--radius-sm); color: var(--accent) !important; font-weight: 500; }
+.dbv-notice-undo:hover { background: var(--bg-hover); }
+
+/* Seleção em lista e galeria: caixa ao passar o mouse, persistente enquanto houver seleção */
+.ls-row, .gl-card { position: relative; }
+.vw-select { position: absolute; z-index: 2; opacity: 0; transition: opacity 0.1s; margin: 0; }
+.ls-row .vw-select { left: -24px; top: 8px; }
+.gl-card .vw-select { left: 8px; top: 8px; }
+.ls-row:hover .vw-select, .gl-card:hover .vw-select, .vw-selecting .vw-select, .vw-select:focus-visible, .is-selected .vw-select { opacity: 1; }
+.ls-row.is-selected { background: color-mix(in srgb, var(--accent) 12%, var(--bg)); }
+.gl-card.is-selected { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 70%, transparent); background: color-mix(in srgb, var(--accent) 8%, var(--bg)); }
+:root[data-theme='dark'] .ls-row.is-selected { background: color-mix(in srgb, var(--accent) 22%, var(--bg)); }

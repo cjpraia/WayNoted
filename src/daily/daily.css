@@ -1,0 +1,136 @@
+/* Fluxo diário: painel de calendário (dl-), barra da nota diária (dn-). Cores só por tokens. */
+:root {
+  --dl-today: var(--accent);
+  --dl-dot-note: var(--accent);
+  --dl-dot-task: rgb(217, 115, 13);
+  --dl-dot-event: rgb(15, 123, 108);
+}
+:root[data-theme='dark'] {
+  --dl-dot-task: rgb(255, 163, 68);
+  --dl-dot-event: rgb(77, 171, 154);
+}
+
+.dl-panel { position: relative; flex: none; display: flex; flex-direction: column; min-width: 0; height: 100%; background: var(--bg-sidebar); border-left: 1px solid var(--border); color: var(--text); }
+.dl-resize { position: absolute; left: -3px; top: 0; bottom: 0; width: 6px; cursor: col-resize; z-index: 2; }
+.dl-resize:hover, .dl-resize:focus-visible { background: var(--accent-bg); outline: none; }
+.dl-head { display: flex; align-items: center; gap: var(--space-1); height: var(--tabs-height); padding: 0 8px 0 var(--space-3); color: var(--text-secondary); flex: none; }
+.dl-head strong { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; }
+.dl-today-btn { font-size: 12px; padding: 4px var(--space-2); border-radius: var(--radius); border: 1px solid var(--border); color: var(--text); background: var(--bg); }
+.dl-today-btn:hover { background: var(--bg-hover); }
+.dl-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: var(--radius); color: var(--icon); }
+.dl-icon-btn:hover { background: var(--bg-hover); color: var(--text); }
+.dl-panel button { font: inherit; background: none; border: 0; cursor: pointer; color: inherit; }
+.dl-panel .dl-today-btn { border: 1px solid var(--border); background: var(--bg); }
+
+.dl-month { padding: 4px var(--space-2) 8px; flex: none; }
+.dl-month-head { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+.dl-month-title { flex: 1; font-size: 13px; font-weight: 600; text-align: center; }
+.np-select.dl-year { min-width: 0; height: 24px; padding: 0 var(--space-1) 0 var(--space-2); font-size: 12px; color: var(--text-secondary); background: transparent; box-shadow: none; }
+.np-select.dl-year:hover:not(:disabled) { background: var(--bg-hover); }
+.dl-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; }
+.dl-wd { font-size: 11px; color: var(--text-tertiary); text-align: center; padding: 4px 0; text-transform: uppercase; }
+.dl-day { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 34px; border-radius: var(--radius); font-size: 12.5px; }
+.dl-panel .dl-day:hover { background: var(--bg-hover); }
+.dl-day.is-out { color: var(--text-tertiary); }
+.dl-day-num { width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; line-height: 1; }
+.dl-day.is-today .dl-day-num { background: var(--dl-today); color: var(--on-accent); font-weight: 600; }
+.dl-day.is-selected:not(.is-today) .dl-day-num { box-shadow: inset 0 0 0 1.5px var(--accent); color: var(--accent); font-weight: 600; }
+.dl-day.is-selected.is-today .dl-day-num { box-shadow: 0 0 0 2px var(--bg-sidebar), 0 0 0 3.5px var(--dl-today); }
+.dl-day:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.dl-dots { display: flex; gap: 2px; height: 4px; margin-top: 1px; }
+.dl-dot { width: 4px; height: 4px; border-radius: 50%; display: block; }
+.dl-dot.is-note { background: var(--dl-dot-note); }
+.dl-dot.is-task { background: var(--dl-dot-task); }
+.dl-dot.is-task.is-overdue { background: var(--danger); }
+.dl-dot.is-event { background: var(--dl-dot-event); }
+
+.dl-tabs { display: flex; gap: 2px; margin: 0 var(--space-2); padding: 2px; border-radius: var(--radius); background: var(--bg-hover); flex: none; }
+.dl-tabs button { flex: 1; font-size: 12px; padding: 4px 0; border-radius: var(--radius-sm); color: var(--text-secondary); }
+.dl-tabs button.is-active { background: var(--bg); color: var(--text); box-shadow: 0 0 0 1px var(--border); font-weight: 500; }
+.dl-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-2) var(--space-3) 24px; }
+.dl-pad { padding: 8px 0; }
+
+.dl-day-head { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 2px 8px; margin-bottom: var(--space-2); }
+.dl-weekday { font-size: 12px; color: var(--accent); font-weight: 500; }
+.dl-today-badge { justify-self: start; font-size: 11px; color: var(--dl-today); background: color-mix(in srgb, var(--dl-today) 14%, transparent); border-radius: var(--radius-sm); padding: 0 var(--space-1); }
+.dl-date { grid-column: 1 / -1; margin: 0; font-size: 18px; font-weight: 700; line-height: 1.25; }
+.dl-week { grid-column: 1 / -1; font-size: 12px; color: var(--text-tertiary); }
+.dl-section { margin-top: var(--space-3); }
+.dl-section h4 { display: flex; align-items: center; gap: var(--space-1); margin: 0 0 var(--space-1); font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.dl-count { font-weight: 500; font-size: 11px; color: var(--text-tertiary); background: var(--bg-hover); border-radius: 999px; padding: 0 var(--space-1); }
+.dl-empty { margin: 0; font-size: 12px; color: var(--text-tertiary); }
+.dl-error { font-size: 12px; color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent); border-radius: var(--radius); padding: var(--space-1) 8px; margin-bottom: 8px; }
+.dl-panel .dl-add { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; padding: var(--space-1) var(--space-2); border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); }
+.dl-panel .dl-add:hover { background: var(--bg-hover); }
+.dl-note, .dl-created { display: flex; align-items: center; gap: 8px; width: 100%; padding: var(--space-1) var(--space-1); border-radius: var(--radius); text-align: left; font-size: 13px; }
+.dl-panel .dl-note:hover, .dl-panel .dl-created:hover { background: var(--bg-hover); }
+.dl-note span, .dl-created span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dl-note .dl-note-icon, .dl-created .dl-note-icon { flex: none; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; }
+.dl-created time { font-size: 11px; color: var(--text-tertiary); }
+.dl-created svg { color: var(--icon); flex: none; }
+.dl-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+.dl-task { display: flex; align-items: flex-start; gap: 4px; border-radius: var(--radius); }
+.dl-task:hover { background: var(--bg-hover); }
+.dl-check { padding: var(--space-1) 2px 0 4px; color: var(--icon); }
+.dl-panel .dl-check:hover { color: var(--accent); }
+.dl-task-main { flex: 1; min-width: 0; display: flex; flex-direction: column; text-align: left; padding: 4px 4px 4px 0; }
+.dl-task-title { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dl-task-meta { font-size: 11px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dl-task.is-done .dl-task-title { text-decoration: line-through; color: var(--text-tertiary); }
+.dl-event { display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 4px 4px; }
+.dl-event-bar { width: 3px; align-self: stretch; border-radius: 2px; background: var(--dl-event-color, var(--dl-dot-event)); }
+.dl-event-time { color: var(--text-secondary); font-variant-numeric: tabular-nums; flex: none; min-width: 72px; font-size: 11.5px; }
+.dl-event-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.dl-summary { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.dl-summary-day { display: flex; align-items: flex-start; gap: var(--space-2); width: 100%; text-align: left; padding: var(--space-1); border-radius: var(--radius); }
+.dl-panel .dl-summary-day:hover { background: var(--bg-hover); }
+.dl-summary-day.is-today .dl-summary-date b { color: var(--dl-today); }
+.dl-summary-date { flex: none; width: 52px; font-size: 11px; color: var(--text-secondary); text-transform: capitalize; }
+.dl-summary-date b { display: block; font-size: 16px; color: var(--text); }
+.dl-summary-items { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 4px; }
+.dl-summary-none { color: var(--text-tertiary); font-size: 12px; }
+.dl-chip { font-size: 11.5px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 1px var(--space-1); border-radius: var(--radius-sm); background: var(--bg-hover); color: var(--text-secondary); }
+.dl-chip.is-note { color: var(--dl-dot-note); background: var(--accent-bg); }
+.dl-chip.is-task { box-shadow: inset 2px 0 0 var(--dl-dot-task); }
+.dl-chip.is-event { box-shadow: inset 2px 0 0 var(--dl-dot-event); }
+
+/* Barra da nota diária (topo da página): ‹ dia › */
+.dn-bar { display: flex; align-items: center; gap: var(--space-1); margin: 0 0 var(--space-1); color: var(--text-secondary); font-size: 13px; flex-wrap: wrap; }
+.dn-bar button { font: inherit; background: none; border: 0; cursor: pointer; color: inherit; }
+.dn-nav { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: var(--radius); border: 1px solid var(--border) !important; color: var(--icon) !important; }
+.dn-nav:hover { background: var(--bg-hover) !important; color: var(--text) !important; }
+.dn-weekday { color: var(--accent); font-weight: 500; }
+.dn-today { font-size: 11.5px; color: var(--dl-today); background: color-mix(in srgb, var(--dl-today) 14%, transparent); border-radius: var(--radius-sm); padding: 0 var(--space-1); }
+.dn-week { color: var(--text-tertiary); font-size: 12px; }
+.dn-go-today { font-size: 12px !important; padding: 2px 8px !important; border-radius: var(--radius) !important; border: 1px solid var(--border) !important; }
+.dn-go-today:hover { background: var(--bg-hover) !important; }
+.dn-error { color: var(--danger); font-size: 12px; }
+
+/* Marcador "Hoje" no caminho (breadcrumb) */
+.pg-crumb-today { font-size: 11px; line-height: 16px; color: var(--dl-today); background: color-mix(in srgb, var(--dl-today) 14%, transparent); border-radius: var(--radius-sm); padding: 0 var(--space-1); margin-left: 4px; white-space: nowrap; }
+
+/* Barra lateral: Hoje / Tarefas */
+.sb-daily { display: flex; flex-direction: column; gap: 1px; margin-top: 4px; }
+.sb-daily-count { margin-left: auto; font-size: 11px; line-height: 16px; padding: 0 var(--space-1); border-radius: 999px; color: var(--text-secondary); background: var(--bg-hover); }
+.sb-daily-count.is-overdue { color: var(--danger); background: color-mix(in srgb, var(--danger) 13%, transparent); }
+
+/* Trazer tarefas atrasadas para hoje */
+.dr-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; background: var(--bg-overlay); padding: 16px; }
+.dr-dialog { width: 100%; max-width: 480px; max-height: 80vh; overflow: auto; background: var(--bg-popover); color: var(--text); border-radius: var(--radius-lg); box-shadow: var(--shadow-popover); padding: 20px; display: flex; flex-direction: column; gap: var(--space-2); outline: none; }
+.dr-dialog header { display: flex; align-items: center; gap: 8px; }
+.dr-dialog h2 { flex: 1; margin: 0; font-size: 16px; font-weight: 600; }
+.dr-dialog header button { display: inline-flex; background: none; border: 0; color: var(--icon); cursor: pointer; padding: 4px; border-radius: var(--radius-sm); }
+.dr-dialog header button:hover { background: var(--bg-hover); }
+.dr-dialog p { margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+.dr-list { list-style: none; margin: 0; padding: 0; max-height: 240px; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+.dr-list li { display: flex; gap: var(--space-2); justify-content: space-between; padding: var(--space-1) var(--space-2); font-size: 13px; border-bottom: 1px solid var(--border); }
+.dr-list li:last-child { border-bottom: 0; }
+.dr-list li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dr-list small { color: var(--text-tertiary); white-space: nowrap; }
+.dr-modes { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.dr-error { color: var(--danger) !important; }
+.dr-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.dn-rollover { font-size: 12px !important; padding: 2px 8px !important; border-radius: var(--radius) !important; border: 1px solid var(--border) !important; margin-left: auto; }
+.dn-rollover:hover { background: var(--bg-hover) !important; }
+.tk-inherit { color: var(--text-secondary); }

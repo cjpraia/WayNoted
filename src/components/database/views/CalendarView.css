@@ -1,0 +1,267 @@
+/* Visualização Calendário (prefixo cal-). */
+
+.cal {
+  display: flex;
+  flex-direction: column;
+  min-width: 560px;
+}
+
+.cal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  margin-bottom: 4px;
+}
+.cal-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.cal-title::first-letter {
+  text-transform: uppercase;
+}
+.cal-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.cal-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+.cal-nav-btn.cal-icon {
+  width: 26px;
+  padding: 0;
+  color: var(--icon);
+}
+.cal-nav-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.cal-undated-btn {
+  height: 24px;
+  margin-right: 8px;
+  padding: 0 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+.cal-undated-btn:hover,
+.cal-undated-btn.is-open {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.cal-undated-list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-bottom: 1px solid var(--border);
+}
+.cal-weekday {
+  height: 26px;
+  padding: 0 8px;
+  font-size: 12px;
+  line-height: 26px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.cal-grid {
+  border-left: 1px solid var(--border);
+}
+
+.cal-week {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  min-height: 124px;
+}
+
+.cal-day {
+  position: relative;
+  grid-row: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: var(--space-1) var(--space-1) 0;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  transition: background 80ms;
+}
+.cal-weekend {
+  background: var(--bg-sidebar);
+}
+.cal-drop {
+  background: var(--accent-bg);
+}
+
+.cal-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 var(--space-1);
+  border-radius: 12px;
+  font-size: 14px;
+  color: var(--text);
+  white-space: nowrap;
+}
+.cal-outside .cal-num {
+  color: var(--text-tertiary);
+}
+.cal-num.cal-today {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 500;
+}
+
+.cal-add {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  box-shadow: 0 0 0 1px var(--border-strong), 0 1px 2px rgba(31, 26, 20, 0.06);
+  color: var(--icon);
+  opacity: 0;
+  transition: opacity 100ms;
+}
+.cal-day:hover .cal-add {
+  opacity: 1;
+}
+.cal-add:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+body.vw-dragging .cal-add {
+  display: none;
+}
+
+/* Cartões / barras */
+.cal-event {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  margin: 0 var(--space-1) 4px;
+  padding: 4px var(--space-2) 4px;
+  border-radius: 6px;
+  background: var(--bg);
+  box-shadow: var(--cal-event-shadow);
+  font-size: 12px;
+  line-height: 18px;
+  cursor: pointer;
+  transition:
+    background 100ms,
+    opacity 100ms;
+}
+.cal {
+  --cal-event-shadow: 0 0 0 1px rgba(31, 26, 20, 0.09), 0 1px 2px rgba(31, 26, 20, 0.05);
+}
+:root[data-theme='dark'] .cal {
+  --cal-event-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+:root[data-theme='dark'] .cal-event {
+  background: var(--bg-popover);
+}
+.cal-event:hover {
+  background: color-mix(in srgb, var(--bg) 94%, var(--text));
+}
+:root[data-theme='dark'] .cal-event:hover {
+  background: color-mix(in srgb, var(--bg-popover) 90%, var(--text));
+}
+.cal-event.cal-cont-left {
+  margin-left: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.cal-event.cal-cont-right {
+  margin-right: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.cal-event.is-dragging {
+  opacity: 0.35;
+}
+.cal-event.is-active {
+  box-shadow: 0 0 0 2px var(--accent-bg), var(--cal-event-shadow);
+}
+/* Ocorrências futuras de uma data recorrente: contorno pontilhado, sem sombra. */
+.cal-event.cal-event--projected,
+:root[data-theme='dark'] .cal-event.cal-event--projected {
+  background: transparent;
+  box-shadow: none;
+  outline: 1px dashed var(--border-strong);
+  outline-offset: -1px;
+  color: var(--text-secondary);
+}
+.cal-event.vw-drag-ghost {
+  background: var(--bg-popover);
+  box-shadow: 0 0 0 1px rgba(31, 26, 20, 0.08), 0 8px 24px rgba(31, 26, 20, 0.14);
+}
+
+.cal-event-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+}
+.cal-event-title .vw-inline-input {
+  height: 18px;
+  font-size: 13px;
+}
+/* Propriedades quebram em linhas em vez de cortar chips no meio. */
+.cal-event-props {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px var(--space-1);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.cal-event-prop {
+  display: inline-flex;
+  flex: none;
+  max-width: 100%;
+  min-width: 0;
+  color: var(--text-secondary);
+}
+.cal-event-prop .db-chips {
+  flex-wrap: wrap;
+  gap: 2px 4px;
+}
+.cal-event-prop .db-chip {
+  height: 16px;
+  padding: 0 var(--space-1);
+  font-size: 11px;
+  line-height: 16px;
+}
+.cal-event-prop .db-text {
+  font-size: 11px;
+}

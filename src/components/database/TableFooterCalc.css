@@ -1,0 +1,4 @@
+/* Complementos do rodapé de cálculos (o layout base fica em table.css). */
+.tb-foot-cell strong { white-space: nowrap; }
+.tb-foot-total { flex: none; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.tb-foot-preview { color: var(--text-tertiary); font-size: 12px; font-variant-numeric: tabular-nums; }

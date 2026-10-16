@@ -1,0 +1,57 @@
+/* "Começar bem" no Meu dia (Zeigarnik, Goal-Gradient, Peak-End, Paradoxo do usuário ativo, Von Restorff). Só tokens. */
+.co-continue { display: flex; align-items: center; gap: 16px; margin: 0 0 32px; padding: 16px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-card, none); }
+.co-continue-icon { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--radius-md); background: var(--accent-bg); font-size: 20px; }
+.co-continue-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.co-eyebrow { margin: 0; font-size: 12px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.co-continue-name { font-family: var(--font-display); font-size: 18px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.co-continue-excerpt { font-size: 13px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.co-continue-actions { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-1); }
+.co-link, .co-step-btn { position: relative; font: inherit; font-size: 12px; color: var(--text-secondary); background: none; border: 0; padding: 4px var(--space-1); border-radius: var(--radius-sm); cursor: pointer; }
+.co-link::before, .co-step-btn::before { content: ''; position: absolute; inset: -3px -2px; }
+.co-link:hover, .co-step-btn:hover { color: var(--text); background: var(--bg-hover); }
+.co-card { margin: 0 0 32px; }
+.co-card-head { display: flex; align-items: center; gap: 12px; }
+.co-card-head .hm-section-title { margin-bottom: 8px; }
+.co-card-head .co-card-action { margin-left: auto; }
+.co-count { font-size: 12px; color: var(--text-tertiary); margin-bottom: 8px; }
+.co-card-head .co-count + .co-card-action { margin-left: auto; }
+.co-bar { height: 4px; border-radius: var(--radius-pill); background: var(--bg-active); overflow: hidden; margin-bottom: 12px; }
+.co-bar > i { display: block; height: 100%; background: var(--accent); border-radius: inherit; transition: width var(--dur-3) var(--ease-out); }
+.co-note { margin: var(--space-2) 0 0; font-size: 12px; color: var(--text-tertiary); }.co-steps { list-style: none; margin: 0; padding: 4px 8px; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 2px 16px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-raised); }
+.co-steps li { display: flex; align-items: center; gap: 8px; min-height: 32px; font-size: 13px; color: var(--text); }
+.co-steps li.is-done { color: var(--text-tertiary); }
+.co-steps li.is-done > span:not(.co-check):not(.co-sr) { text-decoration: line-through; text-decoration-color: var(--border-strong); }
+.co-steps .co-step-btn { font-size: 13px; color: var(--text); padding: 2px 4px; margin: 0 -4px; }
+.co-check { flex: none; display: grid; place-items: center; width: 16px; height: 16px; border-radius: var(--radius-pill); box-shadow: inset 0 0 0 1.5px var(--border-strong); color: var(--on-accent); }
+.is-done .co-check { background: var(--accent); box-shadow: none; animation: co-pop var(--dur-3) var(--ease-out); }
+.co-steps kbd { margin-left: auto; font: inherit; font-size: 11px; color: var(--text-tertiary); background: var(--bg-hover); border-radius: var(--radius-xs); padding: 0 var(--space-1); line-height: 18px; }
+.co-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.co-tip .np-btn { margin-left: var(--space-1); }
+.co-tip { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin: -16px 0 32px; padding: 8px 12px; font-size: 13px; color: var(--text-secondary); background: var(--bg-hover); border-radius: var(--radius-md); }
+.co-tip > span { flex: 1 1 260px; }
+.co-tip strong { color: var(--text); font-weight: 600; }
+.co-week-stats { margin: 0 0 12px; font-size: 14px; color: var(--text-secondary); }
+.co-priorities { display: flex; flex-direction: column; gap: 8px; max-width: 420px; }
+.co-priorities input { height: 32px; padding: 0 var(--space-2); font: inherit; font-size: 14px; color: var(--text); background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.co-priorities input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.co-row { display: flex; gap: 8px; align-items: center; }
+.co-error { margin: 0; font-size: 13px; color: var(--danger); }
+.co-continue button:focus-visible, .co-card button:focus-visible, .co-tip button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Progresso do dia (anel discreto na cor de destaque; nunca vermelho) */
+.co-ring { display: inline-flex; align-items: center; gap: 8px; margin-left: 12px; font-family: var(--font-body, inherit); font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+.co-ring svg { display: block; transform: rotate(-90deg); }
+.co-ring .co-ring-track { stroke: var(--bg-active); }
+.co-ring .co-ring-fill { stroke: var(--accent); transition: stroke-dashoffset var(--dur-3) var(--ease-out); }
+.co-goal { font-size: 12px; font-weight: 400; color: var(--text-tertiary); margin-left: 8px; }
+.tk-day-done .co-summary { font-size: 13px; color: var(--text); font-variant-numeric: tabular-nums; }
+.tk-day-done .co-plan { margin-top: var(--space-1); align-self: flex-start; }
+.tk-day-done.is-fresh { animation: np-fade-in var(--dur-3) var(--ease-out); }
+@keyframes co-pop { from { transform: scale(0.6); } to { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .co-bar > i, .co-ring .co-ring-fill, .is-done .co-check, .tk-day-done.is-fresh { transition: none; animation: none; }
+}
+@media (max-width: 640px) { .co-continue { flex-wrap: wrap; } .co-continue-actions { flex-direction: row; align-items: center; width: 100%; } }
+
+/* Estado vazio do banco: EmptyState + ação principal e atalho */
+.dbv-empty-hint { margin: var(--space-3) var(--space-1); }
+.dbv-empty-hint kbd { font: inherit; font-size: 11px; line-height: 18px; padding: 0 var(--space-1); border-radius: var(--radius-xs); background: rgba(255, 255, 255, 0.2); color: inherit; }

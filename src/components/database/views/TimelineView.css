@@ -1,0 +1,77 @@
+.tl-root{border:1px solid var(--border);border-radius:8px;overflow:hidden}.tl-toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);font-size:13px}.tl-toolbar button,.tl-add{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:6px;color:var(--text-secondary)}.tl-toolbar button:hover,.tl-add:hover{background:var(--bg-hover)}.tl-toolbar strong{margin-left:12px;font-size:14px;font-weight:600}.tl-toolbar span{margin-left:auto;color:var(--text-tertiary)}.tl-scroll{overflow:auto}.tl-grid{display:grid;width:max-content;min-width:100%}.tl-corner,.tl-day{height:32px;display:flex;align-items:center;border-bottom:1px solid var(--border);background:var(--bg);color:var(--text-tertiary);font-size:12px}.tl-corner{position:sticky;left:0;z-index:2;padding-left:12px}.tl-day{justify-content:center;border-left:1px solid var(--border)}.tl-day--today{color:var(--accent);font-weight:700}.tl-row{display:grid;height:42px;border-bottom:1px solid var(--border);position:relative}.tl-row:last-child{border-bottom:0}.tl-title{grid-column:1;padding:0 12px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;position:sticky;left:0;z-index:2;background:var(--bg);border-right:1px solid var(--border);font-size:13px}.tl-title:hover{background:var(--bg-hover)}.tl-track{display:grid;position:relative;align-items:center;background:repeating-linear-gradient(to right,transparent 0 35px,var(--border) 35px 36px)}.tl-bar{height:24px;z-index:1;margin:0 2px;border-radius:5px;background:var(--accent);color: var(--on-accent);text-align:left;padding:0 8px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:12px}.tl-date{position:absolute;right:4px;top:9px;width:18px;opacity:0;z-index:2}.tl-row:hover .tl-date,.tl-date:focus{opacity:1;width:118px;background:var(--bg)}.tl-add{margin:8px 12px;font-size:13px}
+.tl-undated{display:grid;gap:4px;padding:12px;border-top:1px solid var(--border);font-size:12px}.tl-undated>div{display:flex;justify-content:space-between;align-items:center}.tl-undated button{padding:4px 8px;border-radius:5px;text-align:left}.tl-undated button:hover{background:var(--bg-hover)}.tl-undated>div button:last-child{color:var(--accent)}
+.tl-bar{display:flex;align-items:center;gap:4px;touch-action:none}.tl-drag-edge{display:block;flex:none;width:6px;height:17px;border-left:1px solid #ffffff99;border-right:1px solid #ffffff99;cursor:ew-resize}.tl-drag-edge:last-child{margin-left:auto}
+
+/* Refino visual: barras como cartões claros (borda fina + sombra leve),
+   rótulo legível mesmo em barras de um dia e "hoje" em círculo vermelho. */
+.tl-root {
+  --tl-bar-bg: var(--bg);
+  --tl-bar-shadow: 0 0 0 1px rgba(31, 26, 20, 0.1), 0 1px 2px rgba(31, 26, 20, 0.06);
+  --tl-bar-shadow-hover: 0 0 0 1px rgba(31, 26, 20, 0.14), 0 2px 5px rgba(31, 26, 20, 0.09);
+  border-radius: 10px;
+}
+:root[data-theme='dark'] .tl-root {
+  --tl-bar-bg: var(--bg-popover);
+  --tl-bar-shadow: 0 0 0 1px rgba(255, 255, 255, 0.09), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --tl-bar-shadow-hover: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 2px 5px rgba(0, 0, 0, 0.35);
+}
+.tl-day--today {
+  font-weight: 600;
+  color: var(--on-accent);
+  background:
+    radial-gradient(circle at center, var(--accent) 0 11px, transparent 11.5px),
+    var(--bg);
+}
+.tl-row {
+  height: 40px;
+}
+.tl-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.tl-bar {
+  position: relative;
+  height: 28px;
+  padding: 0 10px;
+  overflow: visible;
+  border-radius: 6px;
+  background: var(--tl-bar-bg);
+  box-shadow: var(--tl-bar-shadow);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  transition: box-shadow 100ms;
+}
+.tl-bar:hover {
+  box-shadow: var(--tl-bar-shadow-hover);
+}
+.tl-drag-edge {
+  position: absolute;
+  top: 6px;
+  width: 4px;
+  height: 16px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--border-strong);
+  opacity: 0;
+  transition: opacity 100ms;
+}
+.tl-drag-edge[data-edge='start'] {
+  left: 3px;
+}
+.tl-drag-edge[data-edge='end'] {
+  right: 3px;
+}
+.tl-bar:hover .tl-drag-edge {
+  opacity: 1;
+}
+.tl-scroll::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+.tl-scroll:hover::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  background-clip: padding-box;
+}

@@ -1,0 +1,22 @@
+#!/bin/sh
+# Desktop CLI e servidor MCP (A2). Copiado para Desktop.app/Contents/Resources/bin/workspace.
+# Roda o próprio Electron como Node (ELECTRON_RUN_AS_NODE) sobre electron/cli.cjs, então não exige Node instalado.
+# Funciona também por link simbólico (ex.: ~/.local/bin/workspace).
+SOURCE="$0"
+while [ -h "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  case "$SOURCE" in /*) ;; *) SOURCE="$DIR/$SOURCE" ;; esac
+done
+BIN_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+CONTENTS="$(cd -P "$BIN_DIR/../.." >/dev/null 2>&1 && pwd)"
+ELECTRON="$CONTENTS/MacOS/Desktop"
+CLI="$CONTENTS/Resources/app/electron/cli.cjs"
+# electron-packager empacota em app.asar por padrão; o Electron lê arquivos dentro do asar também no modo Node.
+if [ ! -f "$CLI" ]; then CLI="$CONTENTS/Resources/app.asar/electron/cli.cjs"; fi
+if [ ! -x "$ELECTRON" ] || { [ ! -f "$CLI" ] && [ ! -f "$CONTENTS/Resources/app.asar" ]; }; then
+  echo "workspace: Desktop.app não encontrado em $CONTENTS / Desktop.app not found at $CONTENTS" >&2
+  exit 127
+fi
+export ELECTRON_RUN_AS_NODE=1
+exec "$ELECTRON" "$CLI" "$@"

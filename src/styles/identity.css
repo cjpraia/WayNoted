@@ -1,0 +1,181 @@
+/* Identidade visual do Workspace (docs/DEVELOPMENT.md).
+   Camada aplicada DEPOIS dos estilos de componentes (importada por último em src/main.tsx): fonte de títulos,
+   raios/movimento de popovers e modais, botão primário, cartões de agrupamento nas Configurações, momentos de
+   personalidade (carregamento, estados vazios, "Dia concluído") e marca. Somente tokens de src/styles/tokens.css. */
+
+/* ------------------------------------------------------------ Fonte de títulos: Newsreader (OFL 1.1)
+   Embutida localmente (@fontsource-variable/newsreader, só o subconjunto latino com eixo óptico, ~130 KB);
+   nenhuma requisição de rede em tempo de execução. */
+@font-face {
+  font-family: 'Newsreader Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url('../../node_modules/@fontsource-variable/newsreader/files/newsreader-latin-opsz-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Títulos com caráter: página (fonte "Padrão"), banco em página inteira, saudação do Meu dia, títulos das telas
+   Tarefas/Produtividade, títulos de seção e de Configurações. Fontes "Serifa"/"Mono" da página continuam valendo
+   (PageView define --pg-title-font). */
+:root .pg-title,
+:root .dbv-title {
+  font-family: var(--pg-title-font, var(--font-display));
+  font-optical-sizing: auto;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+}
+:root[data-title-font='system'] .pg-title,
+:root[data-title-font='system'] .dbv-title { font-weight: 700; letter-spacing: -0.01em; }
+:root .hm-greeting,
+:root .tk-header h1,
+:root .pd-title,
+:root .st-h,
+:root .np-display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+:root[data-title-font='system'] :is(.hm-greeting, .tk-header h1, .pd-title, .st-h, .np-display) { font-weight: 700; }
+:root .st-h { font-size: 22px; line-height: 1.25; border-bottom: 0; padding-bottom: 8px; margin-bottom: 8px; }
+:root[data-title-font='system'] .st-h { font-size: 18px; }
+:root .tk-header h1, :root .pd-title { font-size: 30px; }
+:root .pd-title svg, :root .tk-header h1 svg { color: var(--icon); }
+
+/* ------------------------------------------------------------ Seleção, foco, links */
+:root :focus-visible { outline-color: var(--border-strong); }
+:root a { color: inherit; }
+
+/* ------------------------------------------------------------ Popovers e modais: cantos mais generosos + entrada suave */
+@keyframes np-pop-in { from { opacity: 0; translate: 0 -3px; scale: 0.985; } }
+@keyframes np-modal-in { from { opacity: 0; translate: 0 6px; scale: 0.985; } }
+@keyframes np-fade-in { from { opacity: 0; } }
+:root .dbv-popover,
+:root .sb-popover,
+:root .pg-popover,
+:root .bn-root .bn-suggestion-menu,
+:root .bn-root .mantine-Menu-dropdown,
+:root .bn-root .bn-menu-dropdown,
+:root .bn-root .bn-grid-suggestion-menu {
+  border-radius: var(--radius-lg) !important;
+}
+:root .dbv-popover,
+:root .sb-popover,
+:root .pg-popover,
+:root .bn-root .bn-suggestion-menu {
+  animation: np-pop-in var(--dur-2) var(--ease-out);
+}
+:root :is(.st-box, .sm-box, .inbox-modal, .exd-dialog, .nid-dialog, .lai-dialog, .ai-dialog, .ot-modal, .move-dialog, .sec-dialog, .dr-dialog) {
+  border-radius: var(--radius-xl);
+  animation: np-modal-in var(--dur-3) var(--ease-out);
+}
+:root :is(.st-overlay, .sm-overlay) { animation: np-fade-in var(--dur-2) var(--ease-out); }
+:root .bn-root .pg-formatting-toolbar { border-radius: var(--radius-md) !important; }
+
+/* ------------------------------------------------------------ Botão primário (um por tela; Von Restorff) */
+:root :is(.hm-btn, .pd-btn, .dbv-new, .dr-btn.is-primary, .exd-primary, .nid-primary) {
+  min-height: var(--hit-primary);
+  border-radius: var(--radius-md);
+  transition: background var(--dur-1) var(--ease-out), box-shadow var(--dur-1) var(--ease-out), transform var(--dur-1) var(--ease-out);
+}
+:root .dbv-new { height: var(--hit-min); min-height: 0; }
+:root :is(.hm-btn, .pd-btn, .dr-btn.is-primary, .exd-primary, .nid-primary):hover:not(:disabled) { background: var(--accent-hover); }
+:root :is(.hm-btn, .pd-btn, .dr-btn.is-primary, .exd-primary, .nid-primary):active:not(:disabled) { background: var(--accent-active); transform: translateY(0.5px); }
+
+/* ------------------------------------------------------------ Caixas de seleção no tema escuro: marca em --on-accent */
+:root[data-theme='dark'] .db-check-on {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.3l2.6 2.6L12 5.4' fill='none' stroke='%2306201d' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+:root[data-theme='dark'] .pg-editor .bn-block-content[data-content-type='checkListItem'] > div > input:checked {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M3 7.2l2.6 2.6L11 4.4' fill='none' stroke='%2306201d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+:root .pg-editor .bn-block-content[data-content-type='checkListItem'] > div > input { border-radius: var(--radius-xs); transition: background var(--dur-1) var(--ease-out), border-color var(--dur-1) var(--ease-out); }
+
+/* ------------------------------------------------------------ Configurações: cartões de agrupamento (Região comum) */
+:root .st-content > .st-row {
+  padding: var(--space-3) 16px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-top-width: 0;
+}
+:root .st-content > .st-row:not(.st-row + .st-row) { border-top-width: 1px; border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg); margin-top: 8px; }
+:root .st-content > .st-row:not(:has(+ .st-row)) { border-bottom-left-radius: var(--radius-lg); border-bottom-right-radius: var(--radius-lg); margin-bottom: 16px; }
+:root .st-nav { padding: 16px var(--space-2); }
+:root .st-nav-item { height: var(--hit-min); border-radius: var(--radius-md); transition: background var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out); }
+:root .st-nav-item.is-active { background: var(--bg-raised); color: var(--text); box-shadow: var(--shadow-1); }
+:root .st-nav-item.is-active svg { color: var(--accent); }
+:root .st-nav-title { display: flex; align-items: center; gap: 8px; }
+:root .st-title-fonts { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+:root .st-title-font { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); width: 200px; padding: 12px var(--space-3); border-radius: var(--radius-lg); text-align: left; background: var(--bg-raised); box-shadow: 0 0 0 1px var(--border); transition: box-shadow var(--dur-1) var(--ease-out); }
+:root .st-title-font:hover { box-shadow: 0 0 0 1px var(--border-strong); }
+:root .st-title-font.is-selected { box-shadow: 0 0 0 2px var(--accent); }
+:root .st-title-font-sample { font-size: 22px; line-height: 1.2; font-weight: 600; color: var(--text); }
+:root .st-title-font-name { font-size: 12px; color: var(--text-secondary); }
+:root .st-about { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); }
+
+/* ------------------------------------------------------------ Marca */
+.np-logo { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--text); }
+.np-logo-mark { flex: none; display: block; }
+.np-logo-word { font-family: var(--font-display); font-optical-sizing: auto; font-weight: 600; letter-spacing: -0.01em; line-height: 1; }
+
+/* ------------------------------------------------------------ Carregamento ("Abrindo o Workspace…") */
+:root .app-state { gap: var(--space-3); background: var(--bg); }
+:root .app-state h1 { font-family: var(--font-display); font-weight: 500; font-size: 22px; color: var(--text-secondary); }
+.np-loading-mark { animation: np-breathe 1.6s var(--ease-in-out) infinite alternate; }
+@keyframes np-breathe { from { opacity: 0.55; scale: 0.96; } to { opacity: 1; scale: 1; } }
+
+/* ------------------------------------------------------------ Ilustrações (src/components/ui/illustrations) */
+.np-illus { display: block; flex: none; color: var(--accent); }
+.np-illus .il-line { stroke: var(--text-tertiary); }
+.np-illus .il-soft { fill: var(--accent-bg); }
+.np-illus .il-paper { fill: var(--bg-raised); stroke: var(--text-tertiary); }
+.np-illus .il-accent { stroke: var(--accent); }
+.np-illus .il-accent-fill { fill: var(--accent); }
+.np-illus .il-warm { fill: var(--icon-tint-yellow); }
+
+/* ------------------------------------------------------------ Estados vazios */
+.np-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-1); padding: 32px 24px; }
+.np-empty-title { font-family: var(--font-display); font-optical-sizing: auto; font-size: 19px; font-weight: 600; color: var(--text); margin-top: var(--space-1); }
+.np-empty--compact { padding: var(--space-4); }
+.np-empty--compact .np-empty-title { font-size: 16px; }
+.np-empty-text { font-size: 13px; color: var(--text-secondary); max-width: 420px; line-height: 1.5; }
+
+/* ------------------------------------------------------------ Movimento: hover e painéis */
+:root :is(.hm-card, .hm-template, .hm-chip, .hm-quick-action, .tk-btn, .sb-item, .tk-item, .hm-row) {
+  transition-duration: var(--dur-1);
+  transition-timing-function: var(--ease-out);
+}
+:root .hm-card { transition: box-shadow var(--dur-2) var(--ease-out), translate var(--dur-2) var(--ease-out); }
+:root .hm-card:hover { translate: 0 -1px; box-shadow: 0 0 0 1px var(--border-strong), var(--shadow-1); }
+@media (prefers-reduced-motion: reduce) {
+  :root .hm-card:hover { translate: none; }
+  .np-loading-mark { animation: none; }
+}
+
+/* ------------------------------------------------------------ Tela de desbloqueio */
+:root .sec-screen { background: radial-gradient(120% 70% at 50% 0%, var(--accent-bg) 0%, transparent 60%), var(--bg); }
+:root .sec-brand { margin-bottom: var(--space-4); }
+:root .sec-card .sec-badge { width: 40px; height: 40px; border-radius: var(--radius-lg); background: var(--bg-raised); box-shadow: var(--shadow-1); color: var(--text-secondary); }
+:root .sec-card h1 { font-family: var(--font-display); font-optical-sizing: auto; font-size: 24px; font-weight: 600; }
+:root .sec-input { height: var(--hit-primary); border-radius: var(--radius-md); }
+
+/* ------------------------------------------------------------ Barra lateral: "Meu dia" sem quebra; ícone ativo no destaque */
+:root .sb-quick-home { flex: none; white-space: nowrap; padding: 0 var(--space-2) 0 8px; gap: var(--space-1); }
+:root .sb-quick-home--active > svg { color: var(--accent); }
+
+/* Atenção seletiva: cromo esmaecido durante a digitação contínua (src/focus/dimChrome.ts). */
+.sb, .shell-tabs, .pg-tb-right { transition: opacity var(--dur-3) var(--ease-out); }
+:root[data-typing='1'] .sb, :root[data-typing='1'] .shell-tabs, :root[data-typing='1'] .pg-tb-right { opacity: 0.6; }
+:root[data-typing='1'] .sb:focus-within, :root[data-typing='1'] .shell-tabs:focus-within, :root[data-typing='1'] .pg-tb-right:focus-within { opacity: 1; }
+
+/* Fitts: controles visuais < 24 px ganham área de clique de ≥ 28 px sem mudar o desenho (tests/ui-scale-scan.test.mts). */
+.cv-layer-btn, .db-dsp-close, .shell-tab-close, .gr-depth button, .qb-chip-x, .dbv-group-section>header button, .vs-toggle { position: relative; }
+.ed-token-x, .qn-chip button, .qn-source button { position: relative; }
+.cv-layer-btn::before, .db-dsp-close::before, .shell-tab-close::before, .gr-depth button::before, .qb-chip-x::before, .dbv-group-section>header button::before { content: ''; position: absolute; inset: -4px; }
+.ed-token-x::before, .qn-chip button::before, .qn-source button::before { content: ''; position: absolute; inset: -6px; }
+.vs-toggle::before { content: ''; position: absolute; inset: -6px -2px; }
+/* Barra lateral (22 px), comentário de célula (18 px) e inserir linha (20 px): mesma técnica. */
+.sb-mini-btn, .sb-toggle, .db-cell-comment, .tb-row-add, .co-step-btn { position: relative; }
+.sb-mini-btn::before, .sb-toggle::before { content: ''; position: absolute; inset: -3px; }
+.db-cell-comment::before, .tb-row-add::before { content: ''; position: absolute; inset: -5px -4px; }

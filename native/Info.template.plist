@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleIdentifier</key><string>local.workspace.native</string>
+  <key>CFBundleName</key><string>__PRODUCT_NAME__</string>
+  <key>CFBundleShortVersionString</key><string>1.0.0</string>
+  <key>CFBundleVersion</key><string>1</string>
+  <key>NSCalendarsFullAccessUsageDescription</key><string>__PRODUCT_NAME__ shows events from the calendars you choose and adds events you create from your pages. Everything stays on this Mac.</string>
+  <key>NSCalendarsUsageDescription</key><string>__PRODUCT_NAME__ shows events from the calendars you choose and adds events you create from your pages. Everything stays on this Mac.</string>
+  <key>NSCalendarsWriteOnlyAccessUsageDescription</key><string>__PRODUCT_NAME__ adds events you create from your pages to your calendar.</string>
+  <key>NSRemindersFullAccessUsageDescription</key><string>__PRODUCT_NAME__ mirrors the tasks you choose into a Reminders list named __PRODUCT_NAME__ and reads their completion back. Everything stays on this Mac.</string>
+  <key>NSRemindersUsageDescription</key><string>__PRODUCT_NAME__ mirrors the tasks you choose into a Reminders list named __PRODUCT_NAME__ and reads their completion back. Everything stays on this Mac.</string>
+  <key>NSSpeechRecognitionUsageDescription</key><string>__PRODUCT_NAME__ transcribes your dictation on this Mac using on-device speech recognition. Audio is never sent to servers.</string>
+  <key>NSMicrophoneUsageDescription</key><string>__PRODUCT_NAME__ uses the microphone only when you choose to record audio or dictate. Recordings stay on this Mac.</string>
+</dict>
+</plist>

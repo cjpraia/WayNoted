@@ -1,0 +1,7 @@
+.app-state { display: flex; min-height: 100vh; flex-direction: column; justify-content: center; align-items: center; padding: 32px; color: var(--text); text-align: center; gap: 12px; }
+.app-content .app-state { min-height: 50vh; }
+.app-state h1, .app-state h2 { font-size: 22px; font-weight: 600; margin: 0; }
+.app-state p { max-width: 540px; color: var(--text-secondary); line-height: 1.6; }
+.app-state button, .app-save-error button { border: 1px solid var(--border-strong); border-radius: 6px; padding: 0 12px; height: 28px; font-size: 13px; font-weight: 500; background: var(--bg); color: inherit; cursor: pointer; }
+.app-save-error { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #fff3ed; color: #a44223; padding: 8px 16px; font-size: 13px; }
+[data-theme="dark"] .app-save-error { background: #392822; color: #f5b79d; }

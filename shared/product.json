@@ -1,0 +1,25 @@
+{
+  "name": "WayNoted",
+  "packageName": "workspace-desktop",
+  "repositoryUrl": "https://github.com/cjpraia/WayNoted",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "licenseName": "PolyForm Noncommercial License 1.0.0",
+  "licenseUrl": "https://polyformproject.org/licenses/noncommercial/1.0.0",
+  "protocol": "workspace",
+  "bundleId": "app.workspace.desktop",
+  "nativeBundleId": "app.workspace.native",
+  "profileDirectory": "WorkspaceData",
+  "keychainIdentity": "Workspace",
+  "executable": "Desktop",
+  "cli": "workspace",
+  "environmentPrefix": "WORKSPACE_",
+  "protocolAliases": [
+    "waynoted"
+  ],
+  "previousBundles": [
+    "local.waynoted.desktop"
+  ],
+  "previousEnvironmentPrefixes": [
+    "WAYNOTED_"
+  ]
+}

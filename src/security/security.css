@@ -1,0 +1,41 @@
+/* Segurança e privacidade: tela de desbloqueio, página protegida, diálogos. */
+.sec-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 32px 16px; background: var(--bg); color: var(--text); }
+.sec-card { width: 100%; max-width: 360px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+.sec-card h1, .sec-card h2 { font-size: 20px; font-weight: 600; margin: 4px 0 0; letter-spacing: -0.01em; }
+.sec-card p { margin: 0; color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
+.sec-badge { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: var(--bg-hover); color: var(--text-secondary); }
+.sec-form { width: 100%; display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.sec-input { width: 100%; height: 34px; padding: 0 10px; border-radius: var(--radius-sm, 6px); background: var(--bg-input); color: var(--text); box-shadow: inset 0 0 0 1px var(--border-strong); font-size: 14px; border: 0; outline: none; }
+.sec-input:focus { box-shadow: inset 0 0 0 1px var(--accent), 0 0 0 3px var(--accent-bg); }
+.sec-input.is-mono { font-family: var(--font-mono); letter-spacing: 0.02em; font-size: 13px; }
+.sec-error { color: var(--danger); font-size: 13px; min-height: 18px; }
+.sec-hint { font-size: 12px; color: var(--text-tertiary); line-height: 1.45; }
+.sec-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.sec-check { display: flex; align-items: flex-start; gap: 8px; text-align: left; font-size: 13px; color: var(--text-secondary); line-height: 1.45; }
+.sec-check input { margin-top: 2px; flex: none; }
+.sec-recovery { width: 100%; padding: 12px; border-radius: var(--radius-lg, 10px); background: var(--bg-hover); font-family: var(--font-mono); font-size: 13px; line-height: 1.7; word-break: break-all; user-select: all; text-align: center; color: var(--text); }
+.sec-warning { width: 100%; padding: 10px 12px; border-radius: var(--radius, 8px); background: color-mix(in srgb, var(--danger) 10%, transparent); color: var(--text); font-size: 13px; line-height: 1.5; text-align: left; }
+/* Página protegida (dentro do conteúdo) */
+.sec-page { display: flex; justify-content: center; padding: 12vh 16px 48px; }
+/* Diálogo modal */
+.sec-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; background: var(--bg-overlay); padding: 16px; }
+.sec-dialog { width: 100%; max-width: 420px; background: var(--bg-popover); color: var(--text); border-radius: var(--radius-lg, 10px); box-shadow: var(--shadow-modal, var(--shadow-popover)); padding: 24px; display: flex; flex-direction: column; gap: 10px; }
+.sec-dialog h2 { margin: 0; font-size: 16px; font-weight: 600; }
+.sec-dialog p { margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+.sec-dialog .sec-actions { display: flex; justify-content: flex-end; gap: var(--space-4); margin-top: 6px; }
+.sec-dialog .sec-input { height: 30px; font-size: 13px; }
+/* Configurações */
+.sec-settings-list { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.sec-settings-item { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 4px 0; }
+.sec-settings-item span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sec-inline-form { display: flex; flex-direction: column; gap: 6px; max-width: 360px; padding-top: 8px; }
+.sec-lock-icon { display: inline-flex; flex: none; color: var(--text-tertiary); margin-left: 4px; }
+.sec-locked-title { color: var(--text-secondary); font-style: italic; }
+.sec-hint-link { font-size: 12px; }
+.sec-hint-text { width: 100%; padding: 8px 10px; border-radius: var(--radius, 8px); background: var(--bg-hover); color: var(--text) !important; font-size: 13px; text-align: left; overflow-wrap: anywhere; }
+.sec-hint-text strong { font-weight: 500; color: var(--text-secondary); }
+.sec-notice { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 8px auto 0; max-width: 720px; padding: 8px 12px; border-radius: var(--radius, 8px); background: var(--bg-hover); color: var(--text-secondary); font-size: 13px; }
+.sec-notice .np-btn--ghost { color: var(--accent); }
+
+/* Caixas de seleção nativas usam o destaque do app (antes ficavam no azul do sistema). */
+.sec-dialog input[type="checkbox"], .sec-card input[type="checkbox"], [role="dialog"] input[type="checkbox"] { accent-color: var(--accent); }

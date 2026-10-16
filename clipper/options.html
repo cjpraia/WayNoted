@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Workspace Clipper</title>
+<link rel="stylesheet" href="ui.css">
+</head>
+<body class="options">
+<main>
+  <h1 id="h">Workspace Web Clipper</h1>
+  <p id="intro" class="muted"></p>
+  <p id="state" role="status" aria-live="polite"></p>
+  <form id="pair" class="row">
+    <label for="base" id="l-base"></label>
+    <input id="base" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="http://127.0.0.1:12345">
+    <label for="code" id="l-code"></label>
+    <input id="code" type="text" autocomplete="off" spellcheck="false" maxlength="12" placeholder="ABCD-EFGH">
+    <button id="pair-btn" class="primary" type="submit"></button>
+  </form>
+  <div class="row">
+    <button id="test" type="button"></button>
+    <button id="unpair" type="button"></button>
+  </div>
+  <p id="msg" role="status" aria-live="polite"></p>
+</main>
+<script src="identity.js"></script>
+<script src="api.js"></script>
+<script src="options.js"></script>
+</body>
+</html>
