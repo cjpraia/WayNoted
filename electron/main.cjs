@@ -1,4 +1,5 @@
 const PRODUCT = require('../shared/product.json')
+const TEST_BUILD = require('../package.json').workspaceTestBuild === true
 const COMPAT = require('../shared/compatibility.cjs')
 require('./brand.cjs').legacyEnv()
 const { app, BrowserWindow, Menu, shell, dialog, ipcMain, nativeTheme, screen, Notification, safeStorage: electronSafeStorage, clipboard, systemPreferences, powerMonitor } = require('electron')
@@ -55,7 +56,7 @@ const localApis = new Map()
 const agentAccesses = new Map()
 let deviceCipherBusy = false
 
-const profile = require('./brand.cjs').resolveProfile(app.getPath('appData'), process.env.WORKSPACE_USER_DATA)
+const profile = require('./brand.cjs').resolveProfile(app.getPath('appData'), process.env.WORKSPACE_USER_DATA || (TEST_BUILD ? path.join(app.getPath('appData'), PRODUCT.profileDirectory + 'Test') : undefined))
 // Preserve the encryption identity while keeping paths independent of the display name.
 app.setName(profile.keychainName)
 app.setPath('userData', profile.directory)
@@ -969,14 +970,14 @@ async function bootSecureStorage() {
 }
 
 if (gotLock) app.whenReady().then(async () => {
-  if (process.platform === 'win32') app.setAppUserModelId(PRODUCT.bundleId)
+  if (process.platform === 'win32') app.setAppUserModelId(PRODUCT.bundleId + (TEST_BUILD ? '.test' : ''))
   // Em desenvolvimento, o Dock mostra o ícone do aplicativo (o app empacotado usa build/icon.icns via electron-packager).
   if (!app.isPackaged && process.platform === 'darwin') {
     try { const icon = require('electron').nativeImage.createFromPath(path.join(__dirname, '..', 'build', 'icon.icns')); if (!icon.isEmpty()) app.dock?.setIcon(icon) } catch { /* ícone opcional */ }
   }
   securityStatus = await bootSecureStorage()
   void secureStorage.purgeExpiredBackups(app.getPath('userData')).catch(console.error)
-  if (app.isPackaged) { [PRODUCT.protocol, COMPAT.record007, ...(PRODUCT.protocolAliases ?? [])].forEach(scheme => app.setAsDefaultProtocolClient(scheme)) }
+  if (app.isPackaged && !TEST_BUILD) { [PRODUCT.protocol, COMPAT.record007, ...(PRODUCT.protocolAliases ?? [])].forEach(scheme => app.setAsDefaultProtocolClient(scheme)) }
   scrubBrowserStorageIfVaulted()
   registerIpc()
   await backupService.recoverAll().catch(console.error)

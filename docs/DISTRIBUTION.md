@@ -116,7 +116,7 @@ To run the same check manually:
 node scripts/check-package.mjs --allow-install --installer="C:\build\WayNoted-Setup-1.0.0-win-x64.exe"
 ```
 
-`npm run dist:test` creates an isolated test installer identity/directory. Do not run install/uninstall checks over an important personal installation. Reports belong in `.artifacts/package-check/`, never in `docs/` or a committed profile.
+`npm run dist:test` creates a separate test identity, installer directory, and default `WorkspaceDataTest` profile. Test builds do not register the production page-link protocols. Pass the test executable path with `--app` when checking it. Do not run install/uninstall checks over an important personal installation. Reports belong in `.artifacts/package-check/`, never in `docs/` or a committed profile.
 
 ### Signing and public release
 

@@ -33,6 +33,12 @@ test('Windows package preserves profiles and does not auto-publish or require el
   assert.equal(config.nsis.allowElevation, false)
   assert.equal(config.win.forceCodeSigning, true)
   assert.equal(config.publish, null)
+  const isolated = windowsConfig({ test: true })
+  assert.notEqual(isolated.appId, config.appId)
+  assert.notEqual(isolated.nsis.guid, config.nsis.guid)
+  assert.notEqual(isolated.nsis.shortcutName, config.nsis.shortcutName)
+  assert.deepEqual(isolated.protocols, [])
+  assert.equal(isolated.extraMetadata.workspaceTestBuild, true)
   assert.throws(() => windowsConfig({ arch: 'ia32' }), /Unsupported/)
 })
 

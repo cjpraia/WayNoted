@@ -35,6 +35,11 @@ const paths = await packager({
 })
 for (const directory of paths) {
   const app = directory.endsWith('.app') ? directory : path.join(directory, PRODUCT.executable + '.app')
+  if (test) {
+    const metadataPath = path.join(app, 'Contents', 'Resources', 'app', 'package.json')
+    const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'))
+    fs.writeFileSync(metadataPath, JSON.stringify({ ...metadata, workspaceTestBuild: true }, null, 2))
+  }
   const plist = `${app}/Contents/Info.plist`
   // Electron checks its default Helper paths before the public CFBundleName.
   // Restore those neutral paths so the menu can use the brand independently.
