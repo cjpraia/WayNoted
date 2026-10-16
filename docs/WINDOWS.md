@@ -33,7 +33,7 @@ The app contacts that URL only when you ask it to check. It does not install upd
 
 ## Move data from another computer
 
-For a portable JSON copy, use **Settings → Data → Export backup** on the source computer, transfer the file, then choose **Import backup** on Windows. Import adds copies alongside existing pages. Exported unprotected content is readable; handle the file accordingly. Separately protected pages retain their password.
+For a portable JSON copy of unprotected pages, use **Settings → Data → Export backup** on the source computer, transfer the file, then choose **Import backup** on Windows. Import adds copies alongside existing pages. Exported content is readable; handle the file accordingly. JSON export/import refuses separately password-protected pages because that format cannot restore their keys; use the complete external backup below for those pages.
 
 For an encrypted whole-workspace transfer, use **External backup** with a workspace password and device encryption turned off on the source. Copy the complete backup folder, including its `default` subfolder and manifests. In a fresh Windows workspace, choose that folder under **Settings → Data → External backup**, select the backup, restore it, and unlock it using the original workspace password. Restoring replaces the destination workspace and creates a safety backup first. Keep the source and backup until you have checked the restored pages.
 

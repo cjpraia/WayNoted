@@ -174,6 +174,16 @@ export const SUPPORTED_SCHEMA_VERSION = 2
 
 export function validateBackup(value: unknown): WorkspaceBackup {
   if (!object(value) || value.format !== COMPAT.record011 || value.version !== 1 || !object(value.documents)) throw new Error(`Escolha um backup JSON do ${PRODUCT.name} (versão 1).`)
+  // JSON imports create fresh page IDs. Password-bound ciphertext cannot be
+  // remapped, and the JSON format does not include its key registry. Never turn
+  // a protected page into an empty imported page while reporting success.
+  if ((object(value.sealedPages) && Object.keys(value.sealedPages).length > 0)
+    || (object(value.meta) && object(value.meta.pages) && Object.values(value.meta.pages).some(page => object(page) && page.passwordLock))) {
+    const portuguese = object(value.meta) && object(value.meta.settings) && value.meta.settings.locale === 'pt-BR'
+    throw new Error(portuguese
+      ? 'Páginas protegidas precisam do Backup externo completo. Use Configurações → Dados → Backup externo para criar ou restaurar uma cópia que inclua as chaves cifradas. Nenhum dado foi alterado.'
+      : 'Protected pages require a full External backup. Use Settings → Data → External backup to create or restore a copy that includes the wrapped encryption keys. No data was changed.')
+  }
   if (finite(value.schemaVersion) && value.schemaVersion > SUPPORTED_SCHEMA_VERSION) throw new Error(`Este backup foi criado por uma versão mais nova do ${PRODUCT.name} (esquema ${value.schemaVersion}; este app entende até ${SUPPORTED_SCHEMA_VERSION}). Atualize o app para restaurá-lo. / This backup was created by a newer ${PRODUCT.name} (schema ${value.schemaVersion}; this app supports up to ${SUPPORTED_SCHEMA_VERSION}). Update the app to restore it.`)
   const meta = validateMeta(value.meta)
   for (const id of Object.keys(meta.pages)) {

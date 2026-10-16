@@ -72,7 +72,7 @@ jobs:
         run: npm run ${{ matrix.command }}
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          # The previous shipped Windows implementation, with its original version.
+          # The previous Windows implementation, with its original version.
           ref: c71c0f3a2f2974dcd08a864510ccd9b603f2b3f2
           path: .artifacts/baseline-source
           persist-credentials: false

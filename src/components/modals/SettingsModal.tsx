@@ -312,7 +312,7 @@ export function SettingsModal() {
                   }}><option value="">{t('Escolher backup…', 'Choose backup…')}</option>{autoBackups.map(backup => <option key={backup.file} value={backup.file}>{new Date(backup.savedAt).toLocaleString(settings.locale)}</option>)}</Select></label>}
                 </div>}
                 <div className="st-row st-row-between">
-                  <div><div className="st-label">{t('Backup completo', 'Full backup')}</div><div className="st-hint">{t('Páginas, conteúdo, imagens locais, bancos de dados e configurações em um arquivo JSON.', 'Pages, content, local images, databases, and settings in one JSON file.')}</div></div>
+                  <div><div className="st-label">{t('Backup completo', 'Full backup')}</div><div className="st-hint">{t('Páginas sem proteção individual, conteúdo, imagens locais, bancos de dados e configurações em JSON. Para páginas com senha própria, use Backup externo.', 'Pages without individual password protection, content, images, databases, and settings in JSON. For pages with their own password, use External backup.')}</div></div>
                   <Button disabled={busy} onClick={() => void perform(async () => await actions.exportBackup() ? t('Backup exportado.', 'Backup exported.') : t('Exportação cancelada.', 'Export canceled.'))}><Download size={14} aria-hidden /> {t('Exportar backup', 'Export backup')}</Button>
                 </div>
                 <div className="st-row st-row-between">

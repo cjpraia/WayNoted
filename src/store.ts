@@ -1634,7 +1634,9 @@ export const actions = {
   },
 
   async exportBackup(): Promise<boolean> {
-    return api.exportFile(`${PRODUCT.name}-backup-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(await actions.backupSnapshot(), null, 2))
+    const backup = await actions.backupSnapshot()
+    validateBackup(backup) // Refuse a JSON copy that cannot restore protected pages.
+    return api.exportFile(`${PRODUCT.name}-backup-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(backup, null, 2))
   },
 
   /** Grava uma árvore de páginas já montada (ex.: importação do Export Bundle) sem alterar as existentes; cancelável até gravar os metadados. */

@@ -22,6 +22,16 @@ test('incomplete or foreign backups fail before import', () => {
   assert.deepEqual(validateBackup({ ...raw, documents: { [a]: [] } }).documents[a], [])
 })
 
+test('JSON import refuses encrypted pages before losing ciphertext or password metadata', () => {
+  const raw = { format: COMPAT.record011, version: 1, meta: { pages: { [a]: page(a) }, settings: defaultSettings }, documents: { [a]: [] } }
+  const encrypted = { ...raw, sealedPages: { [a]: { [`docs/${a}.json`]: 'encrypted-payload' } } }
+  const before = structuredClone(encrypted)
+  assert.throws(() => validateBackup(encrypted), /Protected pages require a full External backup/)
+  assert.deepEqual(encrypted, before)
+  assert.throws(() => validateBackup({ ...raw, meta: { ...raw.meta, pages: { [a]: { ...page(a), passwordLock: { rootId: a } } } } }), /No data was changed/)
+  assert.deepEqual(validateBackup({ ...raw, sealedPages: {} }).documents[a], [])
+})
+
 test('copy remaps nested databases, page mentions and relation values while preserving prose and external references', () => {
   const map = { [a]: 'copy-a', [b]: 'copy-b' }
   const input = { pageId: b, related: [a, 'external'], href: `workspace://page/${a}`, title: `Texto ${a}`, schema: { relationDatabaseId: a } }
