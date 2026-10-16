@@ -8,10 +8,13 @@
     <AssemblyName>workspace-native</AssemblyName>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
-    <RuntimeFrameworkVersion>10.0.13</RuntimeFrameworkVersion>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <DebugType>none</DebugType>
     <PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
-  <ItemGroup><PackageReference Include="System.Speech" Version="10.0.13" /></ItemGroup>
+  <ItemGroup>
+    <!-- Pin only the .NET runtime; a global version also overrides the Windows SDK reference pack. -->
+    <FrameworkReference Update="Microsoft.NETCore.App" RuntimeFrameworkVersion="10.0.13" />
+    <PackageReference Include="System.Speech" Version="10.0.13" />
+  </ItemGroup>
 </Project>
