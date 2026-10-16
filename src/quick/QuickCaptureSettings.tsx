@@ -56,26 +56,26 @@ export function QuickCaptureSettings() {
   if (!bridge().quickCaptureSettings) return <p className="st-p">{t('A captura rápida está disponível no app para Mac.', 'Quick capture is available in the Mac app.')}</p>
   if (!prefs) return null
   return <>
-    <ShortcutField label={t('Nova nota rápida', 'New quick note')} hint={t(`Abre uma janela flutuante de qualquer app, mesmo com o ${PRODUCT.name} fechado.`, `Opens a floating window from any app, even with ${PRODUCT.name} closed.`)}
+    <ShortcutField label={t('Nova nota rápida', 'New quick note')} hint={t(`Abre uma janela flutuante de qualquer app, enquanto o ${PRODUCT.name} está em execução em segundo plano.`, `Opens a floating window from any app, while ${PRODUCT.name} runs in the background.`)}
       value={prefs.shortcut} status={prefs.status.shortcut} onChange={shortcut => update({ shortcut })} />
-    <ShortcutField label={t('Capturar seleção', 'Capture selection')} hint={t('Copie o texto (⌘C) e use o atalho: a nota abre preenchida, com a página de origem quando o navegador a informar.', 'Copy text (⌘C) and use the shortcut: the note opens prefilled, with the source page when the browser provides it.')}
+    <ShortcutField label={t('Capturar seleção', 'Capture selection')} hint={t('Copie o texto ({copy}) e use o atalho: a nota abre preenchida, com a página de origem quando o navegador a informar.', 'Copy text ({copy}) and use the shortcut: the note opens prefilled, with the source page when the browser provides it.', { copy: window.api?.platform === 'win32' ? 'Ctrl+C' : '⌘C' })}
       value={prefs.captureShortcut} status={prefs.status.captureShortcut} onChange={captureShortcut => update({ captureShortcut })} />
     <div className="st-row st-row-col">
-      <label className="st-label"><input type="checkbox" checked={prefs.showTray} onChange={event => void update({ showTray: event.target.checked })} /> {t('Mostrar ícone na barra de menus', 'Show icon in the menu bar')}</label>
+      <label className="st-label"><input type="checkbox" checked={prefs.showTray} onChange={event => void update({ showTray: event.target.checked })} /> {window.api?.platform === 'win32' ? t('Mostrar ícone na bandeja do sistema', 'Show icon in the system tray') : t('Mostrar ícone na barra de menus', 'Show icon in the menu bar')}</label>
       <span className="st-hint">{t('Acesso a nova nota, busca e páginas recentes sem abrir a janela principal.', 'Access new note, search and recent pages without opening the main window.')}</span>
     </div>
     <div className="st-row st-row-col">
       <label className="st-label"><input type="checkbox" checked={prefs.trayTasks} disabled={!prefs.showTray} onChange={event => void update({ trayTasks: event.target.checked })} /> {t('Listar as tarefas de hoje no menu do ícone', 'List today’s tasks in the icon menu')}</label>
       <span className="st-hint">{t('Até 10 tarefas de hoje e atrasadas; clique em uma para concluí-la. Páginas protegidas por senha nunca aparecem.', 'Up to 10 tasks due today and overdue; click one to complete it. Password-protected pages never appear.')}</span>
     </div>
-    <div className="st-row st-row-col">
+    {window.api?.platform !== 'win32' && <div className="st-row st-row-col">
       <label className="st-label"><input type="checkbox" checked={prefs.trayCount} disabled={!prefs.showTray || !prefs.trayTasks} onChange={event => void update({ trayCount: event.target.checked })} /> {t('Mostrar o número de tarefas ao lado do ícone', 'Show the task count next to the icon')}</label>
       <span className="st-hint">{t('Desligado por padrão; o número some quando não há tarefas para hoje.', 'Off by default; the number disappears when nothing is due today.')}</span>
-    </div>
+    </div>}
     <div className="st-row st-row-col">
       <label className="st-label"><input type="checkbox" checked={prefs.openAtLogin} onChange={event => void update({ openAtLogin: event.target.checked })} /> {t('Abrir ao iniciar sessão', 'Open at login')}</label>
       <span className="st-hint">{prefs.loginItemSupported
-        ? t(`Com o ícone na barra de menus ativo, o ${PRODUCT.name} inicia em segundo plano.`, `With the menu bar icon on, ${PRODUCT.name} starts in the background.`)
+        ? t(`Com o ícone do aplicativo ativo, o ${PRODUCT.name} inicia em segundo plano.`, `With the application icon on, ${PRODUCT.name} starts in the background.`)
         : t('Aplicado no app instalado; nesta versão de desenvolvimento a preferência só é salva.', 'Applied in the installed app; in this development build the preference is only saved.')}</span>
     </div>
     <div className="st-row st-row-col">

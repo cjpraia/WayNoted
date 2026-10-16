@@ -218,11 +218,11 @@ export function QuickNote() {
       {voice.phase === 'error' && voice.error && <div className="qn-error" role="alert">{voice.error}{voice.pane ? ' ' + t('Abrimos o painel certo; reabra a nota rápida depois de permitir.', 'We opened the right pane; reopen quick note after allowing.') : ''}</div>}
       <footer className="qn-foot">
         <button type="button" className={`qn-icon-btn qn-mic${voice.phase === 'listening' ? ' is-rec' : ''}`} onClick={toggleVoice} disabled={locked || voice.phase === 'stopping'} aria-pressed={voice.phase === 'listening' || voice.phase === 'starting'}
-          aria-label={voice.phase === 'listening' || voice.phase === 'starting' ? t('Parar ditado', 'Stop dictation') : t('Ditar com a voz', 'Dictate with your voice')} title={voice.phase === 'listening' ? t('Gravando… clique para parar (Esc)', 'Recording… click to stop (Esc)') : t('Ditar com a voz (reconhecimento neste Mac)', 'Dictate with your voice (recognized on this Mac)')}>
+          aria-label={voice.phase === 'listening' || voice.phase === 'starting' ? t('Parar ditado', 'Stop dictation') : t('Ditar com a voz', 'Dictate with your voice')} title={voice.phase === 'listening' ? t('Gravando… clique para parar (Esc)', 'Recording… click to stop (Esc)') : t('Ditar com a voz (reconhecimento neste computador)', 'Dictate with your voice (recognized on this computer)')}>
           {voice.phase === 'listening' || voice.phase === 'starting' ? <Square size={13} fill="currentColor" aria-hidden /> : <Mic size={15} aria-hidden />}
         </button>
         <span className="qn-hint" role="status">{voice.phase === 'listening' && <span className="qn-rec" style={{ opacity: 0.4 + voice.level * 0.6 }} aria-hidden />}{voice.phase === 'listening' ? <>{t('Ouvindo…', 'Listening…')} · </> : voice.phase === 'starting' ? <>{t('Iniciando o microfone…', 'Starting the microphone…')} · </> : null}{words > 0 && <>{t('{n} palavras', '{n} words', { n: words })} · </>}<kbd>Esc</kbd> {t('fechar', 'close')}</span>
-        <button className="qn-save" disabled={busy || locked} title={locked ? t(`Desbloqueie o ${PRODUCT.name} para salvar`, `Unlock ${PRODUCT.name} to save`) : undefined} onClick={() => void save()}>{busy ? t('Salvando…', 'Saving…') : t('Salvar', 'Save')}<kbd>⌘↵</kbd></button>
+        <button className="qn-save" disabled={busy || locked} title={locked ? t(`Desbloqueie o ${PRODUCT.name} para salvar`, `Unlock ${PRODUCT.name} to save`) : undefined} onClick={() => void save()}>{busy ? t('Salvando…', 'Saving…') : t('Salvar', 'Save')}<kbd>{window.quickApi?.platform === 'win32' ? 'Ctrl+Enter' : '⌘↵'}</kbd></button>
       </footer>
     </div>
   )

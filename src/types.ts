@@ -431,6 +431,8 @@ export interface DictationEvent { sessionId: number; type: 'ready' | 'level' | '
 
 /** Ponte exposta pelo preload do Electron em `window.api`. */
 export interface NativeApi {
+  platform?: string
+  runtimeInfo?(): Promise<{ platform: string; arch: string; calendar: boolean; reminders: boolean; notesImport: boolean; nativeEmbeddings: boolean; ocr: boolean; dictation: boolean; credentialStore: string; name: string }>
   loadMeta(): Promise<Meta | null>
   saveMeta(meta: Meta, base?: Meta | null): Promise<Meta | void>
   /** Gravação incremental (Electron): só as páginas alteradas desde a base `seq` (ver electron/meta-patch.mjs). */

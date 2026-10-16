@@ -203,6 +203,8 @@ function noticesMarkdown(bundle) {
     `Packages: ${bundle.length}`, '', '| Package | Version | License | Source |', '| --- | --- | --- | --- |',
   ]
   for (const info of bundle) lines.push(`| ${info.name} | ${info.version} | ${(info.exception?.license ?? info.license).replace(/\|/g, '/')} | ${info.repository || '-'} |`)
+  lines.push('', '## Windows native components', '', 'Windows builds additionally include the .NET runtime and System.Speech (dotnet/runtime, MIT), and C#/WinRT projections (microsoft/CsWinRT, MIT). Native dependency versions are recorded in resources/native-licenses/DEPENDENCIES.json in the installed app.', '')
+  for (const name of ['dotnet-runtime-LICENSE.txt', 'dotnet-runtime-NOTICES.txt', 'cswinrt-LICENSE.txt']) lines.push(`### ${name}`, '', '```text', readFileSync(join(ROOT, 'native/windows/licenses', name), 'utf8').replace(/\r\n/g, '\n').trim(), '```', '')
   lines.push('', '## License texts', '')
   for (const info of bundle) {
     const file = info.files[0]

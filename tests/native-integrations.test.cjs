@@ -55,8 +55,8 @@ test('runHelper parses JSON output, maps helper errors and sends JSON on stdin w
   await assert.rejects(runHelper(['calendar', 'list'], undefined, { file, platform: 'darwin', spawnImpl: () => fakeChild(['{"error":{"code":"CALENDAR_ACCESS_DENIED","message":"no"}}'], 2) }), /^Error: CALENDAR_ACCESS_DENIED: no$/)
   await assert.rejects(runHelper(['x'], undefined, { file: "/nonexistent/workspace-native", platform: 'darwin' }), /NATIVE_HELPER_MISSING/)
   await assert.rejects(runHelper(['x'], undefined, { file, platform: 'linux' }), /NATIVE_UNSUPPORTED/)
-  assert.equal(helperPath({ isPackaged: true, resourcesPath: '/App/Contents/Resources' }), "/App/Contents/Resources/workspace-native")
-  assert.ok(helperPath({ isPackaged: false }).endsWith(path.join('build', 'native', "workspace-native")))
+  assert.equal(helperPath({ isPackaged: true, resourcesPath: '/App/Contents/Resources' }), path.join('/App/Contents/Resources', process.platform === 'win32' ? 'workspace-native.exe' : 'workspace-native'))
+  assert.ok(helperPath({ isPackaged: false }).endsWith(path.join('build', 'native', ...(process.platform === 'win32' ? ['win32-' + process.arch, 'workspace-native.exe'] : ['workspace-native']))))
 })
 
 test('dictation service streams helper events, stops via stdin and refuses denied microphone', async () => {
@@ -87,7 +87,7 @@ test('dictation service streams helper events, stops via stdin and refuses denie
 test('packaging embeds the helper, permission strings and the ad-hoc signing step', () => {
   const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'))
   assert.match(pkg.scripts.dist, /npm run build:native/)
-  assert.match(fs.readFileSync('build/package.mjs', 'utf8'), /build\/native\/workspace-native/)
+  assert.match(fs.readFileSync('build/package.mjs', 'utf8'), /extraResource: \[nativeFile/)
   assert.match(fs.readFileSync('build/package.mjs', 'utf8'), /build\/sign-app\.mjs/)
   const plist = fs.readFileSync('build/app-info.plist', 'utf8')
   for (const key of ['NSMicrophoneUsageDescription', 'NSSpeechRecognitionUsageDescription', 'NSCalendarsFullAccessUsageDescription']) assert.ok(plist.includes(`<key>${key}</key>`), key)

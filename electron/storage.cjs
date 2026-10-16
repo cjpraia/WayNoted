@@ -29,7 +29,7 @@ function atomicWrite(file, content) {
       const handle = await fs.open(tmp, 'wx', 0o600)
       try { await handle.writeFile(codec ? codec.encode(file, content) : content, 'utf8'); await handle.sync() }
       finally { await handle.close() }
-      await fs.rename(tmp, file)
+      await require('./fs-retry.cjs').rename(tmp, file)
       await syncDirectory(path.dirname(file))
     } catch (error) {
       await fs.rm(tmp, { force: true }).catch(() => {})

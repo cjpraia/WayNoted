@@ -16,7 +16,7 @@ globalThis.__tpl = { locale: 'pt-BR', useI18n: () => ({ locale: globalThis.__tpl
 const href = (path) => JSON.stringify(new URL(path, import.meta.url).href)
 
 async function load(path, name) {
-  let source = await readFile(new URL(path, import.meta.url), 'utf8')
+  let source = (await readFile(new URL(path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n')
   source = source.replace(/import \{ useI18n \} from '[^']*i18n'/, 'const { useI18n } = globalThis.__tpl')
     .replace(/import '[^']*\.css'\n/g, '')
     .replace("from '../../a11y/useModalFocus'", `from ${href('../src/a11y/useModalFocus.ts')}`)

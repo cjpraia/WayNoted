@@ -1,6 +1,6 @@
 # WayNoted keyboard shortcuts
 
-On macOS, ⌘ means Command, ⌥ Option, ⇧ Shift, and ⌃ Control. In browser development mode on other platforms, Ctrl replaces ⌘.
+On macOS, ⌘ means Command, ⌥ Option, ⇧ Shift, and ⌃ Control. On Windows, Ctrl replaces ⌘ and Alt replaces ⌥ in the shared app/editor shortcuts. The interface displays Windows labels. macOS Hide is unavailable on Windows; use the native Windows window controls. Global quick capture defaults to Ctrl+Alt+N and Ctrl+Alt+Shift+N on Windows.
 
 App-level shortcuts are defined in `src/shortcuts.ts`, window handlers in `src/App.tsx`, and native menu accelerators in `electron/main.cjs`. Editor, canvas, and database shortcuts depend on focus. Global shortcuts work while the app is in the background.
 

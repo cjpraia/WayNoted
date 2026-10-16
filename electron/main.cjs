@@ -1,8 +1,10 @@
 const PRODUCT = require('../shared/product.json')
+const TEST_BUILD = require('../package.json').workspaceTestBuild === true
 const COMPAT = require('../shared/compatibility.cjs')
 require('./brand.cjs').legacyEnv()
 const { app, BrowserWindow, Menu, shell, dialog, ipcMain, nativeTheme, screen, Notification, safeStorage: electronSafeStorage, clipboard, systemPreferences, powerMonitor } = require('electron')
 const path = require('node:path')
+const platform = require('./platform.cjs')
 const fs = require('node:fs')
 const fsp = require('node:fs/promises')
 const localPolicy = require('./local-policy.cjs')
@@ -54,7 +56,7 @@ const localApis = new Map()
 const agentAccesses = new Map()
 let deviceCipherBusy = false
 
-const profile = require('./brand.cjs').resolveProfile(app.getPath('appData'), process.env.WORKSPACE_USER_DATA)
+const profile = require('./brand.cjs').resolveProfile(app.getPath('appData'), process.env.WORKSPACE_USER_DATA || (TEST_BUILD ? path.join(app.getPath('appData'), PRODUCT.profileDirectory + 'Test') : undefined))
 // Preserve the encryption identity while keeping paths independent of the display name.
 app.setName(profile.keychainName)
 app.setPath('userData', profile.directory)
@@ -168,6 +170,7 @@ function registerIpc() {
   // IA: provedores configuráveis (Ollama local por padrão; nuvem opt-in). docs/AI.md
   // Chave de IA no arquivo só se ele já é cifrado por algo que o usuário ativou (senha do espaço ou cifra do Keychain).
   aiIpc = registerAIIpc({ trustedHandler, context, dataDir, storage, safeStorage, isFileProtected: dir => vault.isEnabled(dir) || secureStorage.mode() === 'keychain' })
+  trustedHandler('np:runtimeInfo', () => platform.capabilities())
   trustedHandler('np:securityInfo', () => ({ ...securityStatus, deviceCipher: secureStorage.mode() }))
   // Cifra do dispositivo (Keychain): desligada por padrão; ligar é opt-in explícito (docs/SECURITY.md).
   trustedHandler('np:deviceCipherStatus', () => secureStorage.deviceCipherStatus())
@@ -523,8 +526,7 @@ function createWindow(workspaceId = 'default', route = null) {
     minHeight: 480,
     title: `${PRODUCT.name}`,
     show: false,
-    titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 16, y: 11 },
+    ...platform.windowChrome(),
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#191919' : '#ffffff',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -659,7 +661,7 @@ function buildMenu() {
         { label: nativeT('Abrir arquivo Markdown…', 'Open Markdown file…'), click: () => sendCommand('open-markdown-file') },
         { label: nativeT('Exportar…', 'Export…'), accelerator: accel('export', 'CmdOrCtrl+Shift+E'), click: () => sendCommand('export') },
         { type: 'separator' },
-        { label: nativeT('Importar', 'Import'), submenu: [{ label: nativeT("Importar do Export Bundle…", "Import from Export Bundle…"), click: () => sendCommand("import-bundle") }, { label: nativeT("Importar do Markdown Vault…", "Import from Markdown Vault…"), click: () => sendCommand("import-markdown") }, { label: nativeT('Importar do Apple Notes…', 'Import from Apple Notes…'), click: () => sendCommand('import-apple-notes') }, { label: nativeT("Importar do ENEX Archive (.enex)…", "Import from ENEX Archive (.enex)…"), click: () => sendCommand("import-archive") }] },
+        { label: nativeT('Importar', 'Import'), submenu: [{ label: nativeT("Importar do Export Bundle…", "Import from Export Bundle…"), click: () => sendCommand("import-bundle") }, { label: nativeT("Importar do Markdown Vault…", "Import from Markdown Vault…"), click: () => sendCommand("import-markdown") }, { label: nativeT('Importar do Apple Notes…', 'Import from Apple Notes…'), visible: process.platform === 'darwin', click: () => sendCommand('import-apple-notes') }, { label: nativeT("Importar do ENEX Archive (.enex)…", "Import from ENEX Archive (.enex)…"), click: () => sendCommand("import-archive") }] },
         { type: 'separator' },
         {
           label: nativeT('Abrir Pasta de Dados', 'Open data folder'),
@@ -716,6 +718,10 @@ function buildMenu() {
       ],
     },
   ]
+  if (process.platform !== 'darwin') {
+    template[0].submenu = template[0].submenu.filter(item => !['services', 'hide', 'hideOthers', 'unhide'].includes(item.role))
+    template.at(-1).submenu = template.at(-1).submenu.filter(item => item.role !== 'front')
+  }
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }
 
@@ -964,13 +970,14 @@ async function bootSecureStorage() {
 }
 
 if (gotLock) app.whenReady().then(async () => {
+  if (process.platform === 'win32') app.setAppUserModelId(PRODUCT.bundleId + (TEST_BUILD ? '.test' : ''))
   // Em desenvolvimento, o Dock mostra o ícone do aplicativo (o app empacotado usa build/icon.icns via electron-packager).
   if (!app.isPackaged && process.platform === 'darwin') {
     try { const icon = require('electron').nativeImage.createFromPath(path.join(__dirname, '..', 'build', 'icon.icns')); if (!icon.isEmpty()) app.dock?.setIcon(icon) } catch { /* ícone opcional */ }
   }
   securityStatus = await bootSecureStorage()
   void secureStorage.purgeExpiredBackups(app.getPath('userData')).catch(console.error)
-  if (app.isPackaged) { app.setAsDefaultProtocolClient("workspace"); app.setAsDefaultProtocolClient(COMPAT.record007) }
+  if (app.isPackaged && !TEST_BUILD) { [PRODUCT.protocol, COMPAT.record007, ...(PRODUCT.protocolAliases ?? [])].forEach(scheme => app.setAsDefaultProtocolClient(scheme)) }
   scrubBrowserStorageIfVaulted()
   registerIpc()
   await backupService.recoverAll().catch(console.error)
@@ -979,7 +986,7 @@ if (gotLock) app.whenReady().then(async () => {
   buildMenu()
   tray.setVisible(!!capturePrefs?.showTray)
   // Aberto no início da sessão com o ícone na barra de menus: fica em segundo plano até ser chamado.
-  if (!(capturePrefs?.showTray && app.getLoginItemSettings().wasOpenedAtLogin)) createWindow()
+  if (!(capturePrefs?.showTray && (app.getLoginItemSettings().wasOpenedAtLogin || process.argv.includes('--startup')))) createWindow()
   for (const value of [...pendingLinks, ...process.argv.filter(arg => parseDeepLink(arg))]) await openDeepLink(value)
   for (const file of [...pendingFiles.splice(0), ...process.argv.slice(1).filter(isOpenablePath)].slice(0, 10)) await openExternalFile(file)
   const timer = setInterval(() => void tickDesktop().catch(console.error), 5000)
@@ -992,5 +999,5 @@ if (gotLock) app.whenReady().then(async () => {
 }).catch(error => { if (error?.code !== 'USER_QUIT') dialog.showErrorBox(`${PRODUCT.name}`, error.message); app.quit() })
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
+  if (process.platform !== 'darwin' && !tray.isVisible?.()) app.quit()
 })

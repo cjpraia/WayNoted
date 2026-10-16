@@ -31,7 +31,7 @@ export function aiErrorMessage(cause: unknown, t: Translate): string {
     case 'AI_RATE_LIMIT': return error.retryAfter ? t('Limite de uso ou cota atingido. Tente de novo em {s} s.', 'Rate limit or quota reached. Try again in {s} s.', { s: error.retryAfter }) : t('Limite de uso ou cota atingido. Tente de novo em instantes.', 'Rate limit or quota reached. Try again shortly.')
     case 'AI_SERVER': return t('O provedor está com problemas (erro do servidor). Tente de novo mais tarde.', 'The provider is having trouble (server error). Try again later.')
     case 'AI_TIMEOUT': return t('O provedor demorou demais para responder.', 'The provider took too long to respond.')
-    case 'AI_OFFLINE': return t('Sem conexão com o provedor. Para o Ollama: instale-o (ollama.com) e deixe-o aberto neste Mac.', 'Could not reach the provider. For Ollama: install it (ollama.com) and keep it running on this Mac.')
+    case 'AI_OFFLINE': return t('Sem conexão com o provedor. Para o Ollama: instale-o (ollama.com) e deixe-o aberto neste computador.', 'Could not reach the provider. For Ollama: install it (ollama.com) and keep it running on this computer.')
     case 'AI_TOO_LARGE': return t('A resposta passou do limite de tamanho e foi interrompida.', 'The response exceeded the size limit and was stopped.')
     case 'AI_INPUT_TOO_LARGE': return t('Reduza as instruções para 16 mil caracteres e o contexto para 128 mil.', 'Limit instructions to 16,000 characters and context to 128,000.')
     case 'AI_BAD_RESPONSE': case 'AI_REFUSED': return t('O modelo não retornou um resultado válido.', 'The model did not return a valid result.')

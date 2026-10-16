@@ -69,7 +69,7 @@ export function ProductivityView() {
     <div className="pd-inner">
       <header className="pd-header">
         <h1 className="pd-title"><ProductivityIcon size={26} /> {t('Produtividade', 'Productivity')}</h1>
-        <p className="pd-sub">{t('Tudo fica neste Mac; só contadores, nunca o conteúdo.', 'Everything stays on this Mac; only counters, never your content.')}</p>
+        <p className="pd-sub">{t('Tudo fica neste computador; só contadores, nunca o conteúdo.', 'Everything stays on this computer; only counters, never your content.')}</p>
         <button type="button" className="pd-ghost" onClick={openProductivitySettings}><Settings2 size={14} /> {t('Ajustes', 'Settings')}</button>
       </header>
 

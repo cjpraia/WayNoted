@@ -253,7 +253,7 @@ test('desempenho: 2000 páginas (< 15 s) e atualização incremental de uma pág
     const res = await mirror.applyBatch({ root, userData, workspaceId: 'default', workspaceName: 'n', payload: payloadOf(inc, only) })
     const incremental = performance.now() - t1
     assert.equal(res.written, 1)
-    assert.ok(incremental < 200, `incremental ${Math.round(incremental)} ms`)
+    assert.ok(incremental < (process.env.CI ? 1000 : 200), `incremental ${Math.round(incremental)} ms`)
     console.log(`mirror perf: inicial ${Math.round(initial)} ms, incremental ${Math.round(incremental)} ms`)
   } finally { await rm(work, { recursive: true, force: true }) }
 })

@@ -24,7 +24,7 @@ test('accelerators need a non-Shift modifier and a single valid key', () => {
 
 test('preferences fall back to safe defaults and drop invalid inbox ids', () => {
   const prefs = core.normalizePrefs({ shortcut: 'Shift+X', captureShortcut: '', showTray: 'yes', inbox: { default: '11111111-1111-4111-8111-111111111111', evil: 'x', '../a': '11111111-1111-4111-8111-111111111111' } })
-  assert.equal(prefs.shortcut, 'Alt+Command+N')
+  assert.equal(prefs.shortcut, process.platform === 'darwin' ? 'Alt+Command+N' : 'Alt+Control+N')
   assert.equal(prefs.captureShortcut, '')
   assert.equal(prefs.showTray, true)
   assert.deepEqual(Object.keys(prefs.inbox), ['default'])
@@ -82,7 +82,7 @@ test('capture links and clipboard capture read text plus a browser source URL wh
 })
 
 test('tray template icon is a monochrome bitmap with transparent background', () => {
-  const bitmap = trayBitmap(32)
+  const bitmap = trayBitmap(32, 'darwin')
   assert.equal(bitmap.length, 32 * 32 * 4)
   let opaque = 0, colored = 0
   for (let i = 0; i < bitmap.length; i += 4) { if (bitmap[i + 3] > 0) opaque++; if (bitmap[i] || bitmap[i + 1] || bitmap[i + 2]) colored++ }
@@ -95,7 +95,7 @@ test('main process wires quick capture, tray, focus menu and keeps running witho
   const source = require('node:fs').readFileSync(require('node:path').join(__dirname, '../electron/main.cjs'), 'utf8')
   assert.match(source, /createQuickCapture\(/); assert.match(source, /createTray\(/)
   assert.match(source, /accelerator: accel\('focus', 'CmdOrCtrl\+Shift\+F'\), click: \(\) => sendCommand\('focus-mode'\)/)
-  assert.match(source, /if \(process\.platform !== 'darwin'\) app\.quit\(\)/)
+  assert.match(source, /process\.platform !== 'darwin' && !tray\.isVisible/)
   assert.match(source, /quickCapture\.handleUrl/)
   assert.ok(UUID.test('11111111-1111-4111-8111-111111111111'))
 })

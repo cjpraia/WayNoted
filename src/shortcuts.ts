@@ -190,7 +190,17 @@ export const shortcutLabel = (def: ShortcutDef, locale: Locale) => translate(loc
 export const areaLabel = (area: ShortcutArea, locale: Locale) => { const a = SHORTCUT_AREAS.find(item => item.id === area)!; return translate(locale, a.label[0], a.label[1]) }
 export const shortcutKeys = (id: string) => effectiveKeys(id)
 /** Dica curta para tooltips/comandos: ‘⌘K’ (ou o atalho personalizado). `slot` escolhe entre teclas alternativas. */
-export const shortcutHint = (id: string, slot = 0) => shortcutKeys(id)[slot] ?? ''
+export const shortcutHint = (id: string, slot = 0) => {
+  const combo = shortcutKeys(id)[slot] ?? ''
+  return shortcutDisplay(combo, id)
+}
+
+/** Present canonical stored combinations using the current OS's key names. */
+export function shortcutDisplay(combo: string, id = ''): string {
+  if (isMacPlatform()) return combo
+  if (id === 'fullscreen') return 'F11'
+  return combo.replace(/⌃/g, 'Ctrl+').replace(/⌥/g, 'Alt+').replace(/⇧/g, 'Shift+').replace(/⌘/g, 'Ctrl+')
+}
 
 const fold = (value: string) => value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
@@ -202,7 +212,7 @@ export function groupShortcuts(query: string, locale: Locale): { area: ShortcutA
     return words.every(word => hay.includes(word))
   }
   return SHORTCUT_AREAS
-    .map(area => ({ area: area.id, label: areaLabel(area.id, locale), items: SHORTCUTS.filter(def => def.area === area.id && match(def)) }))
+    .map(area => ({ area: area.id, label: areaLabel(area.id, locale), items: SHORTCUTS.filter(def => def.area === area.id && !(typeof window !== 'undefined' && window.api?.platform === 'win32' && def.id === 'minimize') && match(def)) }))
     .filter(group => group.items.length)
 }
 
@@ -224,6 +234,7 @@ const KEY_ALIASES: Record<string, string> = { 'espaço': 'space', ' ': 'space', 
 
 /** ‘⌘⇧N’ → modificadores + tecla normalizada; null se não houver tecla. */
 export function parseCombo(combo: string): ParsedCombo | null {
+  combo = combo.replace(/^(?:(?:Ctrl|Control|Alt|Shift|Meta|Cmd)\+)+/, modifiers => modifiers.replace(/(?:Ctrl|Control)\+/g, isMacPlatform() ? '⌃' : '⌘').replace(/Alt\+/g, '⌥').replace(/Shift\+/g, '⇧').replace(/(?:Meta|Cmd)\+/g, '⌘'))
   const out: ParsedCombo = { mod: false, ctrl: false, alt: false, shift: false, key: '' }
   let rest = combo
   for (; rest; rest = rest.slice(1)) {
@@ -265,6 +276,7 @@ export function isMacPlatform(): boolean {
 /** O evento aciona esse atalho? ⌘ aceita Ctrl (mesmo comportamento do keydown antigo); ⌃ exige Ctrl sem ⌘. */
 export function matchesCombo(event: Pick<KeyboardEvent, 'key' | 'code' | 'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey'>, combo: string): boolean {
   const want = parseCombo(combo)
+  if (!isMacPlatform() && 'getModifierState' in event && (event as KeyboardEvent).getModifierState('AltGraph')) return false // AltGr is text input on Windows.
   if (!want) return false
   if (eventKey(event) !== want.key) return false
   if (event.altKey !== want.alt || event.shiftKey !== want.shift) return false

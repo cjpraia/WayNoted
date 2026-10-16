@@ -50,7 +50,7 @@ function httpsUrl(value, code) {
 const cleanText = (value, max) => String(value ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '').trim().slice(0, max)
 
 /** Valida o JSON do feed e devolve apenas campos conhecidos e saneados. */
-function validateFeed(json) {
+function validateFeed(json, { platform = process.platform, arch = process.arch } = {}) {
   if (!json || typeof json !== 'object' || Array.isArray(json)) throw new UpdateError('invalid-feed')
   const version = cleanText(json.version, 60).replace(/^v/, '')
   if (!parseSemver(version)) throw new UpdateError('invalid-feed')
@@ -59,7 +59,8 @@ function validateFeed(json) {
   if (typeof raw === 'string') notes.default = cleanText(raw, 4000)
   else if (raw && typeof raw === 'object' && !Array.isArray(raw)) for (const key of ['pt-BR', 'en-US', 'default']) if (typeof raw[key] === 'string') notes[key] = cleanText(raw[key], 4000)
   let downloadUrl = ''
-  const link = json.downloadUrl ?? json.url
+  if (json.downloads !== undefined && (!json.downloads || typeof json.downloads !== 'object' || Array.isArray(json.downloads))) throw new UpdateError('invalid-feed')
+  const link = json.downloads ? json.downloads[`${platform}-${arch}`] : json.downloadUrl ?? json.url
   if (link !== undefined) {
     try { downloadUrl = httpsUrl(link, 'invalid-feed').href } catch { throw new UpdateError('invalid-feed') }
   }
@@ -110,7 +111,7 @@ async function fetchFeed(value, options = {}, hops = 0) {
 /** Resultado para a interface; nunca lança (erros viram `{ status: 'error', code }`). */
 async function checkForUpdates(feedUrl, currentVersion, options = {}) {
   try {
-    const feed = validateFeed(await fetchFeed(feedUrl, options))
+    const feed = validateFeed(await fetchFeed(feedUrl, options), options)
     const newer = compareSemver(feed.version, currentVersion) > 0
     return newer ? { status: 'available', current: currentVersion, latest: feed.version, notes: feed.notes, hasDownload: !!feed.downloadUrl, downloadUrl: feed.downloadUrl }
       : { status: 'current', current: currentVersion, latest: feed.version }

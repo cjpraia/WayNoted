@@ -104,7 +104,7 @@ export function AgentSettingsCards({ Card }: { Card: Card }) {
       </div>
       {message && <p className={message.error ? 'ag-warn' : 'ag-note'} role="status">{message.text}</p>}
     </Card>
-    <Card title={t('Web clipper (navegador)', 'Web clipper (browser)')} subtitle={t('A extensão em clipper/ envia a página atual só para este Mac e cria páginas na tabela “Recortes da web”. Ela nunca lê nem edita o resto.', 'The extension in clipper/ sends the current page only to this Mac and creates pages in the “Web clips” table. It never reads or edits anything else.')}>
+    <Card title={t('Web clipper (navegador)', 'Web clipper (browser)')} subtitle={t('A extensão em clipper/ envia a página atual só para este Mac e cria páginas na tabela “Recortes da web”. Ela nunca lê nem edita o resto.', 'The extension in clipper/ sends the current page only to this computer and creates pages in the “Web clips” table. It never reads or edits anything else.')}>
       <div className="st-row st-row-col">
         <span className="st-label">{t('Parear a extensão', 'Pair the extension')}</span>
         <span className="st-hint">{t('Gerar o código é a sua aprovação: depois dele, a extensão pareada cria recortes sem perguntar de novo, e só isso. O código vale 5 minutos e funciona uma vez.', 'Generating the code is your approval: afterwards the paired extension creates clips without asking again, and nothing else. The code lasts 5 minutes and works once.')}</span>

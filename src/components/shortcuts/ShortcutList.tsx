@@ -6,7 +6,7 @@ import { Button } from '../ui/Button'
 import { Select } from '../ui/Select'
 import { showUndoToast } from '../ui/toastQueue'
 import {
-  comboFromEvent, defaultKeys, effectiveKeys, findConflict, groupShortcuts, isCustomized, menuAccelerators, sanitizeOverrides, shortcutLabel, validateCombo, withOverride,
+  comboFromEvent, defaultKeys, effectiveKeys, findConflict, groupShortcuts, isCustomized, menuAccelerators, sanitizeOverrides, shortcutDisplay, shortcutLabel, validateCombo, withOverride,
   type ComboConflict, type ShortcutDef, type ShortcutOverrides,
 } from '../../shortcuts'
 import './ShortcutList.css'
@@ -92,7 +92,7 @@ export function ShortcutList({ compact = false, autoFocus = false, editable = fa
         </Select>}
         {editable && <Button variant="ghost" disabled={!customCount} onClick={restoreAll}>{t('Restaurar todos', 'Restore all')}</Button>}
       </div>
-      {editable && <p className="sc-help">{t('Selecione um atalho e pressione a nova combinação (Esc cancela). Precisa de ⌘ ou ⌃. Os atalhos sem botão são fixos (editor, tabela, lousa e sistema).', 'Select a shortcut and press the new combination (Esc cancels). It needs ⌘ or ⌃. Shortcuts without a button are fixed (editor, table, whiteboard and system).')}</p>}
+      {editable && <p className="sc-help">{t('Selecione um atalho e pressione a nova combinação (Esc cancela). Precisa de Command ou Control. Os atalhos sem botão são fixos (editor, tabela, lousa e sistema).', 'Select a shortcut and press the new combination (Esc cancels). It needs Command on macOS or Ctrl on Windows. Shortcuts without a button are fixed (editor, table, whiteboard and system).')}</p>}
       <div className="sc-sr" role="status" aria-live="polite">{announce}</div>
       {groups.length === 0 && <p className="sc-empty">{t('Nenhum atalho encontrado.', 'No shortcuts found.')}</p>}
       {groups.map(group => (
@@ -110,13 +110,13 @@ export function ShortcutList({ compact = false, autoFocus = false, editable = fa
                   <dd className="sc-keys">
                     {keys.map((key, slot) => editable && def.rebind
                       ? <button key={slot} type="button" className={`sc-key${active && recording!.slot === slot ? ' is-recording' : ''}`} ref={el => { if (el) buttons.current.set(`${def.id}:${slot}`, el); else buttons.current.delete(`${def.id}:${slot}`) }}
-                          aria-label={active && recording!.slot === slot ? t('Gravando o atalho de {name}. Pressione a combinação ou Esc para cancelar.', 'Recording the shortcut for {name}. Press the combination or Esc to cancel.', { name: label }) : t('Alterar o atalho de {name}: atual {key}', 'Change the shortcut for {name}: currently {key}', { name: label, key })}
+                          aria-label={active && recording!.slot === slot ? t('Gravando o atalho de {name}. Pressione a combinação ou Esc para cancelar.', 'Recording the shortcut for {name}. Press the combination or Esc to cancel.', { name: label }) : t('Alterar o atalho de {name}: atual {key}', 'Change the shortcut for {name}: currently {key}', { name: label, key: shortcutDisplay(key, def.id) })}
                           onClick={() => { setMessage(''); setRecording({ id: def.id, slot }); setAnnounce(t('Gravando o atalho de {name}. Pressione a combinação ou Esc para cancelar.', 'Recording the shortcut for {name}. Press the combination or Esc to cancel.', { name: label })) }}
                           onKeyDown={event => onKeyDown(event, def, slot)}
                           onBlur={() => setRecording(current => current && current.id === def.id && current.slot === slot && !current.pending ? null : current)}>
-                          {active && recording!.slot === slot ? t('Pressione o atalho…', 'Press the shortcut…') : key}
+                          {active && recording!.slot === slot ? t('Pressione o atalho…', 'Press the shortcut…') : shortcutDisplay(key, def.id)}
                         </button>
-                      : <kbd key={slot}>{key}</kbd>)}
+                      : <kbd key={slot}>{shortcutDisplay(key, def.id)}</kbd>)}
                     {editable && def.rebind && custom && <Button variant="ghost" className="sc-reset" aria-label={t('Restaurar o padrão de {name}', 'Restore the default for {name}', { name: label })} onClick={() => commit(def, keys.findIndex((key, slot) => key !== defaultKeys(def.id)[slot]), null)}>{t('Restaurar', 'Restore')}</Button>}
                   </dd>
                   {active && message && <div className="sc-message" role="alert">

@@ -15,6 +15,11 @@ const output = path.join(root, 'build', 'native', "workspace-native")
 const arch = process.env.WORKSPACE_NATIVE_ARCH || (process.arch === 'x64' ? 'x86_64' : 'arm64')
 const force = process.argv.includes('--force')
 
+if (process.platform === 'win32') {
+  await import('./build-windows-native.mjs')
+  process.exit(0)
+}
+
 if (process.platform !== 'darwin') {
   console.log('[native] macOS only; skipping helper build.')
   process.exit(0)

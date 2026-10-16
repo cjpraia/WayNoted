@@ -1,3 +1,4 @@
+document.documentElement.dataset.platform = window.api?.platform ?? (/Mac/.test(navigator.platform) ? 'darwin' : 'win32')
 import PRODUCT from '../shared/product.json' with { type: 'json' }
 import COMPAT from '../shared/compatibility.ts'
 import { createRoot } from 'react-dom/client'

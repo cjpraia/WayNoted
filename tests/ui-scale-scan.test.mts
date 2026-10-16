@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 // Varredura do CSS dos componentes (Fitts, Proximidade, Similaridade): alvos pequenos e espaçamentos fora da escala.
 // É uma catraca: o baseline (tests/fixtures/ui-scan-baseline.json) guarda a dívida existente por arquivo; o teste
 // falha se um arquivo piorar ou se surgir arquivo novo com problema. Para quitar dívida, corrija e rode:
@@ -7,7 +8,7 @@ import assert from 'node:assert/strict'
 import { readdirSync, readFileSync, statSync, writeFileSync, existsSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
-const ROOT = new URL('..', import.meta.url).pathname
+const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const BASELINE = join(ROOT, 'tests/fixtures/ui-scan-baseline.json')
 const SCALE = new Set([0, 1, 2, 4, 8, 12, 16, 24, 32, 40, 48, 64])
 const BUTTON = /(btn|button|-close\b|-x\b|toggle)/i
@@ -92,7 +93,7 @@ const detail: Record<string, { small: string[]; scale: string[] }> = {}
 for (const file of files) {
   const rules = parsed.get(file)!
   const small = smallTargets(rules, everyRule), scale = [...new Set(offScale(rules))]
-  if (small.length || scale.length) { const key = relative(ROOT, file); results[key] = { small: small.length, scale: scale.length }; detail[key] = { small, scale } }
+  if (small.length || scale.length) { const key = relative(ROOT, file).replace(/\\/g, '/'); results[key] = { small: small.length, scale: scale.length }; detail[key] = { small, scale } }
 }
 
 test('heurística: detecta botão pequeno e ignora o compensado', () => {

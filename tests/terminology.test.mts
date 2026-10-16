@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 // Glossário (docs/USAGE.md): "um nome por conceito". A lousa (canvas) nunca se chama "Quadro livre";
 // "Quadro" é só a visualização kanban. O menu "/" mantém os apelidos de busca antigos.
 import test from 'node:test'
@@ -5,7 +6,7 @@ import assert from 'node:assert/strict'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
-const root = new URL('..', import.meta.url).pathname
+const root = fileURLToPath(new URL('..', import.meta.url))
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
     const path = join(dir, name)

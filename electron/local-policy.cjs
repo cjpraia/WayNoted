@@ -1,10 +1,17 @@
 const path = require('node:path')
 const { fileURLToPath } = require('node:url')
 
+function localPath(url, entryFile) {
+  const windows = /^[a-z]:[\\/]/i.test(entryFile) || entryFile.startsWith('\\\\')
+  const paths = windows ? path.win32 : path.posix
+  const normalize = value => windows ? paths.normalize(value).toLowerCase() : paths.normalize(value)
+  return { actual: normalize(fileURLToPath(url, { windows })), entry: normalize(entryFile), paths }
+}
+
 function isInternalURL(value, config) {
   try {
     const url = new URL(value)
-    return config.isDev ? url.origin === new URL(config.devURL).origin : url.protocol === 'file:' && fileURLToPath(url) === config.entryFile
+    return config.isDev ? url.origin === new URL(config.devURL).origin : url.protocol === 'file:' && (() => { const file = localPath(url, config.entryFile); return file.actual === file.entry })()
   } catch { return false }
 }
 
@@ -13,7 +20,7 @@ function canRequest(value, config) {
     const url = new URL(value)
     if (['data:', 'blob:', 'devtools:'].includes(url.protocol)) return true
     if (value === 'about:blank' || value === 'about:srcdoc') return true
-    if (url.protocol === 'file:') return fileURLToPath(url).startsWith(path.dirname(config.entryFile) + path.sep)
+    if (url.protocol === 'file:') { const file = localPath(url, config.entryFile); return file.actual.startsWith(file.paths.dirname(file.entry) + file.paths.sep) }
     if (!config.isDev) return false
     if (url.protocol === 'ws:') url.protocol = 'http:'
     if (url.protocol === 'wss:') url.protocol = 'https:'

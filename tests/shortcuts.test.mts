@@ -130,10 +130,10 @@ test('U2: o keydown acha o comando pelo atalho efetivo (padrão e personalizado)
   assert.equal(findShortcutHit(ev('g', 'KeyG', { meta: true })), null, 'o padrão deixa de valer depois de alterado')
   assert.deepEqual(findShortcutHit(ev('G', 'KeyG', { meta: true, shift: true })), { id: 'graph', slot: 0 })
   assert.deepEqual(findShortcutHit(ev('o', 'KeyO', { meta: true, shift: true })), { id: 'search', slot: 1 })
-  assert.equal(shortcutHint('graph'), '⌘⇧G', 'dicas e tooltips seguem o atalho novo')
-  assert.equal(shortcutHint('back-forward', 1), '⌘]')
+  assert.equal(shortcutHint('graph'), process.platform === 'win32' ? 'Ctrl+Shift+G' : '⌘⇧G', 'dicas e tooltips seguem o atalho novo')
+  assert.equal(shortcutHint('back-forward', 1), process.platform === 'win32' ? 'Ctrl+]' : '⌘]')
   setShortcutOverridesSource(() => undefined)
-  assert.equal(shortcutHint('graph'), '⌘G')
+  assert.equal(shortcutHint('graph'), process.platform === 'win32' ? 'Ctrl+G' : '⌘G')
 })
 
 test('U2: conflitos com o app, o editor e atalhos reservados do macOS/VoiceOver', () => {

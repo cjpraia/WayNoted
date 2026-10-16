@@ -13,7 +13,7 @@ test('concurrent saves preserve submission order and leave no temporary files', 
     await drain()
     assert.equal((await readJson(file)).revision, 29)
     assert.deepEqual(await fs.readdir(dir), ['meta.json'])
-    assert.equal((await fs.stat(file)).mode & 0o777, 0o600)
+    if (process.platform !== 'win32') assert.equal((await fs.stat(file)).mode & 0o777, 0o600)
     const saving = atomicWrite(file, '{"final":true}')
     const deleting = removeFile(file)
     await Promise.all([saving, deleting])

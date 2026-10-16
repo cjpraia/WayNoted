@@ -76,7 +76,7 @@ test('contador no título: refreshTitle só mostra o número quando ligado, some
   const fakeTray = { setToolTip: tip => tips.push(tip), setTitle: title => titles.push(title), on() {}, destroy() {} }
   const electron = { Tray: function () { return fakeTray }, nativeImage: { createFromBitmap: () => ({ addRepresentation() {}, setTemplateImage() {} }) } }
   let prefs = { trayTasks: true, trayCount: false }, current = snapshot(7)
-  const tray = createTray({ t, electron, todayTasks: () => current, taskPrefs: () => prefs })
+  const tray = createTray({ t, electron, platform: 'darwin', todayTasks: () => current, taskPrefs: () => prefs })
   tray.setVisible(true)
   assert.equal(titles.at(-1), '', 'desligado por padrão')
   prefs = { trayTasks: true, trayCount: true }; tray.refreshTitle(); assert.equal(titles.at(-1), '7'); assert.match(tips.at(-1), /7 for today/)
@@ -100,4 +100,14 @@ test('fiação: IPC via trustedHandler, conclusão volta ao renderer dono do ite
   assert.match(main, /trayTasks\.drop\(senderId\)/)
   assert.match(renderer, /completeTask\(item, true\)/, 'mesma rota da Caixa de tarefas (guardas U1)')
   assert.doesNotMatch(main, /tray-tasks[\s\S]{0,40}(loadMeta|saveDoc)/, 'o retrato é só leitura: nada de disco')
+})
+
+
+test('Windows tray shows counts in its tooltip without calling macOS title APIs', () => {
+  const tips = []
+  const electron = { Tray: function () { return { setToolTip: value => tips.push(value), on() {}, destroy() {} } }, nativeImage: { createFromBitmap: () => ({ addRepresentation() {} }) } }
+  const tray = createTray({ t, electron, platform: 'win32', todayTasks: () => snapshot(3), taskPrefs: () => ({ trayTasks: true, trayCount: true }) })
+  tray.setVisible(true); tray.refreshTitle()
+  assert.match(tips.at(-1), /3 for today/)
+  tray.setVisible(false)
 })

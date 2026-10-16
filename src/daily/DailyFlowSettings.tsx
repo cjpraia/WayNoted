@@ -21,7 +21,7 @@ export function DailyFlowSettings() {
   const templates = availableTemplates()
   return <>
     <h2 className="st-h">{t('Fluxo diário', 'Daily flow')}</h2>
-    <p className="st-hint st-mb">{t('Uma nota por dia, calendário lateral e tarefas com data reunidas em um só lugar. Tudo fica neste Mac.', 'One note per day, a side calendar and dated tasks in one place. Everything stays on this Mac.')}</p>
+    <p className="st-hint st-mb">{t('Uma nota por dia, calendário lateral e tarefas com data reunidas em um só lugar. Tudo fica neste computador.', 'One note per day, a side calendar and dated tasks in one place. Everything stays on this computer.')}</p>
 
     <div className="st-row st-row-col">
       <label className="st-label" htmlFor="st-daily-template">{t('Modelo da nota diária', 'Daily note template')}</label>

@@ -36,3 +36,10 @@ test('focus mode word count ignores punctuation', () => {
   assert.equal(countWords('Olá, mundo — é 2026! d’água'), 5)
   assert.equal(countWords('  '), 0)
 })
+
+
+test('Windows shortcut labels use Ctrl/Alt and distinguish the Windows key', () => {
+  assert.equal(acceleratorLabel('Alt+Control+N', 'Space', 'win32'), 'Ctrl+Alt+N')
+  assert.equal(acceleratorLabel('Shift+CmdOrCtrl+Return', 'Space', 'win32'), 'Ctrl+Shift+Enter')
+  assert.equal(acceleratorLabel('Super+Space', 'Space', 'win32'), 'Win+Space')
+})

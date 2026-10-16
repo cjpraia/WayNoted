@@ -14,7 +14,7 @@ const cache = new Map()
 async function load(rel) {
   const url = new URL(rel, import.meta.url)
   if (cache.has(url.href)) return cache.get(url.href)
-  let source = (await readFile(url, 'utf8')).replace(/^import type [^\n]*\n/gm, '').replace(/^import ['"][^'"]+\.css['"]\n/gm, '')
+  let source = (await readFile(url, 'utf8')).replace(/\r\n/g, '\n').replace(/^import type [^\n]*\n/gm, '').replace(/^import ['"][^'"]+\.css['"]\n/gm, '')
   for (const dep of [...source.matchAll(/from ['"](\.{1,2}\/[^'"]+)['"]/g)].map(m => m[1])) {
     if (/\/i18n$/.test(dep)) { source = source.split(`'${dep}'`).join(`'${I18N_STUB}'`); continue }
     if (/\.css$/.test(dep)) { source = source.split(`'${dep}'`).join(`'data:text/javascript,'`); continue }

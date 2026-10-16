@@ -14,7 +14,7 @@ Please write issues, pull request descriptions, and documentation in English. Th
 ## Development setup
 
 1. Fork the repository and clone your fork.
-2. Install a compatible Node.js version, npm, and Xcode Command Line Tools on an Apple Silicon Mac.
+2. Install Node.js 24 and npm. For native builds use Xcode Command Line Tools on Apple Silicon macOS, or .NET 10 SDK and Visual Studio C++ Build Tools on Windows. See the platform setup in [Development](docs/DEVELOPMENT.md).
 3. Run:
 
 ```bash
@@ -22,7 +22,7 @@ npm install
 npm run dev
 ```
 
-Use a topic branch for your change. See [Development](docs/DEVELOPMENT.md) for the project structure and native testing workflow. `npm run dev:web` is useful for interface work but cannot validate native storage or macOS integrations.
+Use a topic branch for your change. See [Development](docs/DEVELOPMENT.md) for the project structure and native testing workflow. `npm run dev:web` is useful for interface work but cannot validate native storage or OS integrations.
 
 ## Making a change
 
@@ -48,7 +48,7 @@ During development, run a focused test with:
 node scripts/run-tests.mjs tests/workspace.test.mts
 ```
 
-For a native or packaging change, also run `npm run dist` and test the resulting app with a temporary profile. Describe any macOS permissions or hardware needed to reproduce your result.
+For a native or packaging change, also run `npm run dist` on macOS or `npm run dist:win` / `npm run dist:win:arm64` on Windows and test the resulting app with a temporary profile. Describe any OS permissions or hardware needed to reproduce your result.
 
 For a dependency change, review its license and regenerate notices:
 
@@ -71,6 +71,6 @@ Link the related issue when one exists. Maintainers may request changes before m
 
 ## Reporting bugs and security concerns
 
-For a bug, include the app version, macOS version, reproduction steps, expected behavior, and actual behavior. Remove personal data and secrets from logs and screenshots.
+For a bug, include the app version, OS version and architecture, reproduction steps, expected behavior, and actual behavior. Remove personal data and secrets from logs and screenshots.
 
 For a security vulnerability, use the repository's private **Report a vulnerability** option if available. Otherwise, open an issue requesting a private contact without publishing exploit details or sensitive information.

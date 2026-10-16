@@ -9,6 +9,7 @@ export interface QuickInit { locale: Locale; theme: ThemeSetting; workspaceName:
 
 /** Ponte da janela rápida (electron/quick-preload.cjs). */
 export interface QuickApi {
+  platform?: string
   init(): Promise<QuickInit>
   search(query: string): Promise<QuickDestination[]>
   destination(id: string): Promise<QuickDestinationInfo | null>
@@ -17,7 +18,7 @@ export interface QuickApi {
   save(input: { title: string; blocks: unknown[]; destinationId: string | null; tags: string[]; date: string | null; /** Data completa (hora/repetição) vinda de "@amanhã às 9h". */ dateValue?: import('../types').DateValue; sourceUrl: string | null }): Promise<{ pageId: string; parentId: string; workspaceId: string }>
   close(): Promise<void>
   open(pageId: string): Promise<void>
-  /** Ditado local (reconhecimento no próprio Mac); a janela rápida só inicia, para, cancela e abre o painel de permissão. */
+  /** Ditado local (reconhecimento no próprio computador); a janela rápida só inicia, para, cancela e abre o painel de permissão. */
   dictationStart(input: { locale: Locale }): Promise<{ sessionId: number }>
   dictationStop(): Promise<void>
   dictationCancel(): Promise<void>

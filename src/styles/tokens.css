@@ -351,3 +351,5 @@ textarea {
     transition-delay: 0s !important;
   }
 }
+
+:root[data-platform='win32'] { --traffic-lights-width: 10px; }

@@ -137,7 +137,7 @@ export function AskPanel() {
       <button type="button" className="np-icon-btn" onClick={closeAskPanel} aria-label={t('Fechar painel', 'Close panel')}><X size={16} strokeWidth={1.7} /></button>
     </div>
     {!bridge ? <div className="ai-thread"><p className="ai-empty">{t(`A IA requer o aplicativo desktop do ${PRODUCT.name}.`, `AI requires the ${PRODUCT.name} desktop app.`)}</p></div> : view === 'history' ? <div className="ai-history" role="list" aria-label={t('Conversas salvas', 'Saved conversations')}>
-      {!chats.length && <p className="ai-empty">{t('Nenhuma conversa salva neste Mac.', 'No conversations saved on this Mac.')}</p>}
+      {!chats.length && <p className="ai-empty">{t('Nenhuma conversa salva neste computador.', 'No conversations saved on this computer.')}</p>}
       {chats.map(item => <div key={item.id} className="ai-history-row" role="listitem"><button type="button" onClick={() => { setChatId(item.id); setView('thread') }}>{item.title}</button><button type="button" className="np-icon-btn" onClick={() => { persist(chats.filter(other => other.id !== item.id)); if (chatId === item.id) setChatId(null) }} aria-label={t('Apagar conversa {title}', 'Delete conversation {title}', { title: item.title })}><Trash2 size={14} /></button></div>)}
       {chats.length > 0 && <Button variant="danger-quiet" style={{ alignSelf: 'flex-start', marginTop: 8 }} onClick={() => { persist([]); setChatId(null) }}><Trash2 size={14} aria-hidden />{t('Apagar todo o histórico', 'Delete all history')}</Button>}
     </div> : <>
@@ -156,7 +156,7 @@ export function AskPanel() {
       </div>
       <div className="ai-thread" ref={thread} aria-live="polite">
         {!chat?.turns.length && !busy && <div className="ai-empty">
-          <p>{t('Pergunte sobre o que está nas suas notas. A busca roda neste Mac; só os trechos mais relevantes e a pergunta vão ao modelo, com as fontes citadas.', 'Ask about what is in your notes. The search runs on this Mac; only the most relevant excerpts and your question go to the model, with sources cited.')}</p>
+          <p>{t('Pergunte sobre o que está nas suas notas. A busca roda neste computador; só os trechos mais relevantes e a pergunta vão ao modelo, com as fontes citadas.', 'Ask about what is in your notes. The search runs on this computer; only the most relevant excerpts and your question go to the model, with sources cited.')}</p>
           <div className="ai-templates">{TEMPLATES(t).map(template => { const Icon = template.icon; return <button type="button" key={template.label} onClick={() => { if (template.fill) { setQuestion(template.question); input.current?.focus() } else void send(template.question, template.recentDays) }}><Icon size={15} strokeWidth={1.7} aria-hidden />{template.label}</button> })}</div>
         </div>}
         {chat?.turns.map((turn, index) => turn.role === 'user' ? <div key={index} className="ai-turn-user">{turn.content}</div> : <div key={index} className="ai-turn-bot">

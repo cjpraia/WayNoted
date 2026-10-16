@@ -12,6 +12,13 @@ const JOBS = Number(process.env.TEST_JOBS ?? Math.max(1, Math.min(4, Math.floor(
 const files = (process.argv.slice(2).length ? process.argv.slice(2) : readdirSync('tests').filter(f => /\.test\.(mjs|cjs|mts|js|ts)$/.test(f)).map(f => `tests/${f}`)).sort()
 
 function treeRssMb(root) {
+  if (process.platform === 'win32') {
+    try {
+      const output = execFileSync('tasklist.exe', ['/FI', `PID eq ${root}`, '/FO', 'CSV', '/NH'], { encoding: 'utf8', windowsHide: true })
+      const row = output.trim().split('\n').find(line => line.includes(`\"${root}\"`))
+      return row ? Number(row.split('\",\"').at(-1).replace(/[^0-9]/g, '')) / 1024 : 0
+    } catch { return 0 }
+  }
   let out
   try { out = execFileSync('ps', ['-A', '-o', 'pid=,ppid=,rss='], { encoding: 'utf8' }) } catch { return 0 }
   const rows = out.trim().split('\n').map(l => l.trim().split(/\s+/).map(Number))
@@ -25,18 +32,18 @@ function treeRssMb(root) {
 
 function runFile(file) {
   return new Promise(resolve => {
-    const child = spawn(process.execPath, ['--experimental-strip-types', '--test', file], { detached: true, stdio: ['ignore', 'pipe', 'pipe'] })
+    const child = spawn(process.execPath, ['--experimental-strip-types', '--test', file], { detached: process.platform !== 'win32', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
     let output = ''
     child.stdout.on('data', d => { output += d })
     child.stderr.on('data', d => { output += d })
     const started = Date.now()
     let killed = null
-    const kill = reason => { killed = reason; try { process.kill(-child.pid, 'SIGKILL') } catch {} }
+    const kill = reason => { killed = reason; try { if (process.platform === 'win32') execFileSync('taskkill.exe', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true, stdio: 'ignore' }); else process.kill(-child.pid, 'SIGKILL') } catch {} }
     const timer = setInterval(() => {
       const mb = treeRssMb(child.pid)
       if (mb > MAX_MB) kill(`memória ${Math.round(mb)} MB > ${MAX_MB} MB`)
       else if (Date.now() - started > MAX_S * 1000) kill(`tempo > ${MAX_S}s`)
-    }, 250)
+    }, process.platform === 'win32' ? 1000 : 250)
     child.on('close', code => {
       clearInterval(timer)
       const num = key => Number(output.match(new RegExp(`^ℹ ${key} (\\d+)`, 'm'))?.[1] ?? 0)

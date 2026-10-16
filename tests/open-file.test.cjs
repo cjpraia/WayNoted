@@ -48,7 +48,7 @@ test('salvar: nada é gravado sem save(); save grava no próprio arquivo e prese
   assert.deepEqual(await files.save(view.fileId, 'dois'), { saved: true })
   const bytes = await fs.readFile(file)
   assert.equal(bytes.toString('utf8'), '﻿dois')
-  assert.equal(nodefs.statSync(file).mode & 0o777, 0o640)
+  if (process.platform !== 'win32') assert.equal(nodefs.statSync(file).mode & 0o777, 0o640)
   assert.deepEqual((await fs.readdir(dir)).filter(name => name.includes('.tmp')), [], 'sem temporários')
   assert.equal((await files.check(view.fileId)).state, 'same', 'depois de salvar o hash é o novo')
 }))

@@ -18,9 +18,9 @@ function decodeImage(dataUrl) {
   return { bytes, extension }
 }
 
-function createOcr({ platform = process.platform, run = execFile, script = path.join(__dirname, 'ocr-vision.js') } = {}) {
+function createOcr({ platform = process.platform, run = execFile, nativeRun = require('./native-helper.cjs').runHelper, script = path.join(__dirname, 'ocr-vision.js') } = {}) {
   let queue = Promise.resolve()
-  const available = () => platform === 'darwin'
+  const available = () => ['darwin', 'win32'].includes(platform)
   async function recognize(dataUrl) {
     if (!available()) return { ok: false, reason: 'unsupported', text: '' }
     const { bytes, extension } = decodeImage(dataUrl)
@@ -29,6 +29,10 @@ function createOcr({ platform = process.platform, run = execFile, script = path.
       const file = path.join(dir, `image.${extension}`)
       try {
         await fsp.writeFile(file, bytes, { mode: 0o600 })
+        if (platform === 'win32') {
+          const result = await nativeRun(['ocr'], { file }, { timeout: 30000 })
+          return { ok: true, text: String(result.text ?? '').trimEnd() }
+        }
         // No app empacotado o script fica dentro do app.asar, que o osascript (processo externo) não enxerga:
         // copia-o (leitura com suporte a asar) para a pasta temporária, que é apagada junto com a imagem.
         let scriptPath = script

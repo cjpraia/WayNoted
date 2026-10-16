@@ -53,14 +53,14 @@ function registerAgentIpc(deps) {
     const { response } = await dialog.showMessageBox(win, {
       type: 'question', buttons: [nativeT('Instalar', 'Install', win), nativeT('Cancelar', 'Cancel', win)], defaultId: 1, cancelId: 1,
       message: nativeT("Instalar o comando workspace no PATH?", "Install the workspace command in your PATH?", win),
-      detail: nativeT(`Cria o link simbólico ${link} apontando para ${binPath}. Nenhum outro arquivo é alterado.`, `Creates the symbolic link ${link} pointing to ${binPath}. No other file is changed.`, win),
+      detail: nativeT(process.platform === 'win32' ? `Adiciona ${path.dirname(binPath)} ao PATH do seu usuário. Abra um novo terminal depois. Não requer acesso de administrador.` : `Cria o link simbólico ${link} apontando para ${binPath}. Nenhum outro arquivo é alterado.`, process.platform === 'win32' ? `Adds ${path.dirname(binPath)} to your user PATH. Open a new terminal afterward. No administrator access is needed.` : `Creates the symbolic link ${link} pointing to ${binPath}. No other file is changed.`, win),
     })
     if (response !== 0) return { cancelled: true }
     return { ...(await connector.installCli({ binPath, home })), cancelled: false }
   })
   trustedHandler('np:agentUninstallCli', async e => {
     const { binPath } = paths(), win = context(e).win, link = connector.cliLinkPath(os.homedir())
-    const { response } = await dialog.showMessageBox(win, { type: 'question', buttons: [nativeT('Remover', 'Remove', win), nativeT('Cancelar', 'Cancel', win)], defaultId: 1, cancelId: 1, message: nativeT("Remover o comando workspace do PATH?", "Remove the workspace command from your PATH?", win), detail: nativeT(`Remove o link simbólico ${link}.`, `Removes the symbolic link ${link}.`, win) })
+    const { response } = await dialog.showMessageBox(win, { type: 'question', buttons: [nativeT('Remover', 'Remove', win), nativeT('Cancelar', 'Cancel', win)], defaultId: 1, cancelId: 1, message: nativeT("Remover o comando workspace do PATH?", "Remove the workspace command from your PATH?", win), detail: nativeT(process.platform === 'win32' ? 'Remove a pasta da CLI deste aplicativo do PATH do seu usuário. Abra um novo terminal depois.' : `Remove o link simbólico ${link}.`, process.platform === 'win32' ? 'Removes this application’s CLI directory from your user PATH. Open a new terminal afterward.' : `Removes the symbolic link ${link}.`, win) })
     if (response !== 0) return { cancelled: true }
     return { ...(await connector.uninstallCli({ binPath, home: os.homedir() })), cancelled: false }
   })

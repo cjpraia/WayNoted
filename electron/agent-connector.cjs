@@ -8,20 +8,22 @@ const path = require('node:path')
 const shellQuote = value => /^[A-Za-z0-9_@%+=:,./-]+$/.test(value) ? value : `'${value.replace(/'/g, `'\\''`)}'`
 
 /** Trechos prontos: JSON de `mcpServers` (Claude Desktop, Cursor...) e o comando do Claude Code. `token` é opcional (cliente nomeado). */
-function connectorSnippets({ command, args = ['mcp'], token } = {}) {
+function connectorSnippets({ command, args = ['mcp'], token, platform = process.platform } = {}) {
   const server = { command, args, ...(token ? { env: { WORKSPACE_API_TOKEN: token } } : {}) }
   const json = JSON.stringify({ mcpServers: { workspace: server } }, null, 2)
-  const env = token ? ` -e WORKSPACE_API_TOKEN=${shellQuote(token)}` : ''
-  const claudeCode = `claude mcp add workspace${env} -- ${[command, ...args].map(shellQuote).join(' ')}`
+  const quote = platform === 'win32' ? value => `'${String(value).replace(/'/g, "''")}'` : shellQuote
+  const env = token ? ` -e WORKSPACE_API_TOKEN=${quote(token)}` : ''
+  const claudeCode = `claude mcp add workspace${env} -- ${[command, ...args].map(quote).join(' ')}`
   return { json, claudeCode }
 }
 
 /** Caminho do executável `workspace` para o app atual (null fora do app empacotado). */
-const cliBinPath = ({ packaged, resourcesPath }) => packaged && resourcesPath ? path.join(resourcesPath, 'bin', "workspace") : null
+const cliBinPath = ({ packaged, resourcesPath, platform = process.platform }) => packaged && resourcesPath ? (platform === 'win32' ? path.win32 : path).join(resourcesPath, 'bin', platform === 'win32' ? 'workspace.exe' : 'workspace') : null
 const cliLinkPath = (home = os.homedir()) => path.join(home, '.local', 'bin', "workspace")
 
 /** 'missing' | 'linked' (aponta para este app) | 'stale' (link para outro lugar) | 'file' (arquivo comum, não tocar). */
-async function cliStatus({ binPath, home }) {
+async function cliStatus({ binPath, home, platform = process.platform }) {
+  if (platform === 'win32') return require('./windows-cli.cjs').userPath(binPath)
   const link = cliLinkPath(home)
   let stat
   try { stat = await fs.lstat(link) } catch (error) { if (error.code === 'ENOENT') return { path: link, state: 'missing' }; throw error }
@@ -30,7 +32,8 @@ async function cliStatus({ binPath, home }) {
   return { path: link, state: binPath && path.resolve(path.dirname(link), target) === binPath ? 'linked' : 'stale', target }
 }
 
-async function installCli({ binPath, home }) {
+async function installCli({ binPath, home, platform = process.platform }) {
+  if (platform === 'win32' && binPath) { await fs.access(binPath); return require('./windows-cli.cjs').userPath(binPath, 'install') }
   if (!binPath) throw Object.assign(new Error('CLI_UNAVAILABLE'), { code: 'CLI_UNAVAILABLE' })
   try { await fs.access(binPath) } catch { throw Object.assign(new Error('CLI_UNAVAILABLE'), { code: 'CLI_UNAVAILABLE' }) }
   const status = await cliStatus({ binPath, home })
@@ -41,7 +44,8 @@ async function installCli({ binPath, home }) {
   return { path: status.path, state: 'linked' }
 }
 
-async function uninstallCli({ binPath, home }) {
+async function uninstallCli({ binPath, home, platform = process.platform }) {
+  if (platform === 'win32' && binPath) return require('./windows-cli.cjs').userPath(binPath, 'uninstall')
   const status = await cliStatus({ binPath, home })
   if (status.state === 'linked' || status.state === 'stale') await fs.unlink(status.path)
   else if (status.state === 'file') throw Object.assign(new Error('CLI_PATH_OCCUPIED'), { code: 'CLI_PATH_OCCUPIED', path: status.path })

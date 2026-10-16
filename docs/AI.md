@@ -8,7 +8,7 @@ Choose a provider and test the connection in **Settings → AI**:
 
 | Provider | Execution | Requirements |
 |---|---|---|
-| Ollama | Local; defaults to `127.0.0.1:11434` | Service and model installed on this Mac |
+| Ollama | Local; defaults to `127.0.0.1:11434` | Service and model installed on this computer |
 | OpenRouter | Cloud | API key, consent, and a selected model |
 | Google | Cloud | API key, consent, and a selected model |
 
@@ -33,7 +33,7 @@ Voice transcription and task extraction use separate paths: system dictation is 
 
 | Action | Data involved |
 |---|---|
-| Local Ollama request | Messages sent to the service on this Mac |
+| Local Ollama request | Messages sent to the service on this computer |
 | Cloud connection test or model listing | Provider credential, without page content |
 | Cloud generation | Previewed messages sent to the selected provider |
 | Local index and embeddings | Processing in local Ollama or Apple's helper |

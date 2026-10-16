@@ -148,7 +148,7 @@ test('/v1/search usa o índice: filtros, ordem (título primeiro), limit e rapid
   assert.deepEqual(index.search(pages, 'relatorio').map(page => page.id), ['corpo'], 'índice acompanha edições')
 })
 
-test('conector: trechos de configuração MCP e link simbólico só no ~/.local/bin, sem tocar arquivos alheios', async () => {
+test('conector: trechos de configuração MCP e link simbólico só no ~/.local/bin, sem tocar arquivos alheios', { skip: process.platform === 'win32' ? 'POSIX symlink integration; Windows PATH is covered separately' : false }, async () => {
   const snippets = connector.connectorSnippets({ command: `/Applications/${PRODUCT.name}.app/Contents/Resources/bin/workspace`, args: ['mcp'] })
   const parsed = JSON.parse(snippets.json)
   assert.deepEqual(parsed.mcpServers.workspace, { command: `/Applications/${PRODUCT.name}.app/Contents/Resources/bin/workspace`, args: ['mcp'] })
@@ -175,7 +175,7 @@ test('conector: trechos de configuração MCP e link simbólico só no ~/.local/
   } finally { await fs.rm(home, { recursive: true, force: true }) }
 })
 
-test("o script bin/workspace resolve link simbólico e roda a CLI com o executável do app", async () => {
+test("o script bin/workspace resolve link simbólico e roda a CLI com o executável do app", { skip: process.platform === 'win32' ? 'POSIX launcher; real Windows launcher is tested in the installed package' : false }, async () => {
   const script = await fs.readFile(path.join(__dirname, '..', 'build', 'bin', "workspace"), 'utf8')
   assert.match(script, /ELECTRON_RUN_AS_NODE=1/); assert.match(script, /Resources\/app\/electron\/cli\.cjs/); assert.match(script, /readlink/)
   const stat = await fs.stat(path.join(__dirname, '..', 'build', 'bin', "workspace"))

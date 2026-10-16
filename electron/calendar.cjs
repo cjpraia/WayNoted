@@ -33,7 +33,7 @@ function identity(input) {
   return { id, itemId }
 }
 
-function createCalendarService({ run = runHelper, available = helperAvailable } = {}) {
+function createCalendarService({ run = runHelper, available = () => process.platform === 'darwin' ? helperAvailable() : { available: false, reason: 'APPLE_INTEGRATION_UNSUPPORTED' } } = {}) {
   return {
     async status() {
       const availability = available()

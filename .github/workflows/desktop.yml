@@ -1,0 +1,84 @@
+name: Desktop verification
+on:
+  push:
+    branches: [main, 'codex/windows-support']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, windows-11-arm]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --foreground-scripts
+        timeout-minutes: 12
+      - run: npm run typecheck
+      - run: npm run build:agent
+      - run: npm test
+        env:
+          TEST_JOBS: '2'
+  windows-package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            arch: x64
+            command: dist:win
+          - os: windows-11-arm
+            arch: arm64
+            command: dist:win:arm64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          dotnet-version: '10.0.x'
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+        with:
+          arch: ${{ matrix.arch }}
+      - run: npm ci --foreground-scripts
+        timeout-minutes: 12
+      - name: Build Windows installer (unsigned validation artifact)
+        run: npm run ${{ matrix.command }}
+      - name: Verify the real installed application
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem release/*-Setup-*-win-${{ matrix.arch }}.exe | Select-Object -First 1
+          if (!$setup) { throw 'Installer not found' }
+          node scripts/check-package.mjs "--installer=$($setup.FullName)"
+      - name: Compute checksums
+        shell: pwsh
+        run: |
+          Get-ChildItem release/*-Setup-*-win-${{ matrix.arch }}.exe | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+            "$hash  $($_.Name)" | Out-File release/SHA256SUMS -Encoding ascii
+          }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: windows-validation-unsigned-${{ matrix.arch }}-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            release/*-Setup-*-win-${{ matrix.arch }}.exe
+            release/SHA256SUMS
+            .artifacts/package-check/

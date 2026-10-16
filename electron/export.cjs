@@ -11,12 +11,13 @@ const MAX_FILES = 200000
 function safeRelative(value) {
   if (typeof value !== 'string' || !value || value.length > 1024 || value.includes('\\') || value.includes('\0') || value.startsWith('/')) return null
   const parts = value.split('/')
-  if (parts.some(part => !part || part === '.' || part === '..' || part.length > 255)) return null
+  if (parts.some(part => !part || part === '.' || part === '..' || part.length > 255 || /[<>:\"|?*\u0000-\u001f]/.test(part) || /[. ]$/.test(part) || /^(con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i.test(part))) return null
   return parts
 }
 
 function cleanName(value, fallback) {
-  const name = path.basename(String(value || fallback)).replace(/[\\/:*?"<>|\u0000-\u001f]/g, '-').trim()
+  let name = path.basename(String(value || fallback)).replace(/[\\/:*?"<>|\u0000-\u001f]/g, '-').trim()
+  if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name)) name = '_' + name
   return name && name !== '.' && name !== '..' ? name.slice(0, 120) : fallback
 }
 

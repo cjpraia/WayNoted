@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 // Acessibilidade — nomes acessíveis: nenhum <button> só com ícone/símbolo sem aria-label/title, landmarks e regiões vivas
 // nas telas-chave (verificação estática do código-fonte; a medição na árvore de acessibilidade está em docs/USAGE.md).
 import test from 'node:test'
@@ -5,7 +6,7 @@ import assert from 'node:assert/strict'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
-const ROOT = new URL('..', import.meta.url).pathname
+const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const read = (path: string) => readFileSync(join(ROOT, path), 'utf8')
 function tsx(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
@@ -52,7 +53,7 @@ const REVIEWED = new Set(['src/components/database/PropertyMenu.tsx', 'src/compo
 test('nenhum <button> só com ícone ou símbolo fica sem nome acessível', () => {
   const failures: string[] = []
   for (const file of tsx(join(ROOT, 'src'))) {
-    const rel = relative(ROOT, file)
+    const rel = relative(ROOT, file).replace(/\\/g, '/')
     if (REVIEWED.has(rel)) continue
     for (const line of unnamedButtons(readFileSync(file, 'utf8'))) failures.push(`${rel}:${line}`)
   }
@@ -116,7 +117,7 @@ test('todo diálogo modal (atributo JSX role="dialog") tem nome via aria-label/a
     for (const match of source.matchAll(/\srole="dialog"/g)) {
       const end = tagEnd(source, source.lastIndexOf('<', match.index))
       const tag = source.slice(source.lastIndexOf('<', match.index), end + 1)
-      if (!/aria-label(ledby)?=/.test(tag)) failures.push(`${relative(ROOT, file)}: diálogo sem nome`)
+      if (!/aria-label(ledby)?=/.test(tag)) failures.push(`${relative(ROOT, file).replace(/\\/g, '/')}: diálogo sem nome`)
     }
   }
   assert.deepEqual(failures, [])

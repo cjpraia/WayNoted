@@ -88,7 +88,7 @@ async function writeFileAtomic(file, content) {
   try {
     const handle = await fs.open(tmp, 'wx', 0o600)
     try { await handle.writeFile(content); await handle.sync() } finally { await handle.close() }
-    await fs.rename(tmp, file)
+    await require('./fs-retry.cjs').rename(tmp, file)
   } catch (error) { await fs.rm(tmp, { force: true }).catch(() => {}); throw error }
 }
 
@@ -174,7 +174,7 @@ async function createBackup(o) {
     failAt?.('verify', done)
     const check = await verifyBackup(tmp)
     if (!check.ok) throw backupError('BACKUP_VERIFY_FAILED', 'A cópia gravada não confere com o original.', 'The written copy does not match the original.')
-    await fs.rename(tmp, final)
+    await require('./fs-retry.cjs').rename(tmp, final)
     return { id: name, path: final, manifest }
   } catch (error) {
     await fs.rm(tmp, { recursive: true, force: true }).catch(() => {})
@@ -323,12 +323,12 @@ async function restoreFull(o) {
     }
     failAt?.('swap', 0)
     let hadOld = true
-    try { await fs.rename(dataDir, replaced) } catch (error) { if (error.code === 'ENOENT') hadOld = false; else throw error }
+    try { await require('./fs-retry.cjs').rename(dataDir, replaced) } catch (error) { if (error.code === 'ENOENT') hadOld = false; else throw error }
     try {
-      if (hadOld) { try { await fs.rename(path.join(replaced, 'backups'), path.join(staging, 'backups')) } catch (error) { if (error.code !== 'ENOENT') throw error } }
-      await fs.rename(staging, dataDir)
+      if (hadOld) { try { await require('./fs-retry.cjs').rename(path.join(replaced, 'backups'), path.join(staging, 'backups')) } catch (error) { if (error.code !== 'ENOENT') throw error } }
+      await require('./fs-retry.cjs').rename(staging, dataDir)
     } catch (error) {
-      if (hadOld) await fs.rename(replaced, dataDir).catch(() => {}) // desfaz a troca
+      if (hadOld) await require('./fs-retry.cjs').rename(replaced, dataDir).catch(() => {}) // desfaz a troca
       throw error
     }
     if (hadOld) await fs.rm(replaced, { recursive: true, force: true }).catch(() => {})
@@ -362,7 +362,7 @@ async function recoverInterruptedRestore(dataDir) {
   let names = []
   try { names = (await fs.readdir(parent)).filter(n => n.startsWith(`${base}.replaced-`)) } catch { return false }
   if (!names.length) return false
-  await fs.rename(path.join(parent, names[0]), dataDir)
+  await require('./fs-retry.cjs').rename(path.join(parent, names[0]), dataDir)
   return true
 }
 

@@ -15,7 +15,7 @@ import { DEFAULT_LIST_NAME, newLink, planRemindersSync, pushLog, reminderDue, ty
 const message = (pt: string, en: string) => translate(getState().settings.locale, pt, en)
 const native = (): NativeApi | undefined => (typeof window !== 'undefined' ? window.api : undefined)
 
-export const remindersAvailable = () => !!native()?.remindersStatus
+export const remindersAvailable = () => native()?.platform !== 'win32' && !!native()?.remindersStatus
 export const DEFAULT_REMINDERS: RemindersSyncSettings = { enabled: false, listName: DEFAULT_LIST_NAME }
 export const remindersSettings = (settings = getState().settings): RemindersSyncSettings => ({ ...DEFAULT_REMINDERS, ...settings.remindersSync })
 export function updateRemindersSettings(update: Partial<RemindersSyncSettings> | ((current: RemindersSyncSettings) => RemindersSyncSettings)) {
@@ -69,7 +69,7 @@ let running = false
 export async function runRemindersSync(now = Date.now()): Promise<{ ops: number; errors: number } | null> {
   const api = native()
   const cfg = remindersSettings()
-  if (running || !cfg.enabled || !api?.remindersList || !api.remindersUpsert || !api.remindersComplete || !api.remindersEnsureList || !api.remindersStatus || !getState().ready) return null
+  if (!remindersAvailable() || running || !cfg.enabled || !api?.remindersList || !api.remindersUpsert || !api.remindersComplete || !api.remindersEnsureList || !api.remindersStatus || !getState().ready) return null
   if (taskIndexStatus().pending > 0) return null
   running = true
   const log: SyncLogEntry[] = []

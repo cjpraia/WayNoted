@@ -112,7 +112,7 @@ test('captura: erro de permissão vira mensagem com painel; sem ditado nativo e 
   const none = createVoiceCapture(undefined, 'en-US', () => {})
   await none.start()
   assert.equal(none.snapshot().phase, 'error')
-  assert.match(none.snapshot().error ?? '', new RegExp(`requires the ${PRODUCT.name} app`, ""))
+  assert.match(none.snapshot().error ?? '', new RegExp(`requires the ${PRODUCT.name} desktop app`, ""))
   const busy = fakeNative()
   const blocked = createVoiceCapture(busy.native, 'pt-BR', () => {}, { busy: () => true })
   await blocked.start()

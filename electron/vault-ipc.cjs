@@ -14,7 +14,8 @@ function registerVaultIpc(deps) {
   const windowsOf = id => [...contexts.values()].filter(ctx => ctx.workspaceId === id && !ctx.win.isDestroyed()).map(ctx => ctx.win)
   const workspaceIds = () => [...new Set(['default', ...[...contexts.values()].map(ctx => ctx.workspaceId)])]
   // Só Touch ID/biometria: o Keychain NÃO é consultado aqui (nem ao abrir Configurações). Ele só é tocado ao ATIVAR ou usar o Touch ID.
-  const touchIdAvailable = () => { try { return process.platform === 'darwin' && !!systemPreferences?.canPromptTouchID?.() } catch { return false } }
+  const biometric = deps.biometric ?? require('./biometric.cjs').createBiometric({ preferences: systemPreferences })
+  const touchIdAvailable = () => biometric.available()
   // Rascunhos da captura rápida guardados só na memória enquanto o espaço estava bloqueado.
   const afterUnlock = id => { void Promise.resolve(deps.onUnlocked?.(id)).catch(console.error) }
   const flushAll = id => Promise.all(windowsOf(id).map(win => flushRenderer(win))).then(drainAll)
@@ -22,7 +23,7 @@ function registerVaultIpc(deps) {
   function pageSettings(dir) { try { return pageLocks.settings(dir) } catch { return null } }
   async function status(id) {
     const dir = dataDir(id), result = await vaultWorkspace.status(dir)
-    return { ...result, workspaceId: id, touchIdAvailable: touchIdAvailable(), pages: result.locked ? null : { settings: pageSettings(dir), roots: (() => { try { return pageLocks.list(dir) } catch { return [] } })() } }
+    return { ...result, workspaceId: id, touchIdAvailable: await touchIdAvailable(), biometricKind: process.platform === 'win32' ? 'windowsHello' : 'touchId', pages: result.locked ? null : { settings: pageSettings(dir), roots: (() => { try { return pageLocks.list(dir) } catch { return [] } })() } }
   }
   async function exclusive(id, operation) {
     if (busy.has(id)) throw vault.vaultError('VAULT_BUSY', 'Outra operação de segurança está em andamento.', 'Another security operation is in progress.')
@@ -84,8 +85,8 @@ function registerVaultIpc(deps) {
   })
   trustedHandler('np:vaultUnlockTouchID', async e => {
     const ctx = ctxOf(e), dir = dataDir(ctx.workspaceId)
-    if (!touchIdAvailable()) throw vault.vaultError('TOUCH_ID_UNAVAILABLE', 'Touch ID indisponível neste Mac.', 'Touch ID is unavailable on this Mac.')
-    await systemPreferences.promptTouchID(nativeT(`desbloquear o espaço do ${PRODUCT.name}`, `unlock the ${PRODUCT.name} workspace`, ctx.win))
+    if (!(await touchIdAvailable())) throw vault.vaultError('TOUCH_ID_UNAVAILABLE', 'Verificação do dispositivo indisponível.', 'Device verification is unavailable.')
+    await biometric.verify(ctx.win, nativeT(`desbloquear o espaço do ${PRODUCT.name}`, `unlock the ${PRODUCT.name} workspace`, ctx.win))
     await vaultWorkspace.unlockWithKeychain(dir, safeStorage); activity.set(dir, Date.now()); afterUnlock(ctx.workspaceId); await purgeBrowserCaches(ctx.win, ctx.workspaceId); return status(ctx.workspaceId)
   })
   trustedHandler('np:vaultUnlockRecovery', async (e, recoveryKey, newPassword) => {
@@ -116,8 +117,8 @@ function registerVaultIpc(deps) {
   trustedHandler('np:vaultSetTouchID', async (e, enabled) => {
     const ctx = ctxOf(e), dir = dataDir(ctx.workspaceId)
     if (enabled) {
-      if (!touchIdAvailable()) throw vault.vaultError('TOUCH_ID_UNAVAILABLE', 'Touch ID indisponível neste Mac.', 'Touch ID is unavailable on this Mac.')
-      await systemPreferences.promptTouchID(nativeT('ativar o desbloqueio por Touch ID', 'turn on Touch ID unlock', ctx.win))
+      if (!(await touchIdAvailable())) throw vault.vaultError('TOUCH_ID_UNAVAILABLE', 'Verificação do dispositivo indisponível.', 'Device verification is unavailable.')
+      await biometric.verify(ctx.win, nativeT('ativar o desbloqueio do dispositivo', 'enable device verification unlock', ctx.win))
       await vaultWorkspace.enableTouchId(dir, safeStorage)
     } else await vaultWorkspace.disableTouchId(dir)
     return status(ctx.workspaceId)
