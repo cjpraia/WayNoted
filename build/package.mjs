@@ -11,7 +11,7 @@ const platform = argument('platform') || process.platform
 const arch = argument('arch') || process.arch
 if (!['darwin', 'win32'].includes(platform) || !['arm64', 'x64'].includes(arch)) throw new Error('Unsupported package target')
 if (platform === 'win32' && process.platform !== 'win32') throw new Error('Build Windows packages on Windows, including the native helper and CLI launcher.')
-if (platform === 'win32') await import('./build-windows-icon.mjs')
+if (platform === 'win32') { await import('./build-windows-icon.mjs'); await import('./build-windows-license.mjs') }
 const nativeDirectory = platform === 'win32' ? path.join('build', 'native', 'win32-' + arch) : path.join('build', 'native')
 const nativeFile = path.join(nativeDirectory, platform === 'win32' ? 'workspace-native.exe' : 'workspace-native')
 if (!fs.existsSync(nativeFile)) throw new Error('Native helper missing; run npm run build:native for the target architecture.')

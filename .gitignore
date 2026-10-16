@@ -28,3 +28,5 @@ credentials.json
 /.claude/
 /native/windows/bin/
 /native/windows/obj/
+
+/build/windows-license.txt
