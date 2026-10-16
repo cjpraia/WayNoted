@@ -190,7 +190,10 @@ export const shortcutLabel = (def: ShortcutDef, locale: Locale) => translate(loc
 export const areaLabel = (area: ShortcutArea, locale: Locale) => { const a = SHORTCUT_AREAS.find(item => item.id === area)!; return translate(locale, a.label[0], a.label[1]) }
 export const shortcutKeys = (id: string) => effectiveKeys(id)
 /** Dica curta para tooltips/comandos: ‘⌘K’ (ou o atalho personalizado). `slot` escolhe entre teclas alternativas. */
-export const shortcutHint = (id: string, slot = 0) => shortcutKeys(id)[slot] ?? ''
+export const shortcutHint = (id: string, slot = 0) => {
+  const combo = shortcutKeys(id)[slot] ?? ''
+  return isMacPlatform() ? combo : combo.replace(/⌃/g, 'Ctrl+').replace(/⌥/g, 'Alt+').replace(/⇧/g, 'Shift+').replace(/⌘/g, 'Ctrl+')
+}
 
 const fold = (value: string) => value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
@@ -265,6 +268,7 @@ export function isMacPlatform(): boolean {
 /** O evento aciona esse atalho? ⌘ aceita Ctrl (mesmo comportamento do keydown antigo); ⌃ exige Ctrl sem ⌘. */
 export function matchesCombo(event: Pick<KeyboardEvent, 'key' | 'code' | 'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey'>, combo: string): boolean {
   const want = parseCombo(combo)
+  if (!isMacPlatform() && 'getModifierState' in event && (event as KeyboardEvent).getModifierState('AltGraph')) return false // AltGr is text input on Windows.
   if (!want) return false
   if (eventKey(event) !== want.key) return false
   if (event.altKey !== want.alt || event.shiftKey !== want.shift) return false

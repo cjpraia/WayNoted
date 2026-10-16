@@ -3,6 +3,7 @@ const COMPAT = require('../shared/compatibility.cjs')
 require('./brand.cjs').legacyEnv()
 const { app, BrowserWindow, Menu, shell, dialog, ipcMain, nativeTheme, screen, Notification, safeStorage: electronSafeStorage, clipboard, systemPreferences, powerMonitor } = require('electron')
 const path = require('node:path')
+const platform = require('./platform.cjs')
 const fs = require('node:fs')
 const fsp = require('node:fs/promises')
 const localPolicy = require('./local-policy.cjs')
@@ -168,6 +169,7 @@ function registerIpc() {
   // IA: provedores configuráveis (Ollama local por padrão; nuvem opt-in). docs/AI.md
   // Chave de IA no arquivo só se ele já é cifrado por algo que o usuário ativou (senha do espaço ou cifra do Keychain).
   aiIpc = registerAIIpc({ trustedHandler, context, dataDir, storage, safeStorage, isFileProtected: dir => vault.isEnabled(dir) || secureStorage.mode() === 'keychain' })
+  trustedHandler('np:runtimeInfo', () => platform.capabilities())
   trustedHandler('np:securityInfo', () => ({ ...securityStatus, deviceCipher: secureStorage.mode() }))
   // Cifra do dispositivo (Keychain): desligada por padrão; ligar é opt-in explícito (docs/SECURITY.md).
   trustedHandler('np:deviceCipherStatus', () => secureStorage.deviceCipherStatus())
@@ -523,8 +525,7 @@ function createWindow(workspaceId = 'default', route = null) {
     minHeight: 480,
     title: `${PRODUCT.name}`,
     show: false,
-    titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 16, y: 11 },
+    ...platform.windowChrome(),
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#191919' : '#ffffff',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -964,13 +965,14 @@ async function bootSecureStorage() {
 }
 
 if (gotLock) app.whenReady().then(async () => {
+  if (process.platform === 'win32') app.setAppUserModelId(PRODUCT.bundleId)
   // Em desenvolvimento, o Dock mostra o ícone do aplicativo (o app empacotado usa build/icon.icns via electron-packager).
   if (!app.isPackaged && process.platform === 'darwin') {
     try { const icon = require('electron').nativeImage.createFromPath(path.join(__dirname, '..', 'build', 'icon.icns')); if (!icon.isEmpty()) app.dock?.setIcon(icon) } catch { /* ícone opcional */ }
   }
   securityStatus = await bootSecureStorage()
   void secureStorage.purgeExpiredBackups(app.getPath('userData')).catch(console.error)
-  if (app.isPackaged) { app.setAsDefaultProtocolClient("workspace"); app.setAsDefaultProtocolClient(COMPAT.record007) }
+  if (app.isPackaged) { [PRODUCT.protocol, COMPAT.record007, ...(PRODUCT.protocolAliases ?? [])].forEach(scheme => app.setAsDefaultProtocolClient(scheme)) }
   scrubBrowserStorageIfVaulted()
   registerIpc()
   await backupService.recoverAll().catch(console.error)
@@ -992,5 +994,5 @@ if (gotLock) app.whenReady().then(async () => {
 }).catch(error => { if (error?.code !== 'USER_QUIT') dialog.showErrorBox(`${PRODUCT.name}`, error.message); app.quit() })
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
+  if (process.platform !== 'darwin' && !tray.isVisible?.()) app.quit()
 })

@@ -14,6 +14,7 @@ import './security.css'
 import { Select } from '../components/ui/Select'
 import { Button } from '../components/ui/Button'
 
+const windows = () => window.api?.platform === 'win32'
 const AUTO_LOCK = [0, 1, 5, 15, 30, 60, 240]
 const RELOCK = [0, 1, 5, 15, 60]
 type Form = null | 'enable' | 'disable' | 'change' | 'recovery'
@@ -68,11 +69,11 @@ export function SecuritySettings() {
       void run(async () => { const result = await api.vaultRegenerateRecovery(password); reset(); setSavedKey(false); setRecoveryKey(result.recoveryKey); return t('Nova chave de recuperação gerada; a anterior deixou de valer.', 'New recovery key generated; the previous one no longer works.') })
     }
   }
-  const copyKey = () => void run(async () => { if (!recoveryKey) return; if (nativeApi.copyText) await nativeApi.copyText(recoveryKey); else await navigator.clipboard.writeText(recoveryKey); return t('Chave copiada. Guarde-a fora deste Mac.', 'Key copied. Keep it somewhere other than this Mac.') })
+  const copyKey = () => void run(async () => { if (!recoveryKey) return; if (nativeApi.copyText) await nativeApi.copyText(recoveryKey); else await navigator.clipboard.writeText(recoveryKey); return t('Chave copiada. Guarde-a fora deste computador.', 'Key copied. Keep it somewhere other than this computer.') })
 
   if (!api) return <>
     <h2 className="st-h">{t('Segurança e privacidade', 'Security & privacy')}</h2>
-    <p className="st-p">{t('A criptografia com senha está disponível no aplicativo para Mac.', 'Password encryption is available in the Mac app.')}</p>
+    <p className="st-p">{t('A criptografia com senha está disponível no aplicativo para Mac.', 'Password encryption is available in the desktop app.')}</p>
     <OnlineMediaSettings />
   </>
   const protectedRoots = status?.pages?.roots ?? []
@@ -93,12 +94,12 @@ export function SecuritySettings() {
 
   return <>
     <h2 className="st-h">{t('Segurança e privacidade', 'Security & privacy')}</h2>
-    <p className="st-p">{t('Tudo fica neste Mac, em arquivos locais. Para cifrá-los, ative a senha do espaço (AES-256-GCM): sem ela, nem este Mac abre o conteúdo.', 'Everything stays on this Mac, in local files. To encrypt them, turn on the workspace password (AES-256-GCM): without it, not even this Mac can open the content.')}</p>
+    <p className="st-p">{t('Tudo fica neste computador, em arquivos locais. Para cifrá-los, ative a senha do espaço (AES-256-GCM): sem ela, nem este Mac abre o conteúdo.', 'Everything stays on this computer, in local files. To encrypt them, turn on the workspace password (AES-256-GCM): without it, not even this computer can open the content.')}</p>
     {feedback && <div className={`st-feedback${feedback.error ? ' is-error' : ''}`} role={feedback.error ? 'alert' : 'status'}>{feedback.text}</div>}
 
     {recoveryKey && <div className="st-row st-row-col">
       <span className="st-label">{t('Sua chave de recuperação', 'Your recovery key')}</span>
-      <span className="st-hint">{t('Ela é exibida só agora. Anote ou guarde num gerenciador de senhas fora deste Mac. Sem a senha e sem esta chave, os dados são irrecuperáveis.', 'It is shown only now. Write it down or keep it in a password manager outside this Mac. Without the password and this key, the data cannot be recovered.')}</span>
+      <span className="st-hint">{t('Ela é exibida só agora. Anote ou guarde num gerenciador de senhas fora deste computador. Sem a senha e sem esta chave, os dados são irrecuperáveis.', 'It is shown only now. Write it down or keep it in a password manager outside this computer. Without the password and this key, the data cannot be recovered.')}</span>
       <div className="sec-recovery" aria-label={t('Chave de recuperação', 'Recovery key')}>{recoveryKey}</div>
       <div className="st-confirm">
         <Button onClick={copyKey}><Copy size={14} aria-hidden /> {t('Copiar', 'Copy')}</Button>
@@ -109,14 +110,14 @@ export function SecuritySettings() {
 
     <div className="st-row st-row-col">
       <div className="st-row-between">
-        <span className="st-label">{t('Cifrar também com a chave do Mac (Keychain)', 'Also encrypt with this Mac’s key (Keychain)')}</span>
+        <span className="st-label">{windows() ? t('Cifrar também com a chave do Windows (DPAPI)', 'Also encrypt with the Windows key (DPAPI)') : t('Cifrar também com a chave do computador (Keychain)', 'Also encrypt with this computer’s key (Keychain)')}</span>
         {cipher && nativeApi.deviceCipherSet && (cipher.mode === 'none'
           ? <Button type="button" disabled={busy} onClick={() => setConfirmCipher(value => !value)}>{t('Ativar…', 'Turn on…')}</Button>
           : <Button variant="danger-quiet" type="button" disabled={busy} onClick={() => void run(async () => { await actions.flushAll(); setCipher(await nativeApi.deviceCipherSet!(false)); setConfirmCipher(false); return t('Cifra do Keychain removida. O macOS não pedirá mais a senha do chaveiro ao abrir o app.', 'Keychain encryption removed. macOS will no longer ask for the keychain password when opening the app.') })}>{t('Desligar', 'Turn off')}</Button>)}
       </div>
-      <span className="st-hint">{cipher?.mode === 'keychain' || cipher?.mode === 'legacy'
+      <span className="st-hint">{windows() ? t('A chave do dispositivo usa o Windows DPAPI, vinculada ao seu usuário do Windows. Não protege contra outros programas executados pelo mesmo usuário. Use a senha do espaço para proteção independente e mantenha um backup portável.', 'The device key uses Windows DPAPI, bound to your Windows user. It does not protect against other programs running as the same user. Use a workspace password for independent protection and keep a portable backup.') : cipher?.mode === 'keychain' || cipher?.mode === 'legacy'
         ? (cipher.mode === 'legacy' ? t('Seu espaço ainda usa a cifra antiga do chaveiro (migração adiada). Clique em Desligar para convertê-lo: o macOS pedirá a senha do chaveiro uma última vez.', 'Your workspace still uses the old keychain encryption (migration postponed). Click Turn off to convert it: macOS will ask for the keychain password one last time.') : t('Ativa: AES-256-GCM com chave aleatória protegida pelo Keychain do macOS. O macOS pode pedir a senha do chaveiro ao abrir o app e após atualizações.', 'On: AES-256-GCM with a random key protected by the macOS Keychain. macOS may ask for the keychain password when opening the app and after updates.'))
-        : t('Desligada (padrão): por padrão os dados ficam neste Mac em arquivos locais, sem tocar no Keychain. Para cifrá-los de verdade, use a senha do espaço abaixo.', 'Off (default): by default your data stays on this Mac in local files, without touching the Keychain. To really encrypt it, use the workspace password below.')}</span>
+        : t('Desligada (padrão): por padrão os dados ficam neste computador em arquivos locais, sem tocar no Keychain. Para cifrá-los de verdade, use a senha do espaço abaixo.', 'Off (default): by default your data stays on this computer in local files, without touching the Keychain. To really encrypt it, use the workspace password below.')}</span>
       {confirmCipher && cipher?.mode === 'none' && <div className="sec-inline-form">
         <div className="sec-warning">{t(`Atenção: o macOS pode pedir a senha do chaveiro ao abrir o app e após atualizações do ${PRODUCT.name}. Você pode desligar esta opção a qualquer momento. Os arquivos serão convertidos com verificação.`, `Heads up: macOS may ask for the keychain password when opening the app and after ${PRODUCT.name} updates. You can turn this off at any time. Files are converted with verification.`)}</div>
         <div className="st-confirm">
@@ -163,7 +164,7 @@ export function SecuritySettings() {
       </div>
       <label className="st-row st-row-between"><span className="st-row-col"><span className="st-label">{t('Bloquear ao dormir ou bloquear a tela', 'Lock on sleep or screen lock')}</span></span><input type="checkbox" checked={status.settings.lockOnSleep} disabled={busy} onChange={e => void run(async () => { await api.vaultSetOptions({ lockOnSleep: e.target.checked }) })} /></label>
       <label className="st-row st-row-between">
-        <span className="st-row-col"><span className="st-label">{t('Desbloquear com Touch ID', 'Unlock with Touch ID')}</span><span className="st-hint">{status.touchIdAvailable ? t('A chave do espaço fica no Keychain e só é liberada após o Touch ID; o macOS pode pedir a senha do chaveiro ao ativar e ao usar. Desligado por padrão. A senha nunca é guardada.', 'The workspace key stays in the Keychain and is released only after Touch ID; macOS may ask for the keychain password when turning it on and when using it. Off by default. The password is never stored.') : t('Touch ID indisponível neste Mac.', 'Touch ID is unavailable on this Mac.')}</span></span>
+        <span className="st-row-col"><span className="st-label">{windows() ? t('Desbloquear com Windows Hello', 'Unlock with Windows Hello') : t('Desbloquear com Touch ID', 'Unlock with Touch ID')}</span><span className="st-hint">{windows() ? t('O Windows Hello confirma sua presença antes de liberar a chave protegida pelo Windows. Requer Windows Hello configurado. A senha não é guardada.', 'Windows Hello verifies your presence before releasing the Windows-protected key. Requires Windows Hello setup. Your password is not stored.') : status.touchIdAvailable ? t('A chave do espaço fica no Keychain e só é liberada após o Touch ID; o macOS pode pedir a senha do chaveiro ao ativar e ao usar. Desligado por padrão. A senha nunca é guardada.', 'The workspace key stays in the Keychain and is released only after Touch ID; macOS may ask for the keychain password when turning it on and when using it. Off by default. The password is never stored.') : t('Touch ID indisponível neste computador.', 'Touch ID is unavailable on this computer.')}</span></span>
         <input type="checkbox" checked={status.settings.touchId} disabled={busy || !status.touchIdAvailable} onChange={e => void run(async () => { await api.vaultSetTouchID(e.target.checked) })} />
       </label>
       <div className="st-row st-row-between">
@@ -182,7 +183,7 @@ export function SecuritySettings() {
           {RELOCK.map(value => <option key={value} value={value}>{value === 0 ? t('Retrancar só ao sair', 'Relock only on leave') : t('Retrancar após {n} min', 'Relock after {n} min', { n: value })}</option>)}
         </Select>}
       </div>
-      <span className="st-hint">{t('Proteja uma página pelo menu “•••” da página. Elas retrancam ao sair, ao dormir o Mac e após o tempo escolhido.', 'Protect a page from the page “•••” menu. They relock on leave, when the Mac sleeps and after the chosen time.')}</span>
+      <span className="st-hint">{t('Proteja uma página pelo menu “•••” da página. Elas retrancam ao sair, ao dormir o computador e após o tempo escolhido.', 'Protect a page from the page “•••” menu. They relock on leave, when the computer sleeps and after the chosen time.')}</span>
       {!!protectedRoots.length && <div className="sec-settings-list">
         {protectedRoots.map(root => { const page = pages[root.rootId]; return <div key={root.rootId} className="sec-settings-item">
           <Lock size={14} aria-hidden />

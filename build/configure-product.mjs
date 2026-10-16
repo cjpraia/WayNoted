@@ -10,7 +10,7 @@ if (!PRODUCT.name.trim() || !/^[a-z][a-z0-9-]*$/.test(PRODUCT.protocol)) throw n
 const pkg = json('package.json')
 const licenseText = fs.readFileSync(path.join(root, 'LICENSE'), 'utf8')
 if (!PRODUCT.license || !PRODUCT.licenseName || !licenseText.includes(PRODUCT.licenseName)) throw new Error('Product license metadata does not match LICENSE')
-pkg.name = PRODUCT.packageName; pkg.productName = PRODUCT.name; pkg.description = `${PRODUCT.name} — local workspace for macOS`
+pkg.name = PRODUCT.packageName; pkg.productName = PRODUCT.name; pkg.description = `${PRODUCT.name} — local workspace for macOS and Windows`
 pkg.license = PRODUCT.license
 pkg.repository = { type: 'git', url: `git+${PRODUCT.repositoryUrl}.git` }
 write('package.json', JSON.stringify(pkg, null, 2) + '\n')

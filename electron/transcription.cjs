@@ -5,9 +5,10 @@ const { execFile } = require('node:child_process')
 const { promisify } = require('node:util')
 const runFile = promisify(execFile)
 const formats = { 'audio/webm': 'matroska', 'audio/mp4': 'mov', 'audio/ogg': 'ogg', 'audio/wav': 'wav', 'audio/x-wav': 'wav', 'audio/mpeg': 'mp3', 'audio/flac': 'flac' }
-async function executable(name) {
-  for (const directory of ['/opt/homebrew/bin', '/usr/local/bin']) {
-    const file = path.join(directory, name)
+async function executable(name, { platform = process.platform, env = process.env } = {}) {
+  const locations = [...(env.PATH || '').split(path.delimiter), ...(platform === 'darwin' ? ['/opt/homebrew/bin', '/usr/local/bin'] : [])].filter(Boolean)
+  for (const directory of locations) {
+    const file = path.join(directory, name + (platform === 'win32' ? '.exe' : ''))
     try { await fs.access(file, require('node:fs').constants.X_OK); return file } catch { /* Try next installation. */ }
   }
   throw new Error(`LOCAL_TRANSCRIPTION_RUNTIME:${name}`)
@@ -29,4 +30,4 @@ function createTranscriber({ run = runFile, findExecutable = executable, tempRoo
     } finally { await fs.rm(directory, { recursive: true, force: true }) }
   }
 }
-module.exports = { createTranscriber }
+module.exports = { createTranscriber, executable }

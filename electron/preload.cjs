@@ -1,6 +1,8 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('api', {
+  platform: process.platform,
+  runtimeInfo: () => ipcRenderer.invoke('np:runtimeInfo'),
   loadMeta: () => ipcRenderer.invoke('np:loadMeta'),
   saveMeta: (meta, base) => ipcRenderer.invoke('np:saveMeta', meta, base),
   saveMetaDelta: (request) => ipcRenderer.invoke('np:saveMetaDelta', request),

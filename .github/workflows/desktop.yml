@@ -1,0 +1,72 @@
+name: Desktop verification
+on:
+  push:
+    branches: [main, 'codex/windows-support']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build:agent
+      - run: npm test
+        env:
+          TEST_JOBS: '2'
+  windows-package:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          dotnet-version: '8.0.x'
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+        with:
+          arch: x64
+      - run: npm ci
+      - name: Build Windows installer (unsigned validation artifact)
+        run: npm run dist:win
+      - name: Verify the real installed application
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem release/*-Setup-*-win-x64.exe | Select-Object -First 1
+          if (!$setup) { throw 'Installer not found' }
+          node scripts/check-package.mjs "--installer=$($setup.FullName)"
+      - name: Compute checksums
+        shell: pwsh
+        run: |
+          Get-ChildItem release/*-Setup-*-win-x64.exe | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+            "$hash  $($_.Name)" | Out-File release/SHA256SUMS -Encoding ascii
+          }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: windows-validation-unsigned-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            release/*-Setup-*-win-x64.exe
+            release/SHA256SUMS
+            .artifacts/package-check/

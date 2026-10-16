@@ -73,7 +73,7 @@ function dataDir(env, flags) {
   if (flags['data-dir']) return path.resolve(String(flags['data-dir']))
   if (env.WORKSPACE_DATA_DIR) return path.resolve(env.WORKSPACE_DATA_DIR)
   if (env.WORKSPACE_USER_DATA) return path.join(path.resolve(env.WORKSPACE_USER_DATA), 'data')
-  return path.join(require('./brand.cjs').userDataPath(path.join(os.homedir(), 'Library', 'Application Support')), 'data')
+  return path.join(require('./brand.cjs').userDataPath(require('./platform.cjs').appDataRoot({ env })), 'data')
 }
 
 function connection(env, flags) {

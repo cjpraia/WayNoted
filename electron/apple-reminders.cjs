@@ -29,7 +29,7 @@ function reminderFields(input) {
   return out
 }
 
-function createRemindersService({ run = runHelper, available = helperAvailable } = {}) {
+function createRemindersService({ run = runHelper, available = () => process.platform === 'darwin' ? helperAvailable() : { available: false, reason: 'APPLE_INTEGRATION_UNSUPPORTED' } } = {}) {
   return {
     async status() {
       const availability = available()

@@ -36,6 +36,8 @@ To rebuild and launch the app, run `./scripts/launch.command`. The bundle is cre
 | [Distribution](docs/DISTRIBUTION.md) | Builds, signing, and updates |
 | [Licensing](docs/LICENSING.md) | Project license and third-party notices |
 
+Windows distribution is planned; it is not yet available. See the [Windows distribution plan](docs/DISTRIBUTION.md#windows-distribution-plan) for scope, implementation milestones, and release gates.
+
 ## Contributing
 
 **Pull requests are welcome.** Bug reports, fixes, documentation improvements, translations, and accessibility improvements are all useful. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, checks, and the pull request process. Please write public issues, pull requests, and documentation in English.

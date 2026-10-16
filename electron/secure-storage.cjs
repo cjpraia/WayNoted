@@ -90,7 +90,7 @@ async function hardenPermissions(root) {
 
 /** Reads (or, when `create`, creates) the Keychain-protected random key. The ONLY place that touches the Keychain at startup, and only in keychain/legacy modes. */
 async function loadDeviceKey(root, safeStorage, { create = false } = {}) {
-  if (!safeStorage?.isEncryptionAvailable?.()) throw coded('KEYCHAIN_UNAVAILABLE', `Desbloqueie o Keychain do macOS e abra o ${PRODUCT.name} novamente. Nenhum dado foi alterado.`, `Unlock the macOS Keychain and reopen ${PRODUCT.name}. No data was changed.`)
+  if (!safeStorage?.isEncryptionAvailable?.()) throw coded('KEYCHAIN_UNAVAILABLE', `Desbloqueie o Keychain do macOS e abra o ${PRODUCT.name} novamente. Nenhum dado foi alterado.`, process.platform === 'win32' ? `Windows could not access the device key. Sign in with the original Windows account and reopen ${PRODUCT.name}. No data was changed.` : `Unlock the macOS Keychain and reopen ${PRODUCT.name}. No data was changed.`)
   const keyFile = path.join(root, KEY_FILE)
   let raw
   try { raw = await fs.readFile(keyFile) }

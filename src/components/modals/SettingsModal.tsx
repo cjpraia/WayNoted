@@ -215,7 +215,7 @@ export function SettingsModal() {
               <>
                 <h2 className="st-h">{t('Aparência', 'Appearance')}</h2>
                 <div className="st-label">{t('Tema', 'Theme')}</div>
-                <div className="st-hint st-mb">{t(`Escolha como o ${PRODUCT.name} deve aparecer neste Mac.`, `Choose how ${PRODUCT.name} appears on this Mac.`)}</div>
+                <div className="st-hint st-mb">{t(`Escolha como o ${PRODUCT.name} deve aparecer neste computador.`, `Choose how ${PRODUCT.name} appears on this computer.`)}</div>
                 <div className="st-themes" role="radiogroup" aria-label={t('Tema', 'Theme')}>
                   {THEMES().map((t) => (
                     <button
@@ -252,11 +252,11 @@ export function SettingsModal() {
               <>
                 <h2 className="st-h">{t('Dados', 'Data')}</h2>
                 <p className="st-p">
-                  {window.api ? t('Suas páginas e arquivos ficam neste Mac.', 'Your pages and files stay on this Mac.') : t('Nesta prévia, suas páginas ficam no armazenamento local deste navegador.', 'In this preview, your pages stay in this browser’s local storage.')} {t('Nada sai deste computador a menos que você ative um provedor de IA em nuvem (Configurações → IA); nesse caso, só o que você enviar a ele.', 'Nothing leaves this computer unless you turn on a cloud AI provider (Settings → AI); in that case, only what you send to it.')}
+                  {window.api ? t('Suas páginas e arquivos ficam neste computador.', 'Your pages and files stay on this computer.') : t('Nesta prévia, suas páginas ficam no armazenamento local deste navegador.', 'In this preview, your pages stay in this browser’s local storage.')} {t('Nada sai deste computador a menos que você ative um provedor de IA em nuvem (Configurações → IA); nesse caso, só o que você enviar a ele.', 'Nothing leaves this computer unless you turn on a cloud AI provider (Settings → AI); in that case, only what you send to it.')}
                 </p>
                 {feedback && <p role={feedback.error ? 'alert' : 'status'} className={`st-feedback${feedback.error ? ' is-error' : ''}`}>{feedback.text}</p>}
                 <SettingsCard title={t('Seus dados', 'Your data')} subtitle={t('Onde ficam e como são protegidos.', 'Where they live and how they are protected.')}>
-                {security && <div className="st-row st-row-col"><span className="st-label">{t('Proteção dos arquivos', 'File protection')}</span><span className="st-hint">{security.deviceCipher === 'none' || !security.deviceCipher ? t('Por padrão os dados ficam no seu Mac em arquivos locais (só o seu usuário lê). Para cifrá-los, ative a senha do espaço em Segurança e privacidade. Backups exportados manualmente são portáveis e não criptografados.', 'By default your data stays on your Mac in local files (readable only by your user). To encrypt it, turn on the workspace password in Security & privacy. Manually exported backups are portable and unencrypted.') : t('Arquivos cifrados com AES-256-GCM e chave guardada no Keychain (opção ativada em Segurança e privacidade). Backups exportados manualmente são portáveis e não criptografados.', 'Files are encrypted with AES-256-GCM and a key kept in the Keychain (option turned on in Security & privacy). Manually exported backups are portable and unencrypted.')}</span></div>}
+                {security && <div className="st-row st-row-col"><span className="st-label">{t('Proteção dos arquivos', 'File protection')}</span><span className="st-hint">{security.deviceCipher === 'none' || !security.deviceCipher ? t('Por padrão os dados ficam no seu computador em arquivos locais (só o seu usuário lê). Para cifrá-los, ative a senha do espaço em Segurança e privacidade. Backups exportados manualmente são portáveis e não criptografados.', 'By default your data stays on your computer in local files (readable only by your user). To encrypt it, turn on the workspace password in Security & privacy. Manually exported backups are portable and unencrypted.') : t('Arquivos cifrados com AES-256-GCM e chave protegida pelo sistema operacional (opção ativada em Segurança e privacidade). Backups exportados manualmente são portáveis e não criptografados.', 'Files are encrypted with AES-256-GCM and a key protected by the operating system (option turned on in Security & privacy). Manually exported backups are portable and unencrypted.')}</span></div>}
                 <div className="st-row st-row-between">
                   <div><div className="st-label">{t("Importar do Markdown Vault", "Import from Markdown Vault")}</div><div className="st-hint">{t('Escolha a pasta do vault: notas viram páginas hierárquicas, [[links]] são ligados, anexos copiados e o front-matter vira tabela de propriedades.', 'Choose the vault folder: notes become nested pages, [[links]] are connected, attachments copied, and front-matter becomes a properties table.')}</div></div>
                   <Button disabled={busy} onClick={() => { close(); window.dispatchEvent(new Event(COMPAT.record034)) }}><Upload size={14} aria-hidden /> {t("Importar do Markdown Vault…", "Import from Markdown Vault…")}</Button>
@@ -328,15 +328,15 @@ export function SettingsModal() {
                   <Button disabled={busy} onClick={() => { close(); window.dispatchEvent(new Event(COMPAT.record033)) }}><Upload size={14} aria-hidden /> {t("Importar do Export Bundle…", "Import from Export Bundle…")}</Button>
                 </div>
                 </SettingsCard>
-                <SettingsCard title={t('Integrações locais', 'Local integrations')} subtitle={t('Programas deste Mac que podem ler suas páginas.', 'Programs on this Mac that can read your pages.')}>
+                <SettingsCard title={t('Integrações locais', 'Local integrations')} subtitle={t('Programas deste computador que podem ler suas páginas.', 'Programs on this computer that can read your pages.')}>
                 {api.localApiInfo && <div className="st-row st-row-col">
                   <label className="st-label"><input type="checkbox" checked={settings.localApiEnabled ?? false} onChange={e => actions.updateSettings({ localApiEnabled: e.target.checked })} /> {t('API local para integrações', 'Local API for integrations')}</label>
-                  <span className="st-hint">{t('Acessível somente neste Mac, com token. Permite ler e editar páginas por programas locais.', 'Available only on this Mac, with a token. Allows local programs to read and edit pages.')}</span>
+                  <span className="st-hint">{t('Acessível somente neste computador, com token. Permite ler e editar páginas por programas locais.', 'Available only on this computer, with a token. Allows local programs to read and edit pages.')}</span>
                   {integration?.enabled && <><code>{integration.url}/v1/pages</code><Button disabled={!api.copyLocalApiToken || busy} onClick={() => void perform(async () => { await api.copyLocalApiToken!(); return t('Token copiado.', 'Token copied.') })}>{t('Copiar token da API', 'Copy API token')}</Button></>}
                 </div>}
                 {api.webhookStatus && <div className="st-row st-row-col st-row-stack">
                   <div className="st-label">{t('Webhooks locais', 'Local webhooks')}</div>
-                  <span className="st-hint">{t('Envia eventos assinados para programas neste Mac. Somente http://127.0.0.1 com porta; sem endereços externos.', 'Sends signed events to programs on this Mac. Only http://127.0.0.1 with a port; no external addresses.')}</span>
+                  <span className="st-hint">{t('Envia eventos assinados para programas neste computador. Somente http://127.0.0.1 com porta; sem endereços externos.', 'Sends signed events to programs on this computer. Only http://127.0.0.1 with a port; no external addresses.')}</span>
                   {(settings.webhooks ?? []).map(hook => <div key={hook.id} className="st-webhook"><label><input type="checkbox" checked={hook.enabled} onChange={e => actions.updateSettings({ webhooks: settings.webhooks!.map(item => item.id === hook.id ? { ...item, enabled: e.target.checked } : item) })}/>{hook.url}</label><Button onClick={() => void perform(async () => { if (api.copyText) await api.copyText(hook.secret); else await navigator.clipboard.writeText(hook.secret); return t('Segredo copiado.', 'Secret copied.') })}>{t('Copiar segredo', 'Copy secret')}</Button><Button onClick={() => actions.updateSettings({ webhooks: settings.webhooks!.filter(item => item.id !== hook.id) })}>{t('Remover', 'Remove')}</Button><span className="st-hint">{hookStatus.filter(item => item.hookId === hook.id).at(-1)?.error ?? t('Entrega local com repetição em caso de falha.', 'Local delivery with retry on failure.')}</span></div>)}
                   <input className="st-input" value={hookUrl} onChange={e => setHookUrl(e.target.value)} placeholder="http://127.0.0.1:8000/events" aria-label={t('Endereço do webhook local', 'Local webhook address')} />
                   <Button disabled={!hookUrl.trim() || (settings.webhooks?.length ?? 0) >= 10} onClick={() => {
@@ -413,7 +413,7 @@ export function SettingsModal() {
                 <div className="st-about">
                   <Logo size={36} className="st-about-name" />
                   <div className="st-hint">{t('Versão 1.0.0', 'Version 1.0.0')}</div>
-                  <p className="st-p">{t('App de notas local para macOS', 'Local notes app for macOS')}</p>
+                  <p className="st-p">{t('App de notas local para macOS e Windows', 'Local notes app for macOS and Windows')}</p>
                   <Button onClick={() => setShowNotices(true)}>{t('Avisos de terceiros e licenças', 'Third-party notices and licenses')}</Button>
                 </div>
                 <UpdateCheck />

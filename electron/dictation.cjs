@@ -76,6 +76,7 @@ function createDictationService({ spawnImpl = spawn, run = runHelper, available 
 
 function defaultMicrophone() {
   return async () => {
+    if (process.platform === 'win32') return true
     const { systemPreferences } = require('electron')
     if (!systemPreferences?.getMediaAccessStatus) return true
     const status = systemPreferences.getMediaAccessStatus('microphone')

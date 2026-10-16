@@ -87,7 +87,7 @@ test('dictation service streams helper events, stops via stdin and refuses denie
 test('packaging embeds the helper, permission strings and the ad-hoc signing step', () => {
   const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'))
   assert.match(pkg.scripts.dist, /npm run build:native/)
-  assert.match(fs.readFileSync('build/package.mjs', 'utf8'), /build\/native\/workspace-native/)
+  assert.match(fs.readFileSync('build/package.mjs', 'utf8'), /extraResource: \[nativeFile/)
   assert.match(fs.readFileSync('build/package.mjs', 'utf8'), /build\/sign-app\.mjs/)
   const plist = fs.readFileSync('build/app-info.plist', 'utf8')
   for (const key of ['NSMicrophoneUsageDescription', 'NSSpeechRecognitionUsageDescription', 'NSCalendarsFullAccessUsageDescription']) assert.ok(plist.includes(`<key>${key}</key>`), key)

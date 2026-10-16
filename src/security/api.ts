@@ -16,6 +16,7 @@ export interface VaultStatus {
   algorithm: string
   kdf: string | null
   touchIdAvailable: boolean
+  biometricKind?: 'windowsHello' | 'touchId'
   pages: { settings: { relockMinutes: number } | null; roots: ProtectedRoot[] } | null
 }
 export interface SecurityApi {

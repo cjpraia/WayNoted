@@ -95,7 +95,7 @@ test('main process wires quick capture, tray, focus menu and keeps running witho
   const source = require('node:fs').readFileSync(require('node:path').join(__dirname, '../electron/main.cjs'), 'utf8')
   assert.match(source, /createQuickCapture\(/); assert.match(source, /createTray\(/)
   assert.match(source, /accelerator: accel\('focus', 'CmdOrCtrl\+Shift\+F'\), click: \(\) => sendCommand\('focus-mode'\)/)
-  assert.match(source, /if \(process\.platform !== 'darwin'\) app\.quit\(\)/)
+  assert.match(source, /process\.platform !== 'darwin' && !tray\.isVisible/)
   assert.match(source, /quickCapture\.handleUrl/)
   assert.ok(UUID.test('11111111-1111-4111-8111-111111111111'))
 })

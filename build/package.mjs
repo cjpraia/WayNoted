@@ -6,15 +6,30 @@ import PRODUCT from '../shared/product.json' with { type: 'json' }
 import COMPAT from '../shared/compatibility.mjs'
 const test = process.argv.includes('--test')
 const out = test ? 'release-test' : 'release'
+const argument = name => process.argv.find(value => value.startsWith(`--${name}=`))?.split('=')[1]
+const platform = argument('platform') || process.platform
+const arch = argument('arch') || process.arch
+if (!['darwin', 'win32'].includes(platform) || !['arm64', 'x64'].includes(arch)) throw new Error('Unsupported package target')
+if (platform === 'win32' && process.platform !== 'win32') throw new Error('Build Windows packages on Windows, including the native helper and CLI launcher.')
+if (platform === 'win32') await import('./build-windows-icon.mjs')
+const nativeDirectory = platform === 'win32' ? path.join('build', 'native', 'win32-' + arch) : path.join('build', 'native')
+const nativeFile = path.join(nativeDirectory, platform === 'win32' ? 'workspace-native.exe' : 'workspace-native')
+if (!fs.existsSync(nativeFile)) throw new Error('Native helper missing; run npm run build:native for the target architecture.')
 const paths = await packager({
   dir: '.', name: PRODUCT.executable, executableName: PRODUCT.executable,
-  platform: 'darwin', arch: 'arm64', out, overwrite: true, icon: 'build/icon.icns', prune: false,
-  appBundleId: PRODUCT.bundleId + (test ? '.test' : ''), extendInfo: 'build/app-info.plist',
+  platform, arch, out, overwrite: true, icon: platform === 'win32' ? 'build/icon.ico' : 'build/icon.icns', prune: false,
+  ...(platform === 'darwin' ? { appBundleId: PRODUCT.bundleId + (test ? '.test' : ''), extendInfo: 'build/app-info.plist' } : {}),
   protocols: [{ name: PRODUCT.name, schemes: [PRODUCT.protocol, COMPAT.previousProtocol, ...(PRODUCT.protocolAliases ?? [])] }],
-  extraResource: ['build/native/workspace-native', 'build/bin'],
+  extraResource: [nativeFile, platform === 'win32' ? path.join(nativeDirectory, 'bin') : 'build/bin'],
   ignore: /^\/(src|docs|tests|release|release-test|build|native|node_modules|\.artifacts|\.git|\.claude|tsconfig\.json|vite\.config\.ts|index\.html|package-lock\.json|\.gitignore)($|\/)/,
 })
 for (const directory of paths) {
+  if (platform === 'win32') {
+    const { build, Platform, Arch } = await import('electron-builder')
+    const { windowsConfig } = await import('./windows-config.mjs')
+    await build({ prepackaged: directory, targets: Platform.WINDOWS.createTarget(['nsis'], arch === 'arm64' ? Arch.arm64 : Arch.x64), config: windowsConfig({ arch, test }) })
+    continue
+  }
   const app = directory.endsWith('.app') ? directory : path.join(directory, PRODUCT.executable + '.app')
   const plist = `${app}/Contents/Info.plist`
   // Electron checks its default Helper paths before the public CFBundleName.

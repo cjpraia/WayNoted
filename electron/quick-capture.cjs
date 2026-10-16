@@ -66,12 +66,11 @@ function createQuickCapture(deps) {
     win = new BrowserWindow({
       width: WIDTH, height: HEIGHT, show: false, frame: false, resizable: false, minimizable: false, maximizable: false, fullscreenable: false,
       // NSPanel não ativa o app: o foco volta sozinho para o app anterior ao fechar (como Spotlight/Raycast).
-      type: 'panel', alwaysOnTop: true, skipTaskbar: true, hasShadow: true, roundedCorners: true,
-      transparent: true, backgroundColor: '#00000000', vibrancy: 'popover', visualEffectState: 'active',
+      ...require('./platform.cjs').quickChrome(), alwaysOnTop: true, skipTaskbar: true, hasShadow: true, roundedCorners: true,
       title: `${PRODUCT.name}`, webPreferences: { preload: path.join(__dirname, 'quick-preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: true },
     })
     win.setAlwaysOnTop(true, 'floating')
-    win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true })
+    if (process.platform === 'darwin') win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true })
     // Durante o pedido de microfone do macOS a janela perde o foco sem que o usuário tenha saído.
     win.on('blur', () => { if (!saving && !dictationPending && win?.isVisible() && !win.webContents.isDevToolsOpened()) hide() })
     win.on('close', event => { if (!deps.quitting()) { event.preventDefault(); hide() } })

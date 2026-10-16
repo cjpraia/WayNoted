@@ -1,0 +1,14 @@
+import PRODUCT from '../shared/product.json' with { type: 'json' }
+import COMPAT from '../shared/compatibility.mjs'
+export function windowsConfig({ arch = 'x64', test = false, signed = process.env.WORKSPACE_REQUIRE_SIGNING === '1' } = {}) {
+  if (!['x64', 'arm64'].includes(arch)) throw new Error('Unsupported Windows architecture')
+  return {
+    appId: PRODUCT.bundleId + (test ? '.test' : ''), productName: PRODUCT.name, executableName: PRODUCT.executable,
+    directories: { output: test ? 'release-test' : 'release', buildResources: 'build' },
+    artifactName: `${PRODUCT.name}-Setup-\${version}-win-${arch}.exe`,
+    protocols: [{ name: PRODUCT.name, schemes: [PRODUCT.protocol, COMPAT.previousProtocol, ...(PRODUCT.protocolAliases ?? [])] }],
+    win: { target: [{ target: 'nsis', arch: [arch] }], icon: 'build/icon.ico', forceCodeSigning: signed, requestedExecutionLevel: 'asInvoker', signAndEditExecutable: true, verifyUpdateCodeSignature: true },
+    nsis: { guid: 'e2ee0589-6729-419e-9ca9-728f4a5de48d', oneClick: false, perMachine: false, allowElevation: false, allowToChangeInstallationDirectory: true, createDesktopShortcut: false, createStartMenuShortcut: true, shortcutName: PRODUCT.name, uninstallDisplayName: PRODUCT.name, deleteAppDataOnUninstall: false, include: 'build/windows-installer.nsh', license: 'LICENSE', runAfterFinish: false },
+    publish: null,
+  }
+}

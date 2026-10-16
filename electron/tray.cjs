@@ -26,7 +26,7 @@ function trayBitmap(size) {
     let hits = 0
     for (let sy = 0; sy < N; sy++) for (let sx = 0; sx < N; sx++) if (covered((x + (sx + 0.5) / N) / s, (y + (sy + 0.5) / N) / s)) hits++
     const alpha = Math.round((hits / (N * N)) * 255), i = (y * size + x) * 4
-    buffer[i] = 0; buffer[i + 1] = 0; buffer[i + 2] = 0; buffer[i + 3] = alpha
+    buffer[i] = process.platform === 'win32' ? 180 : 0; buffer[i + 1] = process.platform === 'win32' ? 120 : 0; buffer[i + 2] = process.platform === 'win32' ? 60 : 0; buffer[i + 3] = alpha
   }
   return buffer
 }
@@ -35,7 +35,7 @@ function trayImage(el = electron) {
   const { nativeImage } = el
   const image = nativeImage.createFromBitmap(trayBitmap(16), { width: 16, height: 16, scaleFactor: 1 })
   image.addRepresentation({ scaleFactor: 2, width: 32, height: 32, buffer: trayBitmap(32) })
-  image.setTemplateImage(true)
+  if (process.platform === 'darwin') image.setTemplateImage(true)
   return image
 }
 

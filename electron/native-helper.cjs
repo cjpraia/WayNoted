@@ -4,7 +4,7 @@ const path = require('node:path')
 const fs = require('node:fs')
 const { spawn } = require('node:child_process')
 
-const HELPER_NAME = "workspace-native"
+const HELPER_NAME = process.platform === 'win32' ? "workspace-native.exe" : "workspace-native"
 
 function runtimeInfo() {
   try {
@@ -15,7 +15,7 @@ function runtimeInfo() {
 
 function helperPath({ isPackaged, resourcesPath } = runtimeInfo()) {
   if (process.env.WORKSPACE_NATIVE_HELPER) return process.env.WORKSPACE_NATIVE_HELPER
-  return isPackaged && resourcesPath ? path.join(resourcesPath, HELPER_NAME) : path.join(__dirname, '..', 'build', 'native', HELPER_NAME)
+  return isPackaged && resourcesPath ? path.join(resourcesPath, HELPER_NAME) : path.join(__dirname, '..', 'build', 'native', ...(process.platform === 'win32' ? ['win32-' + process.arch] : []), HELPER_NAME)
 }
 
 function nativeError(code, message) {
@@ -25,7 +25,7 @@ function nativeError(code, message) {
 }
 
 function helperAvailable(file = helperPath(), platform = process.platform) {
-  if (platform !== 'darwin') return { available: false, reason: 'NATIVE_UNSUPPORTED' }
+  if (!['darwin', 'win32'].includes(platform)) return { available: false, reason: 'NATIVE_UNSUPPORTED' }
   try { fs.accessSync(file, fs.constants.X_OK); return { available: true } } catch { return { available: false, reason: 'NATIVE_HELPER_MISSING' } }
 }
 
@@ -69,8 +69,10 @@ const PRIVACY_PANES = {
 }
 
 /** Abre um painel conhecido dos Ajustes do Sistema (lista fechada); `allowed` restringe ainda mais (janela rápida). */
-function openPrivacyPane(pane, open = url => require('electron').shell.openExternal(url), allowed) {
-  const url = Object.hasOwn(PRIVACY_PANES, pane) && (!allowed || allowed.includes(pane)) ? PRIVACY_PANES[pane] : null
+const WINDOWS_PRIVACY_PANES = { microphone: 'ms-settings:privacy-microphone', speech: 'ms-settings:privacy-speech', dictation: 'ms-settings:speech', calendars: 'ms-settings:privacy-calendar', reminders: 'ms-settings:privacy-tasks', automation: 'ms-settings:privacy' }
+function openPrivacyPane(pane, open = url => require('electron').shell.openExternal(url), allowed, platform = process.platform) {
+  const panes = platform === 'win32' ? WINDOWS_PRIVACY_PANES : PRIVACY_PANES
+  const url = Object.hasOwn(panes, pane) && (!allowed || allowed.includes(pane)) ? panes[pane] : null
   if (!url) throw new Error('Painel inválido')
   return open(url)
 }
@@ -79,4 +81,4 @@ function registerPrivacySettingsIpc(trustedHandler, open = url => require('elect
   trustedHandler('np:openPrivacySettings', (_event, pane) => openPrivacyPane(pane, open))
 }
 
-module.exports = { helperPath, helperAvailable, runHelper, nativeError, registerPrivacySettingsIpc, openPrivacyPane, PRIVACY_PANES, HELPER_NAME }
+module.exports = { helperPath, helperAvailable, runHelper, nativeError, registerPrivacySettingsIpc, openPrivacyPane, PRIVACY_PANES, WINDOWS_PRIVACY_PANES, HELPER_NAME }

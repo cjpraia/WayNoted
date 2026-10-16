@@ -72,7 +72,7 @@ export function UnlockScreen({ status, onUnlocked }: { status: VaultStatus; onUn
         </div>
         {mode === 'password' && <HintReveal hint={status.hint} shown={showHint} onShow={() => setShowHint(true)} label={tr('Mostrar dica', 'Show hint')} title={tr('Dica de senha', 'Password hint')} />}
         <div className="sec-row">
-          {touchId && mode === 'password' && <Button variant="ghost" type="button" disabled={busy} onClick={() => void run(() => api.vaultUnlockTouchID())}><Fingerprint size={16} aria-hidden /> {tr('Usar Touch ID', 'Use Touch ID')}</Button>}
+          {touchId && mode === 'password' && <Button variant="ghost" type="button" disabled={busy} onClick={() => void run(() => api.vaultUnlockTouchID())}><Fingerprint size={16} aria-hidden /> {status.biometricKind === 'windowsHello' ? tr('Usar Windows Hello', 'Use Windows Hello') : tr('Usar Touch ID', 'Use Touch ID')}</Button>}
           <Button variant="ghost" type="button" disabled={busy} onClick={() => { setError(''); setMode(mode === 'password' ? 'recovery' : 'password') }}>
             <KeyRound size={16} aria-hidden /> {mode === 'password' ? tr('Esqueci a senha', 'Forgot password') : tr('Voltar à senha', 'Back to password')}
           </Button>
