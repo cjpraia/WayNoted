@@ -177,9 +177,9 @@ try {
     assert.ok(JSON.parse(response.stdout))
     check('Custom installation path with spaces and Unicode survives reinstall')
     await application.close(); application = undefined
-    await uninstall()
-    await run(path.resolve(installer), ['/S'], { timeout: 180000, windowsHide: true })
-    appPath = standardApp
+    // Keep testing the installed custom path. An uninstaller may launch its
+    // cleanup process asynchronously; immediately reinstalling elsewhere races
+    // the previous InstallLocation registry cleanup.
   }
   if (portableBackup) {
     const fixture = JSON.parse(await fs.readFile(path.join(portableBackup, 'fixture.json'), 'utf8'))
@@ -204,5 +204,6 @@ try {
     check('macOS backup restores databases, Unicode, workspace password and protected pages on Windows', { sourcePlatform: fixture.platform })
     await application.close(); application = undefined
   }
+  if (installer && process.platform === 'win32') await uninstall()
 } catch (error) { result.error = error.stack; if (application) { const pages = await application.windows(); if (pages[0]) { await pages[0].screenshot({ path: path.join(artifacts, 'failure.png') }).catch(() => {}); await fs.writeFile(path.join(artifacts, 'failure.html'), await pages[0].content()).catch(() => {}) } }; throw error }
 finally { if (application) await application.close().catch(() => {}); await fs.writeFile(path.join(artifacts, 'results.json'), JSON.stringify(result, null, 2)); await fs.rm(directory, { recursive: true, force: true }).catch(() => {}) }
