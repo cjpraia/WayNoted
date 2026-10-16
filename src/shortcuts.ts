@@ -227,6 +227,7 @@ const KEY_ALIASES: Record<string, string> = { 'espaço': 'space', ' ': 'space', 
 
 /** ‘⌘⇧N’ → modificadores + tecla normalizada; null se não houver tecla. */
 export function parseCombo(combo: string): ParsedCombo | null {
+  combo = combo.replace(/^(?:(?:Ctrl|Control|Alt|Shift|Meta|Cmd)\+)+/, modifiers => modifiers.replace(/(?:Ctrl|Control)\+/g, isMacPlatform() ? '⌃' : '⌘').replace(/Alt\+/g, '⌥').replace(/Shift\+/g, '⇧').replace(/(?:Meta|Cmd)\+/g, '⌘'))
   const out: ParsedCombo = { mod: false, ctrl: false, alt: false, shift: false, key: '' }
   let rest = combo
   for (; rest; rest = rest.slice(1)) {

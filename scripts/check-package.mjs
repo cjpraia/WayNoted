@@ -48,8 +48,8 @@ try {
   }
   await page.keyboard.press(process.platform === 'darwin' ? 'Meta+n' : 'Control+n')
   const title = page.locator('textarea.pg-title'); await title.waitFor({ state: 'visible', timeout: 30000 })
-  await title.fill('Windows package persistence check')
-  const editor = page.locator('[contenteditable="true"]').first(); await editor.click(); await page.keyboard.type('Persistent content from the installed Windows application.')
+  await title.fill('Windows package persistence check'); await title.press('End'); await title.press('Enter')
+  const editor = page.locator('[contenteditable="true"]:visible').first(); await editor.click(); await page.keyboard.type('Persistent content from the installed Windows application.')
   await eventually(async () => JSON.stringify(await request('/v1/pages')).includes('Windows package persistence check'))
   check('Keyboard creates a page and persists its title')
   await page.evaluate(() => window.api.copyText('Windows clipboard check'))
@@ -95,5 +95,5 @@ try {
       await application.close(); application = undefined
     } finally { await fs.rm(sentinel, { force: true }) }
   }
-} catch (error) { result.error = error.stack; throw error }
+} catch (error) { result.error = error.stack; if (application) { const pages = await application.windows(); if (pages[0]) { await pages[0].screenshot({ path: path.join(artifacts, 'failure.png') }).catch(() => {}); await fs.writeFile(path.join(artifacts, 'failure.html'), await pages[0].content()).catch(() => {}) } }; throw error }
 finally { if (application) await application.close().catch(() => {}); await fs.writeFile(path.join(artifacts, 'results.json'), JSON.stringify(result, null, 2)); await fs.rm(directory, { recursive: true, force: true }).catch(() => {}) }

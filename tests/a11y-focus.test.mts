@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 // Acessibilidade — foco visível: cada `outline: none/0` dos CSS tem anel equivalente (src/styles/a11y.css, `!important`)
 // ou está numa exceção documentada. Também: `lang` dinâmico e skip link. docs/USAGE.md
 import test from 'node:test'
@@ -6,7 +7,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { htmlLang, syncDocumentLang } from '../src/a11y/lang.ts'
 
-const ROOT = new URL('..', import.meta.url).pathname
+const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const a11yCss = readFileSync(join(ROOT, 'src/styles/a11y.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
 
 /** Campos de título / texto livre em que o cursor de texto é o indicador de foco (exceção documentada). */
@@ -27,7 +28,7 @@ function outlineNoneRules() {
   for (const file of cssFiles(join(ROOT, 'src'))) {
     const css = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
     for (const match of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
-      if (/outline\s*:\s*(none|0)\b/.test(match[2])) found.push({ file: relative(ROOT, file), selector: match[1].trim().replace(/\s+/g, ' ') })
+      if (/outline\s*:\s*(none|0)\b/.test(match[2])) found.push({ file: relative(ROOT, file).replace(/\\/g, '/'), selector: match[1].trim().replace(/\s+/g, ' ') })
     }
   }
   return found
@@ -62,7 +63,7 @@ test('todo `outline: none/0` é campo de título (exceção), contêiner de foco
 
 test('nenhum CSS reintroduz `outline: none !important` (derrotaria o anel global)', () => {
   for (const file of cssFiles(join(ROOT, 'src'))) {
-    assert.ok(!/outline\s*:\s*(none|0)\s*!important/.test(readFileSync(file, 'utf8')), `${relative(ROOT, file)} usa outline none !important`)
+    assert.ok(!/outline\s*:\s*(none|0)\s*!important/.test(readFileSync(file, 'utf8')), `${relative(ROOT, file).replace(/\\/g, '/')} usa outline none !important`)
   }
 })
 

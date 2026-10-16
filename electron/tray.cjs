@@ -5,7 +5,7 @@ const { badgeTitle } = require('./tray-tasks.cjs')
 
 /** Rasteriza o ícone da marca (ladrilho com sol nascente sobre o horizonte; docs/DEVELOPMENT.md) em BGRA,
  *  monocromático (template do macOS), com antisserrilhamento por supersampling. Coordenadas em pontos de 16×16. */
-function trayBitmap(size) {
+function trayBitmap(size, platform = process.platform) {
   const s = size / 16, buffer = Buffer.alloc(size * size * 4)
   // Distância até o contorno de um retângulo arredondado (positiva fora, negativa dentro).
   const roundRect = (px, py, cx, cy, hw, hh, r) => {
@@ -26,7 +26,7 @@ function trayBitmap(size) {
     let hits = 0
     for (let sy = 0; sy < N; sy++) for (let sx = 0; sx < N; sx++) if (covered((x + (sx + 0.5) / N) / s, (y + (sy + 0.5) / N) / s)) hits++
     const alpha = Math.round((hits / (N * N)) * 255), i = (y * size + x) * 4
-    buffer[i] = process.platform === 'win32' ? 180 : 0; buffer[i + 1] = process.platform === 'win32' ? 120 : 0; buffer[i + 2] = process.platform === 'win32' ? 60 : 0; buffer[i + 3] = alpha
+    buffer[i] = platform === 'win32' ? 180 : 0; buffer[i + 1] = platform === 'win32' ? 120 : 0; buffer[i + 2] = platform === 'win32' ? 60 : 0; buffer[i + 3] = alpha
   }
   return buffer
 }

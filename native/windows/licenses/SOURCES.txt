@@ -1,0 +1,9 @@
+.NET runtime and System.Speech:
+https://github.com/dotnet/runtime/tree/v8.0.0
+Original license and third-party notice files are preserved verbatim.
+
+C#/WinRT:
+https://github.com/microsoft/CsWinRT/tree/c28d756c4f042cf573d269c6ac39de05087e86c8
+Original MIT license is preserved verbatim.
+
+The app's own code remains under the root LICENSE. These third-party components retain their own licenses.

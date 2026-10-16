@@ -77,14 +77,15 @@ export function newId(): string {
 
 /** Nome de arquivo legível e portátil (macOS, Windows, Linux). */
 export function safeFileName(title: string, fallback: string): string {
-  const cleaned = title
+  const cleaned = title.normalize('NFC')
     .replace(/[\u0000-\u001f\u007f]+/g, ' ')
     .replace(/[\\/:*?"<>|#%[\]^`{}]+/g, '-')
     .replace(/\s+/g, ' ')
     .replace(/^[.\s-]+|[.\s]+$/g, '')
     .trim()
   const short = [...cleaned].slice(0, 80).join('').trim()
-  return short || fallback
+  const value = short || fallback
+  return /^(con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i.test(value) ? '_' + value : value
 }
 
 export function dirname(path: string): string {

@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 // Acessibilidade — alto contraste (prefers-contrast: more), menos movimento e menos transparência em src/styles/tokens.css.
 // Pares críticos: texto AAA (7:1), ícones/bordas/anel de foco ≥ 3:1 (WCAG 1.4.11), nos dois temas. docs/USAGE.md
 import test from 'node:test'
@@ -5,7 +6,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-const ROOT = new URL('..', import.meta.url).pathname
+const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const css = readFileSync(join(ROOT, 'src/styles/tokens.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
 
 function vars(body: string): Record<string, string> {

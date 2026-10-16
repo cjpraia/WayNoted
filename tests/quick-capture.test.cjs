@@ -82,7 +82,7 @@ test('capture links and clipboard capture read text plus a browser source URL wh
 })
 
 test('tray template icon is a monochrome bitmap with transparent background', () => {
-  const bitmap = trayBitmap(32)
+  const bitmap = trayBitmap(32, 'darwin')
   assert.equal(bitmap.length, 32 * 32 * 4)
   let opaque = 0, colored = 0
   for (let i = 0; i < bitmap.length; i += 4) { if (bitmap[i + 3] > 0) opaque++; if (bitmap[i] || bitmap[i + 1] || bitmap[i + 2]) colored++ }

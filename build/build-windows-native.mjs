@@ -11,3 +11,8 @@ fs.mkdirSync(path.join(output, 'bin'), { recursive: true })
 execFileSync('dotnet', ['publish', 'native/windows/WorkspaceNative.csproj', '-c', 'Release', '-r', 'win-' + arch, '-o', output, '--self-contained', 'true'], { cwd: root, stdio: 'inherit' })
 execFileSync('cl.exe', ['/nologo', '/std:c++17', '/EHsc', '/MT', '/O2', 'native/windows/launcher.cpp', '/Fe:' + path.join(output, 'bin', 'workspace.exe'), '/Fo:' + path.join(output, 'launcher.obj')], { cwd: root, stdio: 'inherit' })
 fs.rmSync(path.join(output, 'launcher.obj'), { force: true })
+
+const licenses = path.join(output, 'native-licenses')
+fs.cpSync(path.join(root, 'native', 'windows', 'licenses'), licenses, { recursive: true })
+const assets = JSON.parse(fs.readFileSync(path.join(root, 'native', 'windows', 'obj', 'project.assets.json'), 'utf8'))
+fs.writeFileSync(path.join(licenses, 'DEPENDENCIES.json'), JSON.stringify({ framework: 'net8.0-windows10.0.19041.0', architecture: arch, packages: Object.entries(assets.libraries ?? {}).filter(([, item]) => item.type === 'package').map(([name]) => name) }, null, 2))

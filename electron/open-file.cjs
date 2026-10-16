@@ -45,7 +45,7 @@ async function writeTextAtomic(file, text, bom) {
   try {
     const handle = await fsp.open(tmp, 'wx', mode)
     try { await handle.writeFile(bytes); await handle.sync() } finally { await handle.close() }
-    await fsp.rename(tmp, file)
+    await require('./fs-retry.cjs').rename(tmp, file)
   } catch (error) { await fsp.rm(tmp, { force: true }).catch(() => {}); throw error }
   return sha(bytes)
 }

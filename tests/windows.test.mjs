@@ -84,3 +84,30 @@ test('Windows OCR uses the native helper on a temporary file and cleans it after
   assert.deepEqual(await ocr.recognize(image), { ok: true, text: 'Recognized text' })
   await assert.rejects(fs.stat(file), { code: 'ENOENT' })
 })
+
+test('Windows replacement tolerates transient sharing violations without deleting the destination', async () => {
+  const { rename } = require('../electron/fs-retry.cjs')
+  const events = []; let attempts = 0
+  await rename('temporary', 'original', { platform: 'win32', move: async (source, target) => { events.push([source, target]); if (++attempts < 3) throw Object.assign(new Error('Locked'), { code: 'EPERM' }) }, wait: async () => {} })
+  assert.equal(attempts, 3); assert.deepEqual(events[0], ['temporary', 'original'])
+  await assert.rejects(rename('temporary', 'original', { platform: 'win32', move: async () => { throw Object.assign(new Error('Bad path'), { code: 'ENOENT' }) } }), { code: 'ENOENT' })
+})
+
+test('Windows export rejects devices, alternate streams, and ambiguous filenames before writing', async () => {
+  const { safeRelative } = require('../electron/export.cjs')
+  for (const value of ['CON.md', 'x/NUL', 'name:stream.md', 'name.', 'name ', 'C:/escape.md']) assert.equal(safeRelative(value), null, value)
+  assert.deepEqual(safeRelative('Notes/normal.md'), ['Notes', 'normal.md'])
+  const { safeFileName } = await import('../src/export/model.ts')
+  assert.equal(safeFileName('CON', 'Untitled'), '_CON')
+  assert.equal(safeFileName('NUL.txt', 'Untitled'), '_NUL.txt')
+})
+
+test('Windows local-file policy handles drive-letter case without granting sibling or remote files', () => {
+  const { isInternalURL, canRequest } = require('../electron/local-policy.cjs')
+  const config = { isDev: false, entryFile: 'C:\\Apps\\Workspace\\resources\\app.asar\\dist\\index.html' }
+  assert.equal(isInternalURL('file:///c:/Apps/Workspace/resources/app.asar/dist/index.html#page', config), true)
+  assert.equal(canRequest('file:///C:/Apps/Workspace/resources/app.asar/dist/assets/font.woff2', config), true)
+  assert.equal(canRequest('file:///C:/Apps/Workspace/resources/app.asar/dist-other/secret', config), false)
+  assert.equal(canRequest('file://remote/share/secret', config), false)
+  assert.equal(isInternalURL('file:///C:/Apps/Workspace/resources/app.asar/dist/other.html', config), false)
+})

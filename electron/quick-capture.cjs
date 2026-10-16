@@ -48,7 +48,7 @@ function createQuickCapture(deps) {
     try {
       const url = new URL(event.senderFrame.url)
       if (deps.isDev) return url.origin === new URL(deps.devURL).origin && url.pathname === '/quick.html'
-      return url.protocol === 'file:' && fileURLToPath(url) === path.join(deps.distDir, 'quick.html')
+      return require('./local-policy.cjs').isInternalURL(url.href, { isDev: false, entryFile: path.join(deps.distDir, 'quick.html') })
     } catch { return false }
   }
   function handle(channel, fn) {

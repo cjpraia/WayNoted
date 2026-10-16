@@ -23,6 +23,9 @@ export type DictationPane = 'microphone' | 'speech' | 'dictation' | null
 /** Mensagem e painel dos Ajustes do Sistema para cada código do helper. */
 export function dictationErrorInfo(code: string | undefined, message: string | undefined, locale: 'pt-BR' | 'en-US'): { text: string; pane: DictationPane } {
   const en = locale === 'en-US'
+  const windows = typeof window !== 'undefined' && window.api?.platform === 'win32'
+  if (windows && code === 'ON_DEVICE_UNAVAILABLE') return { pane: 'dictation', text: en ? 'Install the offline speech recognizer for this language in Windows Settings → Time & language → Speech. Audio is never uploaded.' : 'Instale o reconhecedor de fala offline deste idioma em Configurações do Windows → Hora e idioma → Fala. Nenhum áudio é enviado.' }
+  if (windows && ['MIC_DENIED', 'ACCESS_DENIED'].includes(code ?? '')) return { pane: 'microphone', text: en ? 'Allow desktop apps to use your microphone in Windows Settings → Privacy & security → Microphone.' : 'Permita o acesso de aplicativos de área de trabalho ao microfone nas Configurações do Windows → Privacidade e segurança → Microfone.' }
   const language = en ? (message?.includes('pt-BR') ? 'Portuguese (Brazil)' : 'English (US)') : (message?.includes('en-US') ? 'inglês (EUA)' : 'português (Brasil)')
   // O macOS devolve kLSRErrorDomain 201 quando o Ditado está desligado em Ajustes do Sistema → Teclado.
   if (/Siri and Dictation are disabled|kLSRErrorDomain\D*201/i.test(message ?? '')) return { pane: 'dictation', text: en
@@ -38,7 +41,7 @@ export function dictationErrorInfo(code: string | undefined, message: string | u
     case 'NO_AUDIO_INPUT': return { pane: null, text: en ? 'No microphone input is available.' : 'Nenhuma entrada de microfone disponível.' }
     case 'UNSUPPORTED_LOCALE': return { pane: null, text: en ? 'Dictation supports Portuguese (Brazil) and English (US).' : 'O ditado suporta português (Brasil) e inglês (EUA).' }
     case 'NATIVE_HELPER_MISSING': return { pane: null, text: en ? 'The native dictation component is missing from this build (npm run build:native).' : 'O componente nativo de ditado não está neste build (npm run build:native).' }
-    case 'NATIVE_UNSUPPORTED': case 'NOT_DESKTOP': return { pane: null, text: en ? `Dictation requires the ${PRODUCT.name} app for Mac.` : `O ditado requer o app ${PRODUCT.name} para Mac.` }
+    case 'NATIVE_UNSUPPORTED': case 'NOT_DESKTOP': return { pane: null, text: en ? `Dictation requires the ${PRODUCT.name} desktop app.` : `O ditado requer o app ${PRODUCT.name} para desktop.` }
     case 'LOCKED': return { pane: null, text: en ? 'This page is locked.' : 'Esta página está bloqueada.' }
     default: return { pane: null, text: (en ? 'Dictation stopped: ' : 'O ditado parou: ') + (message || code || (en ? 'unknown error' : 'erro desconhecido')) }
   }

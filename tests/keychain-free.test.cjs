@@ -93,9 +93,9 @@ test('(a) new space: no safeStorage call at startup nor in normal use; plain 060
     assert.equal(await fs.access(path.join(root, secure.KEY_FILE)).then(() => true, () => false), false)
     const meta = await fs.readFile(path.join(dirs[0], 'meta.json'))
     assert.equal(isEncrypted(meta), false); JSON.parse(meta.toString('utf8'))
-    assert.equal((await fs.stat(path.join(dirs[0], 'meta.json'))).mode & 0o777, 0o600)
-    assert.equal((await fs.stat(dirs[0])).mode & 0o777, 0o700)
-    assert.equal((await fs.stat(root)).mode & 0o777, 0o700)
+    if (process.platform !== 'win32') assert.equal((await fs.stat(path.join(dirs[0], 'meta.json'))).mode & 0o777, 0o600)
+    if (process.platform !== 'win32') assert.equal((await fs.stat(dirs[0])).mode & 0o777, 0o700)
+    if (process.platform !== 'win32') assert.equal((await fs.stat(root)).mode & 0o777, 0o700)
     // second launch: still nothing
     setStorageCodec(null); await secure.initializeSecureStorage(root, fake)
     assert.deepEqual(fake.calls, [])

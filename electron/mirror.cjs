@@ -123,7 +123,7 @@ async function writeFileAtomic(file, content, { mode = 0o600 } = {}) {
   const tmp = path.join(path.dirname(file), `.${path.basename(file)}.${process.pid}.${randomUUID()}.tmp`)
   try {
     await fs.writeFile(tmp, content, { mode })
-    await fs.rename(tmp, file)
+    await require('./fs-retry.cjs').rename(tmp, file)
   } catch (error) { await fs.rm(tmp, { force: true }).catch(() => {}); throw error }
 }
 
@@ -271,7 +271,7 @@ async function applyBatch(o) {
     if (await exists(source)) {
       const target = path.join(bin, ...rel.split('/'))
       await fs.mkdir(path.dirname(target), { recursive: true })
-      await fs.rename(source, target)
+      await require('./fs-retry.cjs').rename(source, target)
       await pruneEmptyDirs(path.dirname(source), wsDir)
       removed++
     }

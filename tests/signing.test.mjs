@@ -55,5 +55,5 @@ test('scripts de assinatura usam a mesma lógica e o script de identidade é ide
   const script = fs.readFileSync('build/make-signing-identity.sh', 'utf8')
   assert.ok(/find-identity/.test(script) && /exit 0/.test(script), 'idempotente')
   assert.ok(/codeSign/.test(script) && /codeSigning/.test(script))
-  assert.ok((fs.statSync('build/make-signing-identity.sh').mode & 0o100) !== 0, 'executável')
+  if (process.platform !== 'win32') assert.ok((fs.statSync('build/make-signing-identity.sh').mode & 0o100) !== 0, 'executável')
 })

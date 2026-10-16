@@ -55,7 +55,9 @@ internal static class Program
     {
         var locale = Locale(args);
         if (locale != "en-US" && locale != "pt-BR") return Error("UNSUPPORTED_LOCALE", "Unsupported dictation language.");
-        var info = SpeechRecognitionEngine.InstalledRecognizers().FirstOrDefault(r => string.Equals(r.Culture.Name, locale, StringComparison.OrdinalIgnoreCase));
+        RecognizerInfo? info = null;
+        try { info = SpeechRecognitionEngine.InstalledRecognizers().FirstOrDefault(r => string.Equals(r.Culture.Name, locale, StringComparison.OrdinalIgnoreCase)); }
+        catch (PlatformNotSupportedException) { /* Capability probe must not crash the app. */ }
         if (args.ElementAtOrDefault(1) == "status")
         {
             Emit(new { available = info is not null, recognizer = info is not null, onDevice = info is not null, speech = info is null ? "unavailable" : "authorized", microphone = "notDetermined", locale });

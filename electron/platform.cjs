@@ -3,7 +3,7 @@ const path = require('node:path')
 const os = require('node:os')
 const PRODUCT = require('../shared/product.json')
 function appDataRoot({ platform = process.platform, env = process.env, home = os.homedir() } = {}) {
-  const paths = platform === 'win32' ? path.win32 : path
+  const paths = platform === 'win32' ? path.win32 : path.posix
   if (platform === 'win32') return env.APPDATA || paths.join(home, 'AppData', 'Roaming')
   if (platform === 'darwin') return paths.join(home, 'Library', 'Application Support')
   return env.XDG_CONFIG_HOME || paths.join(home, '.config')

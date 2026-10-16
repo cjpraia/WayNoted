@@ -179,7 +179,7 @@ test('no component or action applies a type without the incorporate flow', () =>
     for (const name of readdirSync(dir)) {
       const path = join(dir, name)
       if (statSync(path).isDirectory()) { walk(path); continue }
-      if (!/\.(ts|tsx)$/.test(name) || allowed.has(path)) continue
+      if (!/\.(ts|tsx)$/.test(name) || allowed.has(path.replace(/\\/g, '/'))) continue
       if (/\b(applyType|applyTypeStep)\(/.test(readFileSync(path, 'utf8'))) offenders.push(path)
     }
   }
