@@ -7,3 +7,9 @@ https://github.com/microsoft/CsWinRT/tree/c28d756c4f042cf573d269c6ac39de05087e86
 Original MIT license is preserved verbatim.
 
 The app's own code remains under the root LICENSE. These third-party components retain their own licenses.
+
+Windows SDK .NET reference/projection package:
+https://api.nuget.org/v3-flatcontainer/microsoft.windows.sdk.net.ref/10.0.19041.57/microsoft.windows.sdk.net.ref.nuspec
+License URL published by that package: https://aka.ms/WinSDKLicenseURL
+The original windows-sdk-LICENSE.rtf is preserved verbatim; windows-sdk-LICENSE.txt is a plain-text rendering for readability.
+These Microsoft Windows SDK terms are distinct from the MIT license of the C#/WinRT runtime.

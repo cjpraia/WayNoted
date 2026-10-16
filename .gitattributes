@@ -6,3 +6,4 @@
 *.jpeg binary
 *.pdf binary
 native/windows/licenses/dotnet-runtime-NOTICES.txt whitespace=-blank-at-eof
+*.rtf binary

@@ -36,3 +36,7 @@ Run the scan when adding dependencies and before distributing a release. Review 
 **Settings → About → Third-party notices and licenses** displays the app license and notices file. The main process reads a fixed path through `electron/notices-ipc.cjs`.
 
 Before distribution, confirm that `LICENSE`, `THIRD-PARTY-NOTICES.md`, and Electron's notices are included in the final bundle. See [Distribution](DISTRIBUTION.md) for build and signing instructions.
+
+## Windows native components
+
+Windows packages also include the .NET runtime and System.Speech under their MIT licenses, the C#/WinRT runtime under MIT, and Windows SDK .NET projections governed by Microsoft Windows SDK terms. These components retain their respective licenses; the app's PolyForm license does not replace them. The original Windows SDK license and a readable text rendering are included with the native notices in `resources/native-licenses/`. The generated third-party notices also include those terms. Source URLs are recorded in `native/windows/licenses/SOURCES.txt`.
