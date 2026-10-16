@@ -27,6 +27,11 @@ if (platform === 'win32') {
 } else {
 const paths = await packager({
   dir: '.', name: PRODUCT.executable, executableName: PRODUCT.executable,
+  afterCopy: test ? [({ buildPath }) => {
+    const metadataPath = path.join(buildPath, 'package.json')
+    const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'))
+    fs.writeFileSync(metadataPath, JSON.stringify({ ...metadata, workspaceTestBuild: true }, null, 2))
+  }] : [],
   platform, arch, out, overwrite: true, icon: platform === 'win32' ? 'build/icon.ico' : 'build/icon.icns', prune: false,
   ...(platform === 'darwin' ? { appBundleId: PRODUCT.bundleId + (test ? '.test' : ''), extendInfo: 'build/app-info.plist' } : {}),
   protocols: [{ name: PRODUCT.name, schemes: [PRODUCT.protocol, COMPAT.previousProtocol, ...(PRODUCT.protocolAliases ?? [])] }],
@@ -35,11 +40,6 @@ const paths = await packager({
 })
 for (const directory of paths) {
   const app = directory.endsWith('.app') ? directory : path.join(directory, PRODUCT.executable + '.app')
-  if (test) {
-    const metadataPath = path.join(app, 'Contents', 'Resources', 'app', 'package.json')
-    const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'))
-    fs.writeFileSync(metadataPath, JSON.stringify({ ...metadata, workspaceTestBuild: true }, null, 2))
-  }
   const plist = `${app}/Contents/Info.plist`
   // Electron checks its default Helper paths before the public CFBundleName.
   // Restore those neutral paths so the menu can use the brand independently.
