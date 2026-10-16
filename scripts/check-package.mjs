@@ -63,10 +63,14 @@ try {
     assert.notEqual(installedVersion, startingVersion)
     assert.ok((await page.evaluate(() => window.api.vaultStatus())).locked)
     await page.evaluate(() => window.api.vaultUnlock('Upgrade-package-check-42!')); await page.reload()
+    // The preload bridge exists before React mounts its save/close listener.
+    // Wait for the unlocked shell before requesting another security operation.
+    await page.locator('.shell-tabs').waitFor({ state: 'visible', timeout: 60000 })
     assert.equal((await page.evaluate(() => window.api.loadMeta())).pages[oldPage.id].title, 'Upgrade preservation check')
     assert.ok(JSON.stringify(await page.evaluate(id => window.api.loadDoc(id), oldPage.id)).includes('Content created by the previous installed version.'))
     check('Version upgrade preserves password vault, page identity and full content', { from: startingVersion, to: installedVersion })
     await page.evaluate(() => window.api.vaultDisable('Upgrade-package-check-42!')); await page.reload()
+    await page.locator('.shell-tabs').waitFor({ state: 'visible', timeout: 60000 })
   }
   const runtime = await page.evaluate(() => window.api.runtimeInfo())
   assert.equal(runtime.platform, process.platform); check('Installed app launches with native bridge')
@@ -125,7 +129,7 @@ try {
   await page.evaluate(() => window.api.vaultLock()).catch(() => {})
   await page.locator('input[type=password]').first().waitFor({ state: 'visible', timeout: 30000 })
   await page.evaluate(() => window.api.vaultUnlock('Disposable-package-check-42!'))
-  await page.reload(); await title.waitFor({ state: 'visible', timeout: 30000 }).catch(() => {})
+  await page.reload(); await page.locator('.shell-tabs').waitFor({ state: 'visible', timeout: 60000 })
   check('Vault lock and password unlock')
   await application.close(); application = undefined
   page = await launch()
@@ -161,6 +165,7 @@ try {
     await page.locator('input[type=password]').first().waitFor({ state: 'visible', timeout: 30000 })
     await page.evaluate(password => window.api.vaultUnlock(password), fixture.password)
     await page.reload()
+    await page.locator('.shell-tabs').waitFor({ state: 'visible', timeout: 60000 })
     const meta = await page.evaluate(() => window.api.loadMeta())
     assert.equal(meta.pages[fixture.ids.row].title, 'Transferred row — café')
     assert.equal(meta.pages[fixture.ids.row].props.city, 'São Paulo')
