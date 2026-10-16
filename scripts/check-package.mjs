@@ -13,7 +13,7 @@ const installer = option('installer')
 const baselineInstaller = option('baseline-installer')
 const portableBackup = option('portable-backup')
 if (installer && !process.env.CI && !process.argv.includes('--allow-install')) throw new Error('Installer checks replace and uninstall the selected app. Use a disposable Windows environment and pass --allow-install explicitly.')
-const appPath = option('app') || (process.platform === 'win32' ? path.join(process.env.LOCALAPPDATA, 'Programs', 'WorkspaceDesktop', 'Desktop.exe') : path.resolve('release/Desktop-darwin-arm64/Desktop.app/Contents/MacOS/Desktop'))
+let appPath = option('app') || (process.platform === 'win32' ? path.join(process.env.LOCALAPPDATA, 'Programs', 'WorkspaceDesktop', 'Desktop.exe') : path.resolve('release/Desktop-darwin-arm64/Desktop.app/Contents/MacOS/Desktop'))
 const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'workspace-package-'))
 const profile = path.join(directory, 'profile with spaces — á')
 const artifacts = path.resolve('.artifacts', 'package-check', process.platform)
@@ -40,6 +40,11 @@ async function eventually(fn) {
   let last
   while (Date.now() < deadline) { try { const value = await fn(); if (value) return value } catch (error) { last = error }; await new Promise(resolve => setTimeout(resolve, 200)) }
   throw last || new Error('Timed out waiting for persisted content')
+}
+async function uninstall() {
+  const names = await fs.readdir(path.dirname(appPath))
+  const file = names.find(name => /^Uninstall.*\.exe$/i.test(name)); assert.ok(file)
+  await run(path.join(path.dirname(appPath), file), ['/S'], { timeout: 180000, windowsHide: true })
 }
 try {
   if (baselineInstaller && !installer) throw new Error('An upgrade check requires both installers')
@@ -152,6 +157,29 @@ try {
       await eventually(async () => (await page.locator('body').innerText()).includes('Windows package persistence check')); check('Reinstall preserves vault access and notes')
       await application.close(); application = undefined
     } finally { await fs.rm(sentinel, { force: true }) }
+    const standardApp = appPath
+    await uninstall()
+    const customDirectory = path.join(directory, 'custom installation — café')
+    // NSIS requires /D to be last and unquoted, including paths with spaces.
+    await run(path.resolve(installer), ['/S', '/D=' + customDirectory], { timeout: 180000, windowsHide: true, windowsVerbatimArguments: true })
+    appPath = path.join(customDirectory, 'Desktop.exe')
+    await fs.access(appPath)
+    await run(path.resolve(installer), ['/S'], { timeout: 180000, windowsHide: true })
+    await fs.access(appPath)
+    await assert.rejects(fs.access(standardApp), { code: 'ENOENT' })
+    page = await launch()
+    await page.evaluate(() => window.api.vaultUnlock('Disposable-package-check-42!')); await page.reload()
+    await page.locator('.shell-tabs').waitFor({ state: 'visible', timeout: 60000 })
+    assert.equal((await page.evaluate(() => window.api.loadMeta())).pages[created.id].title, 'Windows package persistence check')
+    const currentApi = await page.evaluate(() => window.api.localApiInfo())
+    const cli = path.join(customDirectory, 'resources', 'bin', 'workspace.exe')
+    const response = await run(cli, ['whoami', '--json'], { env: { ...env, WORKSPACE_API_URL: currentApi.url, WORKSPACE_API_TOKEN: client.token }, windowsHide: true, timeout: 20000 })
+    assert.ok(JSON.parse(response.stdout))
+    check('Custom installation path with spaces and Unicode survives reinstall')
+    await application.close(); application = undefined
+    await uninstall()
+    await run(path.resolve(installer), ['/S'], { timeout: 180000, windowsHide: true })
+    appPath = standardApp
   }
   if (portableBackup) {
     const fixture = JSON.parse(await fs.readFile(path.join(portableBackup, 'fixture.json'), 'utf8'))

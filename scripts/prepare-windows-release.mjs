@@ -23,6 +23,7 @@ const required = [
   'Version upgrade preserves password vault, page identity and full content',
   'macOS backup restores databases, Unicode, workspace password and protected pages on Windows',
   'Reinstall preserves vault access and notes',
+  'Custom installation path with spaces and Unicode survives reinstall',
 ]
 await fs.mkdir(output, { recursive: true })
 for (const arch of ['x64', 'arm64']) {
@@ -60,7 +61,7 @@ See the [Windows guide](${repo}/blob/v${version}/docs/WINDOWS.md). Updating with
 
 ## Verification
 
-[Passing build and test workflow](${ci}) for source \`${sourceCommit}\`. Both architectures pass ${reports.x64.checks.length} installed-app checks, including actual installation, UI persistence, clipboard, quick capture, OCR, CLI/MCP without Node.js on PATH, DPAPI, vaults, restart, upgrade from ${reports.x64.checks.find(c => c.name === required[6]).from} to ${version}, uninstall/reinstall, and restoration of an encrypted backup created on macOS with database values and separately protected pages. See \`verification.json\` for the reports.
+[Passing build and test workflow](${ci}) for source \`${sourceCommit}\`. Both architectures pass ${reports.x64.checks.length} installed-app checks, including actual installation, UI persistence, clipboard, quick capture, OCR, CLI/MCP without Node.js on PATH, DPAPI, vaults, restart, upgrade from ${reports.x64.checks.find(c => c.name === required[6]).from} to ${version}, uninstall/reinstall in default and custom Unicode paths, and restoration of an encrypted backup created on macOS with database values and separately protected pages. See \`verification.json\` for the reports.
 
 Microphone capture and Windows Hello interactions depend on hardware and have not been exercised by these automated checks. Offline dictation requires a compatible installed Windows SAPI recognizer; Brazilian Portuguese is not supported by the built-in engine. Audio-file transcription requires a separately configured local model/runtime. Apple-specific services remain macOS-only; the app's own notes, tasks, and calendar views work on Windows.
 

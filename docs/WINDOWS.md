@@ -21,7 +21,7 @@ Get-FileHash "$HOME\Downloads\WayNoted-Setup-1.0.1-win-x64.exe" -Algorithm SHA25
 
 Pages, the block editor, databases, relations, rollups, queries, tasks, calendar views, daily notes, files, canvas, and local agent integrations work on Windows. Shortcuts use **Ctrl** in place of **Command**. The window uses native Windows minimize, maximize, and close buttons.
 
-Download the newer Setup matching your architecture, close WayNoted (including its tray icon if enabled), and run Setup. Your notes remain in `%APPDATA%\WorkspaceData`, separately from the app in `%LOCALAPPDATA%\Programs\WorkspaceDesktop`. Uninstalling preserves your notes; keep an independent backup before updating or moving computers.
+Download the newer Setup matching your architecture, close WayNoted (including its tray icon if enabled), and run Setup. Setup preserves a previously chosen installation directory. Your notes remain in `%APPDATA%\WorkspaceData`, separately from the app in `%LOCALAPPDATA%\Programs\WorkspaceDesktop`. Uninstalling preserves your notes; keep an independent backup before updating or moving computers.
 
 Updates are manual. To use **Settings → About → Check for updates**, configure this feed:
 
