@@ -64,7 +64,7 @@ internal static class Program
             return 0;
         }
         if (args.ElementAtOrDefault(1) != "start") return Error("UNKNOWN_COMMAND", "Use dictation status|start.");
-        if (info is null) return Error("ON_DEVICE_UNAVAILABLE", $"Install the offline Windows speech recognizer for {locale} in Windows Settings. No audio was uploaded.");
+        if (info is null) return Error("ON_DEVICE_UNAVAILABLE", $"No compatible offline Windows speech recognizer is installed for {locale}. This language may not be supported by the Windows speech engine. No audio was uploaded.");
         using var engine = new SpeechRecognitionEngine(info);
         engine.LoadGrammar(new DictationGrammar());
         engine.SetInputToDefaultAudioDevice();

@@ -98,7 +98,7 @@ The profile is `%APPDATA%\WorkspaceData`, outside the installation directory. Up
 | Apple Calendar, Reminders, Notes import, Apple embeddings | macOS-only; internal tasks/calendar remain available |
 | Audio-file transcription | Optional local transcription runtime/model, configured separately |
 
-OCR language packs and speech recognizers depend on the Windows image. The helper returns an explicit availability/error result; it does not switch to cloud recognition. Actual microphone capture and Hello user verification require interactive hardware validation and cannot be established by a headless runner.
+OCR language packs and speech recognizers depend on the Windows image. The helper returns an explicit availability/error result; it does not switch to cloud recognition. Native dictation does not guarantee Portuguese (Brazil) support: the built-in Windows Speech Recognition language list excludes Portuguese, and a display-language pack does not add a compatible SAPI recognizer. The app reports this explicitly rather than falling back to cloud recognition. Local audio-file transcription remains a separate option with a configured runtime/model. See [Microsoft’s supported speech-recognition languages](https://support.microsoft.com/pt-br/accessibility/windows/voice-access/windows-speech-recognition-commands). Actual microphone capture and Hello user verification require interactive hardware validation and cannot be established by a headless runner.
 
 DPAPI is tied to the Windows user context, not to a vault password or biometric verification. Programs running as the same user can have different access than with macOS Keychain. See [Security](SECURITY.md) and [Electron safeStorage](https://www.electronjs.org/docs/latest/api/safe-storage).
 
