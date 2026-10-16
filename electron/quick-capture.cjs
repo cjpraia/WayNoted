@@ -131,12 +131,12 @@ function createQuickCapture(deps) {
 
   function applyLoginItem() {
     // Só o app empacotado entra nos itens de início; em desenvolvimento a preferência fica apenas salva.
-    if (electron.app.isPackaged) electron.app.setLoginItemSettings({ openAtLogin: prefs.openAtLogin })
+    if (electron.app.isPackaged) electron.app.setLoginItemSettings({ openAtLogin: prefs.openAtLogin, ...(process.platform === 'win32' ? { path: process.execPath, args: ['--startup'] } : {}) })
   }
 
   async function getSettings() {
     await loadPrefs()
-    const openAtLogin = electron.app.isPackaged ? electron.app.getLoginItemSettings().openAtLogin : prefs.openAtLogin
+    const openAtLogin = electron.app.isPackaged ? electron.app.getLoginItemSettings(process.platform === 'win32' ? { path: process.execPath, args: ['--startup'] } : {}).openAtLogin : prefs.openAtLogin
     return { shortcut: prefs.shortcut, captureShortcut: prefs.captureShortcut, showTray: prefs.showTray, trayTasks: prefs.trayTasks, trayCount: prefs.trayCount, openAtLogin, status: shortcutStatus, loginItemSupported: electron.app.isPackaged }
   }
   async function updateSettings(patch) {

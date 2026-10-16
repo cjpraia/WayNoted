@@ -5,7 +5,7 @@ const { randomUUID } = require('node:crypto')
 const { indexBlocks, isLivePage } = require('./content-index.cjs')
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const DEFAULT_PREFS = Object.freeze({ shortcut: 'Alt+Command+N', captureShortcut: 'Alt+Shift+Command+N', showTray: true, trayTasks: true, trayCount: false, openAtLogin: false, inbox: {} })
+const DEFAULT_PREFS = Object.freeze({ shortcut: process.platform === 'darwin' ? 'Alt+Command+N' : 'Alt+Control+N', captureShortcut: process.platform === 'darwin' ? 'Alt+Shift+Command+N' : 'Alt+Shift+Control+N', showTray: true, trayTasks: true, trayCount: false, openAtLogin: false, inbox: {} })
 const OPTION_COLORS = ['blue', 'green', 'purple', 'orange', 'pink', 'yellow', 'red', 'brown', 'gray']
 const MODIFIERS = new Set(['Command', 'Cmd', 'Control', 'Ctrl', 'CommandOrControl', 'CmdOrCtrl', 'Alt', 'Option', 'AltGr', 'Shift', 'Super', 'Meta'])
 const KEY = /^([A-Z0-9]|F([1-9]|1[0-9]|2[0-4])|Space|Tab|Backspace|Delete|Insert|Return|Enter|Up|Down|Left|Right|Home|End|PageUp|PageDown|Escape|Esc|Plus|[`\-=[\];',./\\])$/
@@ -22,11 +22,12 @@ function isValidAccelerator(value) {
 
 function normalizePrefs(raw) {
   const value = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {}
+  const normalizeShortcut = value => process.platform === 'win32' && typeof value === 'string' ? value.replace(/\b(Command|Cmd)\b/g, 'Control') : value
   const inbox = {}
   if (value.inbox && typeof value.inbox === 'object') for (const [ws, id] of Object.entries(value.inbox)) if (typeof id === 'string' && UUID.test(id) && (ws === 'default' || UUID.test(ws))) inbox[ws] = id
   return {
-    shortcut: value.shortcut === '' ? '' : isValidAccelerator(value.shortcut) ? value.shortcut : DEFAULT_PREFS.shortcut,
-    captureShortcut: value.captureShortcut === '' ? '' : isValidAccelerator(value.captureShortcut) ? value.captureShortcut : DEFAULT_PREFS.captureShortcut,
+    shortcut: value.shortcut === '' ? '' : isValidAccelerator(value.shortcut) ? normalizeShortcut(value.shortcut) : DEFAULT_PREFS.shortcut,
+    captureShortcut: value.captureShortcut === '' ? '' : isValidAccelerator(value.captureShortcut) ? normalizeShortcut(value.captureShortcut) : DEFAULT_PREFS.captureShortcut,
     showTray: typeof value.showTray === 'boolean' ? value.showTray : DEFAULT_PREFS.showTray,
     trayTasks: typeof value.trayTasks === 'boolean' ? value.trayTasks : DEFAULT_PREFS.trayTasks,
     trayCount: typeof value.trayCount === 'boolean' ? value.trayCount : DEFAULT_PREFS.trayCount,

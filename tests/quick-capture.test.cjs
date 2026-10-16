@@ -24,7 +24,7 @@ test('accelerators need a non-Shift modifier and a single valid key', () => {
 
 test('preferences fall back to safe defaults and drop invalid inbox ids', () => {
   const prefs = core.normalizePrefs({ shortcut: 'Shift+X', captureShortcut: '', showTray: 'yes', inbox: { default: '11111111-1111-4111-8111-111111111111', evil: 'x', '../a': '11111111-1111-4111-8111-111111111111' } })
-  assert.equal(prefs.shortcut, 'Alt+Command+N')
+  assert.equal(prefs.shortcut, process.platform === 'darwin' ? 'Alt+Command+N' : 'Alt+Control+N')
   assert.equal(prefs.captureShortcut, '')
   assert.equal(prefs.showTray, true)
   assert.deepEqual(Object.keys(prefs.inbox), ['default'])

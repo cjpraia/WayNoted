@@ -111,3 +111,12 @@ test('Windows local-file policy handles drive-letter case without granting sibli
   assert.equal(canRequest('file://remote/share/secret', config), false)
   assert.equal(isInternalURL('file:///C:/Apps/Workspace/resources/app.asar/dist/other.html', config), false)
 })
+
+test('Updates select only a matching platform and architecture when a multi-platform feed is supplied', () => {
+  const { validateFeed } = require('../electron/update-check.cjs')
+  const feed = { version: '1.2.0', downloads: { 'win32-x64': 'https://example.com/setup-x64.exe', 'win32-arm64': 'https://example.com/setup-arm64.exe', 'darwin-arm64': 'https://example.com/mac.dmg' } }
+  assert.equal(validateFeed(feed, { platform: 'win32', arch: 'x64' }).downloadUrl, feed.downloads['win32-x64'])
+  assert.equal(validateFeed(feed, { platform: 'win32', arch: 'arm64' }).downloadUrl, feed.downloads['win32-arm64'])
+  assert.equal(validateFeed(feed, { platform: 'darwin', arch: 'x64' }).downloadUrl, '')
+  assert.equal(validateFeed({ version: '1.2.0', downloadUrl: 'https://example.com/download' }).downloadUrl, 'https://example.com/download')
+})

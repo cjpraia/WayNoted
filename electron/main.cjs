@@ -660,7 +660,7 @@ function buildMenu() {
         { label: nativeT('Abrir arquivo Markdown…', 'Open Markdown file…'), click: () => sendCommand('open-markdown-file') },
         { label: nativeT('Exportar…', 'Export…'), accelerator: accel('export', 'CmdOrCtrl+Shift+E'), click: () => sendCommand('export') },
         { type: 'separator' },
-        { label: nativeT('Importar', 'Import'), submenu: [{ label: nativeT("Importar do Export Bundle…", "Import from Export Bundle…"), click: () => sendCommand("import-bundle") }, { label: nativeT("Importar do Markdown Vault…", "Import from Markdown Vault…"), click: () => sendCommand("import-markdown") }, { label: nativeT('Importar do Apple Notes…', 'Import from Apple Notes…'), click: () => sendCommand('import-apple-notes') }, { label: nativeT("Importar do ENEX Archive (.enex)…", "Import from ENEX Archive (.enex)…"), click: () => sendCommand("import-archive") }] },
+        { label: nativeT('Importar', 'Import'), submenu: [{ label: nativeT("Importar do Export Bundle…", "Import from Export Bundle…"), click: () => sendCommand("import-bundle") }, { label: nativeT("Importar do Markdown Vault…", "Import from Markdown Vault…"), click: () => sendCommand("import-markdown") }, { label: nativeT('Importar do Apple Notes…', 'Import from Apple Notes…'), visible: process.platform === 'darwin', click: () => sendCommand('import-apple-notes') }, { label: nativeT("Importar do ENEX Archive (.enex)…", "Import from ENEX Archive (.enex)…"), click: () => sendCommand("import-archive") }] },
         { type: 'separator' },
         {
           label: nativeT('Abrir Pasta de Dados', 'Open data folder'),
@@ -717,6 +717,10 @@ function buildMenu() {
       ],
     },
   ]
+  if (process.platform !== 'darwin') {
+    template[0].submenu = template[0].submenu.filter(item => !['services', 'hide', 'hideOthers', 'unhide'].includes(item.role))
+    template.at(-1).submenu = template.at(-1).submenu.filter(item => item.role !== 'front')
+  }
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }
 
@@ -981,7 +985,7 @@ if (gotLock) app.whenReady().then(async () => {
   buildMenu()
   tray.setVisible(!!capturePrefs?.showTray)
   // Aberto no início da sessão com o ícone na barra de menus: fica em segundo plano até ser chamado.
-  if (!(capturePrefs?.showTray && app.getLoginItemSettings().wasOpenedAtLogin)) createWindow()
+  if (!(capturePrefs?.showTray && (app.getLoginItemSettings().wasOpenedAtLogin || process.argv.includes('--startup')))) createWindow()
   for (const value of [...pendingLinks, ...process.argv.filter(arg => parseDeepLink(arg))]) await openDeepLink(value)
   for (const file of [...pendingFiles.splice(0), ...process.argv.slice(1).filter(isOpenablePath)].slice(0, 10)) await openExternalFile(file)
   const timer = setInterval(() => void tickDesktop().catch(console.error), 5000)

@@ -118,7 +118,7 @@ function registerVaultIpc(deps) {
     const ctx = ctxOf(e), dir = dataDir(ctx.workspaceId)
     if (enabled) {
       if (!(await touchIdAvailable())) throw vault.vaultError('TOUCH_ID_UNAVAILABLE', 'Verificação do dispositivo indisponível.', 'Device verification is unavailable.')
-      await biometric.verify(ctx.win, nativeT('ativar o desbloqueio por Touch ID', 'turn on Touch ID unlock', ctx.win))
+      await biometric.verify(ctx.win, nativeT('ativar o desbloqueio do dispositivo', 'enable device verification unlock', ctx.win))
       await vaultWorkspace.enableTouchId(dir, safeStorage)
     } else await vaultWorkspace.disableTouchId(dir)
     return status(ctx.workspaceId)
