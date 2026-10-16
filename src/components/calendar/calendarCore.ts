@@ -6,7 +6,7 @@ import type { CalendarIntegrationSettings } from '../../types.ts'
 export const DEFAULT_CALENDAR_SETTINGS: CalendarIntegrationSettings = { enabled: false, calendarIds: [] }
 
 export const nativeCalendar = () => (typeof window !== 'undefined' ? window.api : undefined)
-export const hasNativeCalendar = () => !!nativeCalendar()?.calendarStatus
+export const hasNativeCalendar = () => nativeCalendar()?.platform !== 'win32' && !!nativeCalendar()?.calendarStatus
 
 export function calendarSettings(settings = getState().settings): CalendarIntegrationSettings {
   return { ...DEFAULT_CALENDAR_SETTINGS, ...settings.calendarIntegration }

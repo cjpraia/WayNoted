@@ -1825,7 +1825,7 @@ export function useStore(): State {
 }
 
 const welcomeDoc: unknown[] = [
-  { type: 'paragraph', content: `Welcome to ${PRODUCT.name} — your notes, stored locally on this Mac. Get started in five minutes: check off each step as you go. The “Getting started” card in My day also tracks your progress automatically.` },
+  { type: 'paragraph', content: `Welcome to ${PRODUCT.name} — your notes, stored locally on this computer. Get started in five minutes: check off each step as you go. The “Getting started” card in My day also tracks your progress automatically.` },
   { type: 'heading', props: { level: 2 }, content: 'Start here' },
   { type: 'checkListItem', content: 'Create a page (⌘N) and give it a title' },
   { type: 'checkListItem', content: 'On an empty line, press / to see the available block types' },

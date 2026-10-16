@@ -102,7 +102,7 @@ export function VoiceTasksDialog({ onClose }: { onClose(): void }) {
   return <div className="vt-overlay" onMouseDown={event => { if (event.target === event.currentTarget) close() }}>
     <div ref={root} className="vt-dialog" role="dialog" aria-modal="true" aria-label={t('Tarefas por voz', 'Tasks by voice')} onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); close() } }}>
       <h3>{t('Tarefas por voz', 'Tasks by voice')}</h3>
-      <p className="vt-hint">{t('Fale suas tarefas de uma vez, por exemplo “ligar para o João amanhã às 10 e depois comprar pão”. O reconhecimento é feito neste Mac e nada é criado antes da sua confirmação.', 'Say your tasks in one go, for example “call John tomorrow at 10 and then buy bread”. Recognition runs on this Mac and nothing is created before you confirm.')}</p>
+      <p className="vt-hint">{t('Fale suas tarefas de uma vez, por exemplo “ligar para o João amanhã às 10 e depois comprar pão”. O reconhecimento é feito neste computador e nada é criado antes da sua confirmação.', 'Say your tasks in one go, for example “call John tomorrow at 10 and then buy bread”. Recognition runs on this computer and nothing is created before you confirm.')}</p>
       <div className="vt-rec">
         {hasMic && (listening
           ? <Button variant="danger" onClick={() => void stop()}><Square size={14} aria-hidden /> {t('Parar', 'Stop')}</Button>

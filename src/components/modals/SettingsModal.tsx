@@ -49,7 +49,7 @@ const SECTIONS = (): { id: Section; label: string; icon: typeof User | typeof Pr
   { id: 'types', label: t('Tipos', 'Types'), icon: Tag },
   { id: 'shortcuts', label: t('Atalhos', 'Shortcuts'), icon: Keyboard },
   { id: 'capture', label: t('Captura rápida', 'Quick capture'), icon: Zap },
-  ...(window.api?.calendarStatus ? [{ id: 'calendar' as const, label: t('Calendário', 'Calendar'), icon: CalendarDays }] : []),
+  ...(window.api?.platform !== 'win32' && window.api?.calendarStatus ? [{ id: 'calendar' as const, label: t('Calendário', 'Calendar'), icon: CalendarDays }] : []),
   { id: 'help', label: t('Ajuda', 'Help'), icon: HelpCircle },
   { id: 'about', label: t('Sobre', 'About'), icon: Info },
 ]

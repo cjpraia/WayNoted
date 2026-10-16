@@ -22,7 +22,7 @@ export function ProductivitySettings() {
   }
   return <>
     <h2 className="st-h">{t('Produtividade', 'Productivity')}</h2>
-    <p className="st-hint st-mb">{t('Tudo fica neste Mac; só contadores, nunca o conteúdo. Cada espaço tem o próprio registro, cifrado junto com o espaço quando ele tem senha.', 'Everything stays on this Mac; only counters, never your content. Each workspace has its own record, encrypted with the workspace when it has a password.')}</p>
+    <p className="st-hint st-mb">{t('Tudo fica neste computador; só contadores, nunca o conteúdo. Cada espaço tem o próprio registro, cifrado junto com o espaço quando ele tem senha.', 'Everything stays on this computer; only counters, never your content. Each workspace has its own record, encrypted with the workspace when it has a password.')}</p>
     <div className="st-row st-row-between">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <label className="st-label" htmlFor="st-pd-enabled">{t('Registrar atividade', 'Track activity')}</label>

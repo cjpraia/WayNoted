@@ -23,7 +23,7 @@ export type DictationPane = 'microphone' | 'speech' | 'dictation' | null
 /** Mensagem e painel dos Ajustes do Sistema para cada código do helper. */
 export function dictationErrorInfo(code: string | undefined, message: string | undefined, locale: 'pt-BR' | 'en-US'): { text: string; pane: DictationPane } {
   const en = locale === 'en-US'
-  const windows = typeof window !== 'undefined' && window.api?.platform === 'win32'
+  const windows = typeof window !== 'undefined' && (window.api?.platform ?? window.quickApi?.platform) === 'win32'
   if (windows && code === 'ON_DEVICE_UNAVAILABLE') return { pane: 'dictation', text: en ? 'Install the offline speech recognizer for this language in Windows Settings → Time & language → Speech. Audio is never uploaded.' : 'Instale o reconhecedor de fala offline deste idioma em Configurações do Windows → Hora e idioma → Fala. Nenhum áudio é enviado.' }
   if (windows && ['MIC_DENIED', 'ACCESS_DENIED'].includes(code ?? '')) return { pane: 'microphone', text: en ? 'Allow desktop apps to use your microphone in Windows Settings → Privacy & security → Microphone.' : 'Permita o acesso de aplicativos de área de trabalho ao microfone nas Configurações do Windows → Privacidade e segurança → Microfone.' }
   const language = en ? (message?.includes('pt-BR') ? 'Portuguese (Brazil)' : 'English (US)') : (message?.includes('en-US') ? 'inglês (EUA)' : 'português (Brasil)')

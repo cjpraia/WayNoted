@@ -1,5 +1,5 @@
 .NET runtime and System.Speech:
-https://github.com/dotnet/runtime/tree/v8.0.0
+https://github.com/dotnet/runtime/tree/v10.0.13
 Original license and third-party notice files are preserved verbatim.
 
 C#/WinRT:

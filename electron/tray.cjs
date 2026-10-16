@@ -31,11 +31,11 @@ function trayBitmap(size, platform = process.platform) {
   return buffer
 }
 
-function trayImage(el = electron) {
+function trayImage(el = electron, platform = process.platform) {
   const { nativeImage } = el
-  const image = nativeImage.createFromBitmap(trayBitmap(16), { width: 16, height: 16, scaleFactor: 1 })
-  image.addRepresentation({ scaleFactor: 2, width: 32, height: 32, buffer: trayBitmap(32) })
-  if (process.platform === 'darwin') image.setTemplateImage(true)
+  const image = nativeImage.createFromBitmap(trayBitmap(16, platform), { width: 16, height: 16, scaleFactor: 1 })
+  image.addRepresentation({ scaleFactor: 2, width: 32, height: 32, buffer: trayBitmap(32, platform) })
+  if (platform === 'darwin') image.setTemplateImage(true)
   return image
 }
 
@@ -44,6 +44,7 @@ function trayImage(el = electron) {
  *         todayTasks?() → { items:[{ id, title, overdue }], total, overdue } | null, taskPrefs?() → { trayTasks, trayCount }, completeTask?(id), openToday?() }
  */
 function createTray(deps) {
+  const platform = deps.platform ?? process.platform
   const el = deps.electron ?? electron // injetável nos testes
   let tray = null
   async function menuTemplate() {
@@ -77,7 +78,7 @@ function createTray(deps) {
   async function popUp() { if (!tray) return; const menu = await buildMenu(); tray?.popUpContextMenu(menu) }
   function setVisible(visible) {
     if (visible && !tray) {
-      tray = new el.Tray(trayImage(el))
+      tray = new el.Tray(trayImage(el, platform))
       tray.setToolTip(`${PRODUCT.name}`)
       tray.on('click', () => void popUp())
       tray.on('right-click', () => void popUp())
@@ -89,7 +90,7 @@ function createTray(deps) {
     if (!tray) return
     const prefs = deps.taskPrefs?.() ?? {}
     const snapshot = prefs.trayTasks === false ? null : deps.todayTasks?.()
-    tray.setTitle(badgeTitle(snapshot, !!prefs.trayCount), { fontType: 'monospacedDigit' })
+    if (platform === 'darwin') tray.setTitle(badgeTitle(snapshot, !!prefs.trayCount), { fontType: 'monospacedDigit' })
     tray.setToolTip(snapshot?.total && prefs.trayTasks !== false ? deps.t(`${PRODUCT.name} · ${snapshot.total} para hoje`, `${PRODUCT.name} · ${snapshot.total} for today`) : `${PRODUCT.name}`)
   }
   return { refreshTitle, setVisible, menuTemplate, buildMenu, isVisible: () => !!tray, tray: () => tray }

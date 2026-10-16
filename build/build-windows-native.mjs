@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 const root = fileURLToPath(new URL('..', import.meta.url))
-if (process.platform !== 'win32') throw new Error('Build Windows native resources on Windows with the .NET 8 SDK and MSVC tools.')
+if (process.platform !== 'win32') throw new Error('Build Windows native resources on Windows with the .NET 10 SDK and MSVC tools.')
 const arch = process.argv.find(value => value.startsWith('--arch='))?.split('=')[1] || process.env.WORKSPACE_TARGET_ARCH || process.arch
 if (!['x64', 'arm64'].includes(arch)) throw new Error('Unsupported Windows architecture')
 const output = path.join(root, 'build', 'native', 'win32-' + arch)
@@ -15,4 +15,4 @@ fs.rmSync(path.join(output, 'launcher.obj'), { force: true })
 const licenses = path.join(output, 'native-licenses')
 fs.cpSync(path.join(root, 'native', 'windows', 'licenses'), licenses, { recursive: true })
 const assets = JSON.parse(fs.readFileSync(path.join(root, 'native', 'windows', 'obj', 'project.assets.json'), 'utf8'))
-fs.writeFileSync(path.join(licenses, 'DEPENDENCIES.json'), JSON.stringify({ framework: 'net8.0-windows10.0.19041.0', architecture: arch, packages: Object.entries(assets.libraries ?? {}).filter(([, item]) => item.type === 'package').map(([name]) => name) }, null, 2))
+fs.writeFileSync(path.join(licenses, 'DEPENDENCIES.json'), JSON.stringify({ framework: 'net10.0-windows10.0.19041.0', architecture: arch, packages: Object.entries(assets.libraries ?? {}).filter(([, item]) => item.type === 'package').map(([name]) => name) }, null, 2))

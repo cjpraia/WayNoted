@@ -1,6 +1,6 @@
 # WayNoted Web Clipper
 
-A Manifest V3 extension for **Chrome, Edge, Brave, and Arc** that sends the current page to WayNoted **on this Mac**. It only communicates with the app's local API (`http://127.0.0.1:<port>`); there is no external server or account.
+A Manifest V3 extension for **Chrome, Edge, Brave, and Arc** that sends the current page to WayNoted **on this computer**. It only communicates with the app's local API (`http://127.0.0.1:<port>`); there is no external server or account.
 
 ## What it captures
 

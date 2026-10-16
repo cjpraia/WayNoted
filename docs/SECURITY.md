@@ -2,22 +2,22 @@
 
 ## Local storage
 
-The default profile is stored at `~/Library/Application Support/WorkspaceData/`. The default workspace uses `data/`; additional workspaces use `workspaces/<id>/data/`. **Settings → Data → Open data folder** shows the effective path.
+The default profile is `~/Library/Application Support/WorkspaceData/` on macOS and `%APPDATA%\WorkspaceData` on Windows. The default workspace uses `data/`; additional workspaces use `workspaces/<id>/data/`. **Settings → Data → Open data folder** shows the effective path.
 
 Without a workspace password or device encryption, local files are readable by processes running as your user. File permissions do not replace encryption.
 
 The app uses atomic writes and transaction logs to recover interrupted operations. Metadata includes a schema version: incompatible versions must be rejected without replacing data. Keep an independent backup before updating or migrating an important installation.
 
-## Passwords and Keychain
+## Passwords and OS credential protection
 
 - **Workspace password:** a vault using a scrypt-derived key and AES-256-GCM protection, with automatic locking and a recovery key.
 - **Page password:** protects a page and can be inherited by subpages.
-- **Touch ID:** optional unlocking linked to macOS Keychain.
-- **Device encryption:** optional AES-256-GCM protection with a random key protected by Keychain; disabled by default on new installations.
+- **Biometric unlock:** Touch ID on macOS or Windows Hello on Windows, when available. Windows requests native user verification before releasing the remembered vault key; cancellation or an unavailable verifier never counts as success.
+- **Device encryption:** optional AES-256-GCM protection with a random key protected by macOS Keychain or Windows DPAPI; disabled by default on new installations.
 
 Protected content cannot be recovered without the password or recovery key. Keep the recovery key outside the app.
 
-Keychain access goes through `electron/keychain.cjs`. A new installation without Keychain-dependent options should not access it during normal use. Device encryption, legacy format migrations, Touch ID, and stored AI keys may require access.
+OS credential protection goes through `electron/keychain.cjs` and Electron safeStorage. On Windows, DPAPI binds protection to the Windows user context; another program running as that same user may be able to decrypt it. This is not a user-presence check and does not replace password protection. Windows Hello verification is a separate optional step. On macOS, a new installation without Keychain-dependent options should not access Keychain during normal use. Device encryption, legacy format migrations, biometric unlock, and stored AI keys may require OS credential access.
 
 Existing profiles preserve the identity needed for their keys in `profile-identity.json`. New installations use a generic technical identity. Do not rename Keychain records or compatibility identifiers to match the public brand.
 
@@ -65,4 +65,4 @@ Do not expose the port through a proxy, tunnel, or port forwarding. Never commit
 
 ## Relevant checks
 
-Storage, vault, migration, agent-access, local-policy, and provider tests exercise these boundaries. Tests are not an independent audit. Native permissions and macOS behavior require verification in the packaged app. See [Distribution](DISTRIBUTION.md) for signing.
+Storage, vault, migration, agent-access, local-policy, and provider tests exercise these boundaries. Tests are not an independent audit. Native permissions and OS behavior require verification in the packaged app. Windows Hello and microphone behavior also require suitable hardware and an interactive Windows session. See [Distribution](DISTRIBUTION.md) for signing.

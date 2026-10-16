@@ -110,7 +110,7 @@ export function AutomationsEditor({ dbId, schema }: { dbId: string; schema: Data
 
   return <section className="am-root">
     <header><strong>{t('Automações locais', 'Local automations')}</strong><button type="button" onClick={add}><Plus size={14} />{t('Adicionar', 'Add')}</button></header>
-    <p>{t('Quando algo acontece numa linha, a regra confere as condições e faz as ações. Tudo acontece neste Mac, sem rede. Use “Testar” para ver o que ela faria, sem alterar nada. Regras que disparam outras param depois de {n} níveis.', 'When something happens to a row, the rule checks its conditions and runs its actions. Everything happens on this Mac, with no network. Use “Test” to see what it would do without changing anything. Rules that trigger others stop after {n} levels.', { n: 3 })}</p>
+    <p>{t('Quando algo acontece numa linha, a regra confere as condições e faz as ações. Tudo acontece neste computador, sem rede. Use “Testar” para ver o que ela faria, sem alterar nada. Regras que disparam outras param depois de {n} níveis.', 'When something happens to a row, the rule checks its conditions and runs its actions. Everything happens on this computer, with no network. Use “Test” to see what it would do without changing anything. Rules that trigger others stop after {n} levels.', { n: 3 })}</p>
     {automations.map(automation => {
       const trigger = automation.trigger
       const preview = previews[automation.id]

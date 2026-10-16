@@ -5,7 +5,13 @@ const KEY_SYMBOLS: Record<string, string> = { Space: 'Espaço', Return: '↩', E
 const ORDER = ['Control', 'Alt', 'Shift', 'Command']
 
 /** 'Alt+Command+N' → '⌥⌘N' (ordem do macOS: ⌃⌥⇧⌘). */
-export function acceleratorLabel(accelerator: string, spaceLabel = 'Espaço'): string {
+export function acceleratorLabel(accelerator: string, spaceLabel = 'Espaço', platform = typeof window === 'undefined' ? 'darwin' : window.api?.platform ?? window.quickApi?.platform ?? 'darwin'): string {
+  if (platform === 'win32') {
+    const parts = accelerator.split('+'), key = parts.pop() ?? ''
+    const labels: Record<string, string> = { Control: 'Ctrl', Ctrl: 'Ctrl', CommandOrControl: 'Ctrl', CmdOrCtrl: 'Ctrl', Alt: 'Alt', Option: 'Alt', Shift: 'Shift', Command: 'Win', Cmd: 'Win', Meta: 'Win', Super: 'Win' }
+    const mods = parts.map(part => labels[part] ?? part).sort((a, b) => ['Ctrl', 'Alt', 'Shift', 'Win'].indexOf(a) - ['Ctrl', 'Alt', 'Shift', 'Win'].indexOf(b))
+    return [...mods, key === 'Space' ? spaceLabel : key === 'Return' ? 'Enter' : key.toUpperCase()].join('+')
+  }
   if (!accelerator) return ''
   const parts = accelerator.split('+'), key = parts.pop() ?? ''
   const mods = parts.map(part => ({ part, rank: ORDER.indexOf(part === 'Ctrl' ? 'Control' : part === 'Option' ? 'Alt' : ['Cmd', 'CommandOrControl', 'CmdOrCtrl', 'Super', 'Meta'].includes(part) ? 'Command' : part) }))

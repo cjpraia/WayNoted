@@ -10,7 +10,7 @@ Writes require approval by default and may wait for a response in the app. The t
 
 ## CLI
 
-The bundle includes `Desktop.app/Contents/Resources/bin/workspace`, which uses the embedded Electron runtime and needs no separate Node.js installation. Install the command on PATH from settings. In a checkout, use `npm run cli -- <command>`.
+On macOS, the bundle includes `Desktop.app/Contents/Resources/bin/workspace`; Windows includes `<installation>\resources\bin\workspace.exe`. Both use the embedded Electron runtime and need no separate Node.js installation. Install the command on PATH from settings. On Windows this changes only the current user’s PATH; reopen the terminal afterward. It does not require administrator access or symlink privileges. In a checkout, use `npm run cli -- <command>`.
 
 ```bash
 workspace help
@@ -47,6 +47,8 @@ Settings provides snippets with the actual paths for MCP clients and a setup com
   }
 }
 ```
+
+On Windows use the absolute `workspace.exe` path in `command`; JSON backslashes must be escaped, for example `C:\\Users\\User\\AppData\\Local\\Programs\\WorkspaceDesktop\\resources\\bin\\workspace.exe`. Settings generates the correct JSON and PowerShell commands automatically.
 
 Use absolute paths and replace the placeholders. Restart or reload the client session after changing configuration.
 
@@ -87,11 +89,11 @@ Receivers must use `http://127.0.0.1:PORT/path`. The app sends POST events with 
 
 Failed deliveries are retried with increasing delays. Deduplicate by event ID: a delivery can repeat after an interruption. Secrets and delivery logs stay local.
 
-## Web clipper and macOS features
+## Web clipper and native features
 
 The clipper uses separate pairing and can only create clips; it does not receive general access to notes. See [Web Clipper](../clipper/README.md) for installation and pairing.
 
-Calendar, Reminders, dictation, OCR, and Notes import are optional and depend on permissions and the macOS version. Configure them in the app; deny or revoke access through system settings when needed.
+Apple Calendar, Reminders, Notes import, and Apple embeddings remain macOS-only. Internal tasks, calendar views, and daily notes work on both platforms. OCR uses the OS engine on macOS and Windows. Windows needs an installed OCR language. Native dictation uses offline OS speech recognition and requires an installed recognizer for the selected language and microphone permission. Availability depends on the Windows image and language; the app reports unavailable recognizers instead of uploading audio. Windows Hello requires a configured compatible device/account. Configure native features in the app and Windows/macOS settings.
 
 Internal links use `workspace://page/UUID`, with `#block=ID` or `#view=ID` where applicable. Routes also exist for home, tasks, graph, productivity, types, daily notes, search, new pages, and quick capture. See `electron/deep-links.cjs` and `electron/quick-capture-core.cjs` for route contracts.
 

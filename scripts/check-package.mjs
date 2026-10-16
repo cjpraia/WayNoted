@@ -10,6 +10,7 @@ import { promisify } from 'node:util'
 const run = promisify(execFile)
 const option = name => process.argv.find(value => value.startsWith(`--${name}=`))?.slice(name.length + 3)
 const installer = option('installer')
+if (installer && !process.env.CI && !process.argv.includes('--allow-install')) throw new Error('Installer checks replace and uninstall the selected app. Use a disposable Windows environment and pass --allow-install explicitly.')
 const appPath = option('app') || (process.platform === 'win32' ? path.join(process.env.LOCALAPPDATA, 'Programs', 'WorkspaceDesktop', 'Desktop.exe') : path.resolve('release/Desktop-darwin-arm64/Desktop.app/Contents/MacOS/Desktop'))
 const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'workspace-package-'))
 const profile = path.join(directory, 'profile with spaces — á')
@@ -20,6 +21,11 @@ const result = { platform: process.platform, arch: process.arch, checks: [] }
 let application
 const check = (name, details = {}) => { result.checks.push({ name, ...details }); console.log('PASS:', name) }
 const env = { ...process.env, WORKSPACE_USER_DATA: profile }; delete env.ELECTRON_RUN_AS_NODE
+if (process.platform === 'win32') {
+  // The installed app and launcher must work without the runner's Node/.NET tools.
+  for (const name of Object.keys(env)) if (name.toLowerCase() === 'path') delete env[name]
+  env.PATH = [path.join(process.env.SystemRoot, 'System32'), process.env.SystemRoot].join(';')
+}
 async function launch() {
   application = await _electron.launch({ executablePath: appPath, env, timeout: 90000 })
   const page = await application.firstWindow({ timeout: 90000 })
@@ -51,12 +57,21 @@ try {
   const title = page.locator('textarea.pg-title'); await title.waitFor({ state: 'visible', timeout: 30000 })
   await title.fill('Windows package persistence check'); await page.locator('.bn-editor').first().waitFor({ state: 'attached', timeout: 30000 }); await title.press('End'); await title.press('Enter')
   const editor = page.locator('[contenteditable="true"]:visible').first(); await editor.click(); await page.keyboard.type('Persistent content from the installed Windows application.')
-  await eventually(async () => JSON.stringify(await request('/v1/pages')).includes('Windows package persistence check'))
-  check('Keyboard creates a page and persists its title')
+  const created = await eventually(async () => (await request('/v1/pages')).results.find(item => item.title === 'Windows package persistence check'))
+  await eventually(async () => JSON.stringify(await request(`/v1/pages/${created.id}/blocks`)).includes('Persistent content from the installed Windows application.'))
+  check('Keyboard creates a page and persists title and body')
   await page.evaluate(() => window.api.copyText('Windows clipboard check'))
   assert.equal(await application.evaluate(({ clipboard }) => clipboard.readText()), 'Windows clipboard check'); check('System clipboard')
   await page.screenshot({ path: path.join(artifacts, 'editor.png') })
   if (process.platform === 'win32') {
+    await page.evaluate(() => window.api.showQuickCapture())
+    const quick = await eventually(async () => (await application.windows()).find(item => item.url().includes('quick.html')))
+    await quick.locator('.qn-title').fill('Quick capture installed check')
+    await quick.locator('.qn-body').fill('Saved from the native floating window.')
+    await quick.locator('.qn-body').press('Control+Enter')
+    const captured = await eventually(async () => (await request('/v1/pages')).results.find(item => item.title === 'Quick capture installed check'))
+    assert.ok(JSON.stringify(await request(`/v1/pages/${captured.id}/blocks`)).includes('Saved from the native floating window.'))
+    check('Native quick capture saves through Ctrl+Enter')
     const image = await page.evaluate(() => { const canvas = document.createElement('canvas'); canvas.width = 1000; canvas.height = 150; const ctx = canvas.getContext('2d'); ctx.fillStyle = 'white'; ctx.fillRect(0, 0, 1000, 150); ctx.fillStyle = 'black'; ctx.font = '48px Segoe UI'; ctx.fillText('WINDOWS OCR CHECK 12345', 20, 90); return canvas.toDataURL('image/png') })
     const ocr = await page.evaluate(data => window.api.ocrImage(data), image)
     assert.ok(ocr.ok && /WINDOWS OCR CHECK/.test(ocr.text), JSON.stringify(ocr)); check('Native Windows OCR recognizes real image text')

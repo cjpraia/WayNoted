@@ -26,7 +26,7 @@ A daily note holds content for a date. **Tasks** collects checklist items and da
 
 The canvas arranges notes, shapes, connectors, images, and page or database cards on a freeform surface. Page cards remain linked to their original content. Export a canvas as PNG, SVG, or PDF.
 
-PDFs support highlights, notes, and drawing. OCR and dictation use local macOS capabilities when available.
+PDFs support highlights, notes, and drawing. OCR and dictation use local OS capabilities when available. Windows requires installed OCR/speech language support; see [Distribution](DISTRIBUTION.md#windows-native-features).
 
 ## Templates
 

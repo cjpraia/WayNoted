@@ -2,6 +2,7 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('quickApi', {
+  platform: process.platform,
   init: () => ipcRenderer.invoke('npq:init'),
   search: (query) => ipcRenderer.invoke('npq:search', query),
   destination: (id) => ipcRenderer.invoke('npq:destination', id),
