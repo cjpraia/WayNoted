@@ -2,7 +2,7 @@
 // preenchimento, traço, "estilo à mão" (Excalidraw), texto, conector, ordem e ações.
 import { useEffect, useState, type ReactNode } from 'react'
 import { useI18n } from '../../i18n'
-import { CANVAS_COLORS, NOTE_COLORS, isBox, isCard, rotatable, type BoxObject, type CanvasColor, type CanvasObject, type FillKind, type FontKind, type ShapeKind, type StrokeStyle } from '../../canvas/model'
+import { CANVAS_COLORS, NOTE_COLORS, isBox, isCard, rotatable, type BoxObject, type CanvasColor, type CanvasObject, type FillKind, type FontKind, type ShapeKind, type StrokeStyle, type TextObject } from '../../canvas/model'
 import type { Align } from '../../canvas/geometry'
 import type { Reorder } from '../../canvas/ops'
 import { SKETCH_LEVELS } from '../../canvas/sketch'
@@ -13,11 +13,11 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 /** Numeric field that commits on Enter/blur (arrow keys ±1, ⇧ ±10, like Figma). */
-function NumberField({ label, value, onCommit, suffix, min, max }: { label: string; value: number; onCommit(v: number): void; suffix?: string; min?: number; max?: number }) {
+function NumberField({ label, value, onCommit, suffix, min, max, symbol = label }: { label: string; symbol?: string; value: number; onCommit(v: number): void; suffix?: string; min?: number; max?: number }) {
   const [draft, setDraft] = useState(String(Math.round(value)))
   useEffect(() => setDraft(String(Math.round(value))), [value])
-  const commit = (raw: string) => { const v = Number(raw.replace(',', '.')); if (Number.isFinite(v)) onCommit(Math.max(min ?? -1e6, Math.min(max ?? 1e6, v))); else setDraft(String(Math.round(value))) }
-  return <label className="cv-num"><span>{label}</span><input inputMode="decimal" value={draft} aria-label={label} onChange={e => setDraft(e.target.value)} onBlur={e => commit(e.target.value)}
+  const commit = (raw: string) => { const v = Number(raw.replace(',', '.')); if (raw.trim() && Number.isFinite(v)) { const next = Math.max(min ?? -1e6, Math.min(max ?? 1e6, v)); setDraft(String(next)); if (next !== value) onCommit(next) } else setDraft(String(Math.round(value))) }
+  return <label className="cv-num"><span aria-hidden>{symbol}</span><input inputMode="decimal" value={draft} aria-label={label} onChange={e => setDraft(e.target.value)} onBlur={e => commit(e.target.value)}
     onKeyDown={e => { e.stopPropagation(); if (e.key === 'Enter') commit((e.target as HTMLInputElement).value); if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); const next = Math.round(value) + (e.key === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 10 : 1); setDraft(String(next)); commit(String(next)) } }} />{suffix && <em>{suffix}</em>}</label>
 }
 
@@ -25,15 +25,40 @@ function Seg<T extends string | number>({ value, options, onPick }: { value: T |
   return <div className="cv-seg">{options.map(o => <button key={String(o.id)} type="button" className={value === o.id ? 'is-active' : ''} aria-pressed={value === o.id} onClick={() => onPick(o.id)}>{o.label}</button>)}</div>
 }
 
+type TextFormat = Pick<TextObject, 'font' | 'fontSize' | 'align' | 'bold' | 'italic'>
+
+export function TextFormatControls({ object, onFormat }: { object: TextObject; onFormat(format: Partial<TextFormat>): void }) {
+  const { t } = useI18n()
+  return <div className="cv-text-format">
+    <div className="cv-text-format-row">
+      <Seg<FontKind> value={object.font ?? 'sans'} onPick={font => onFormat({ font: font === 'sans' ? undefined : font })}
+        options={[{ id: 'sans', label: 'Sans' }, { id: 'hand', label: t('À mão', 'Hand') }, { id: 'mono', label: 'Mono' }]} />
+      <NumberField label={t('Tamanho da fonte', 'Font size')} symbol="T" value={object.fontSize} min={6} max={400} suffix="px" onCommit={fontSize => onFormat({ fontSize: Math.round(fontSize) })} />
+    </div>
+    <div className="cv-text-format-row">
+      <div className="cv-seg">
+        <button type="button" aria-label={t('Negrito', 'Bold')} title={t('Negrito', 'Bold')} aria-pressed={!!object.bold} className={object.bold ? 'is-active' : ''} onClick={() => onFormat({ bold: !object.bold || undefined })}><strong>B</strong></button>
+        <button type="button" aria-label={t('Itálico', 'Italic')} title={t('Itálico', 'Italic')} aria-pressed={!!object.italic} className={object.italic ? 'is-active' : ''} onClick={() => onFormat({ italic: !object.italic || undefined })}><i>I</i></button>
+      </div>
+      <div className="cv-text-align">
+        <IconButton icon="alignLeft" size={16} label={t('Texto à esquerda', 'Align text left')} active={!object.align} onClick={() => onFormat({ align: undefined })} />
+        <IconButton icon="alignHCenter" size={16} label={t('Centralizar texto', 'Center text')} active={object.align === 'center'} onClick={() => onFormat({ align: 'center' })} />
+        <IconButton icon="alignRight" size={16} label={t('Texto à direita', 'Align text right')} active={object.align === 'right'} onClick={() => onFormat({ align: 'right' })} />
+      </div>
+    </div>
+  </div>
+}
+
 interface Props {
   objects: CanvasObject[]
   onPatch(fn: (o: CanvasObject) => CanvasObject, key?: string): void
+  onTextFormat(o: TextObject): TextObject
   onAlign(mode: Align | 'distributeH' | 'distributeV'): void
   onReorder(mode: Reorder): void
   onLock(): void; onGroup(): void; onUngroup(): void; onDelete(): void; onDuplicate(): void; onEdit(): void; onSaveLibrary(): void
 }
 
-export function BoardInspector({ objects, onPatch, onAlign, onReorder, onLock, onGroup, onUngroup, onDelete, onDuplicate, onEdit, onSaveLibrary }: Props) {
+export function BoardInspector({ objects, onPatch, onTextFormat, onAlign, onReorder, onLock, onGroup, onUngroup, onDelete, onDuplicate, onEdit, onSaveLibrary }: Props) {
   const { t } = useI18n()
   const first = objects[0]
   const types = new Set(objects.map(o => o.type))
@@ -47,10 +72,13 @@ export function BoardInspector({ objects, onPatch, onAlign, onReorder, onLock, o
   const texty = objects.every(o => o.type === 'note' || o.type === 'text' || o.type === 'shape' || o.type === 'connector' || o.type === 'section')
   const colorable = objects.every(o => 'color' in o)
   const typeLabel: Record<string, string> = { note: t('Nota', 'Note'), text: t('Texto', 'Text'), shape: t('Forma', 'Shape'), section: t('Seção', 'Section'), connector: t('Conector', 'Connector'), draw: t('Desenho', 'Drawing'), image: t('Imagem', 'Image'), file: t('Arquivo', 'File'), page: t('Página', 'Page'), database: t('Banco de dados', 'Database') }
-  const style = first as Partial<{ opacity: number; strokeStyle: StrokeStyle; strokeWidth: number; sketch: number; font: FontKind; color: CanvasColor; fill: FillKind; shape: ShapeKind; radius: number; route: string; startArrow: boolean; endArrow: boolean; fontSize: number; align: string; size: number }>
+  const style = first as Partial<{ opacity: number; strokeStyle: StrokeStyle; strokeWidth: number; sketch: number; font: FontKind; color: CanvasColor; fill: FillKind; shape: ShapeKind; radius: number; route: string; startArrow: boolean; endArrow: boolean; size: number }>
   const patchBox = (key: string, change: (o: BoxObject) => BoxObject) => onPatch(o => isBox(o) ? change(o) : o, key)
   return <aside className="cv-inspector" aria-label={t('Propriedades do objeto', 'Object properties')} onPointerDown={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()} onWheel={e => e.stopPropagation()}>
     <div className="cv-insp-head"><strong>{objects.length > 1 ? t('{n} objetos', '{n} objects', { n: objects.length }) : only ? typeLabel[only] : ''}</strong>{locked && <span className="cv-insp-badge">{t('Travado', 'Locked')}</span>}</div>
+    {first.type === 'text' && only === 'text' && !locked && <Section title={t('Texto', 'Text')}>
+      <TextFormatControls key={first.id} object={first} onFormat={format => onPatch(o => o.type === 'text' ? onTextFormat({ ...o, ...format }) : o)} />
+    </Section>}
     {single && !locked && <Section title={t('Posição e tamanho', 'Position and size')}>
       <div className="cv-num-grid">
         <NumberField label="X" value={single.x} onCommit={v => patchBox(`geom:${single.id}`, o => ({ ...o, x: v }))} />
@@ -92,12 +120,10 @@ export function BoardInspector({ objects, onPatch, onAlign, onReorder, onLock, o
     {only === 'connector' && !locked && <Section title={t('Conector', 'Connector')}>
       {(['curve', 'straight', 'orthogonal'] as const).map(r => <IconButton key={r} icon={r} size={16} label={r === 'curve' ? t('Curva', 'Curved') : r === 'straight' ? t('Reta', 'Straight') : t('Ortogonal', 'Elbow')} active={style.route === r} onClick={() => onPatch(o => o.type === 'connector' ? { ...o, route: r } : o)} />)}
       <IconButton icon="arrowStart" size={16} label={t('Seta no início', 'Start arrow')} active={!!style.startArrow} onClick={() => onPatch(o => o.type === 'connector' ? { ...o, startArrow: !o.startArrow || undefined } : o)} />
-      <IconButton icon="arrowEnd" size={16} label={t('Seta no fim', 'End arrow')} active={!!style.endArrow} onClick={() => onPatch(o => o.type === 'connector' ? { ...o, endArrow: !o.endArrow || undefined } : o)} />
+      <IconButton icon="arrowEnd" size={16} label={t('Seta no fim', 'End arrow')} active={!!style.endArrow} onClick={() => onPatch(o => o.type === 'connector' ? { ...o, endArrow: !o.endArrow } : o)} />
     </Section>}
-    {texty && !locked && <Section title={t('Texto', 'Text')}>
+    {texty && only !== 'text' && !locked && <Section title={t('Texto', 'Text')}>
       <Seg<FontKind> value={style.font ?? 'sans'} onPick={font => onPatch(o => ({ ...o, font: font === 'sans' ? undefined : font }) as CanvasObject)} options={[{ id: 'sans', label: 'Sans' }, { id: 'hand', label: t('À mão', 'Hand') }, { id: 'mono', label: 'Mono' }]} />
-      {only === 'text' && <Seg<number> value={style.fontSize} onPick={n => onPatch(o => o.type === 'text' ? { ...o, fontSize: n, h: Math.max(o.h, n * 1.4) } : o)} options={[{ id: 14, label: 'P' }, { id: 20, label: 'M' }, { id: 32, label: 'G' }, { id: 56, label: 'XG' }]} />}
-      {only === 'text' && <Seg<string> value={style.align ?? 'left'} onPick={a => onPatch(o => o.type === 'text' ? { ...o, align: a === 'left' ? undefined : a as 'center' | 'right' } : o)} options={[{ id: 'left', label: '⟸' }, { id: 'center', label: '≡' }, { id: 'right', label: '⟹' }]} />}
     </Section>}
     <Section title={t('Ordem', 'Order')}>
       <IconButton icon="front" size={16} label={t('Trazer para a frente', 'Bring to front')} kbd="⌘⇧]" onClick={() => onReorder('front')} />

@@ -56,6 +56,18 @@ export function facingSide(b: BoxObject, toward: Point): Exclude<Side, 'auto'> {
   return dy >= 0 ? 'bottom' : 'top'
 }
 
+/** Anchor in the object's unrotated box, as fractions of its width and height. */
+export function connectorEndAt(p: Point, target?: BoxObject | null): ConnectorEnd {
+  if (!target) return { x: p.x, y: p.y }
+  const local = rotatePoint(p, center(target), -(target.rotation ?? 0))
+  const fraction = (n: number) => Math.max(0, Math.min(1, n))
+  return { ...p, id: target.id, anchor: { u: fraction((local.x - target.x) / target.w), v: fraction((local.y - target.y) / target.h) } }
+}
+
+function anchorPoint(target: BoxObject, anchor: NonNullable<ConnectorEnd['anchor']>): Point {
+  return rotatePoint({ x: target.x + anchor.u * target.w, y: target.y + anchor.v * target.h }, center(target), target.rotation ?? 0)
+}
+
 function endTarget(end: ConnectorEnd, lookup: Lookup): BoxObject | undefined {
   if (!end.id) return undefined
   const target = lookup(end.id)
@@ -67,10 +79,11 @@ export interface ConnectorEnds { a: Point; b: Point; sideA: Exclude<Side, 'auto'
 /** Resolves both ends; anchored ends follow their objects (missing objects fall back to the stored point). */
 export function connectorEnds(c: ConnectorObject, lookup: Lookup): ConnectorEnds {
   const ta = endTarget(c.from, lookup), tb = endTarget(c.to, lookup)
-  const rough = (target: BoxObject | undefined, end: ConnectorEnd) => target ? center(target) : { x: end.x, y: end.y }
+  const rough = (target: BoxObject | undefined, end: ConnectorEnd) => target ? (end.anchor ? anchorPoint(target, end.anchor) : center(target)) : { x: end.x, y: end.y }
   const ra = rough(ta, c.from), rb = rough(tb, c.to)
   const resolve = (target: BoxObject | undefined, end: ConnectorEnd, other: Point) => {
     if (!target) return { p: { x: end.x, y: end.y }, side: null }
+    if (end.anchor) return { p: anchorPoint(target, end.anchor), side: null }
     const s = end.side && end.side !== 'auto' ? end.side : facingSide(target, other)
     return { p: sidePoint(target, s), side: s as Exclude<Side, 'auto'> }
   }
@@ -87,12 +100,16 @@ export function connectorGeometry(c: ConnectorObject, lookup: Lookup): Connector
   const dist = Math.hypot(b.x - a.x, b.y - a.y)
   if (c.route === 'curve') {
     const d = Math.max(30, Math.min(240, dist / 2.5))
-    const dir = (side: Side | null, from: Point, to: Point): Point => {
+    const dir = (side: Side | null, end: ConnectorEnd, from: Point, to: Point): Point => {
       if (side) return NORMAL[side]
+      if (end.anchor) {
+        const dx = to.x - from.x, dy = to.y - from.y
+        return Math.abs(dx) >= Math.abs(dy) ? { x: Math.sign(dx), y: 0 } : { x: 0, y: Math.sign(dy) }
+      }
       const len = Math.hypot(to.x - from.x, to.y - from.y) || 1
       return { x: (to.x - from.x) / len, y: (to.y - from.y) / len }
     }
-    const na = dir(sideA, a, b), nb = dir(sideB, b, a)
+    const na = dir(sideA, c.from, a, b), nb = dir(sideB, c.to, b, a)
     return { kind: 'bezier', points: [a, { x: a.x + na.x * d, y: a.y + na.y * d }, { x: b.x + nb.x * d, y: b.y + nb.y * d }, b], ends }
   }
   // Ortogonal: saídas perpendiculares de 20 e cotovelos no meio.

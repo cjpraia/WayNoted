@@ -2,8 +2,8 @@ import COMPAT from '../shared/compatibility.ts'
 // Lousa: modelo, normalização, envelope do documento, geometria, snap, conectores, culling e desfazer.
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { canvasDocument, canvasSegments, canvasText, contrast, emptyCanvas, normalizeCanvas, normalizeCanvasPageInfo, readCanvasDocument, swatch, CANVAS_COLORS, type CanvasObject, type ConnectorObject } from '../src/canvas/model.ts'
-import { alignOffsets, boxBounds, connectorEnds, connectorGeometry, distributeOffsets, handleAt, hitTest, objectBounds, resizeRect, rotationFor, sectionMembers, snapRect, transformObject } from '../src/canvas/geometry.ts'
+import { canvasDocument, canvasSegments, canvasText, contrast, emptyCanvas, normalizeCanvas, normalizeCanvasPageInfo, readCanvasDocument, swatch, CANVAS_COLORS, type CanvasObject, type ConnectorObject, type BoxObject } from '../src/canvas/model.ts'
+import { alignOffsets, boxBounds, connectorEndAt, connectorEnds, connectorGeometry, distributeOffsets, handleAt, hitTest, objectBounds, resizeRect, rotationFor, rotatePoint, sectionMembers, snapRect, transformObject } from '../src/canvas/geometry.ts'
 import { SpatialIndex } from '../src/canvas/spatial.ts'
 import { CanvasHistory } from '../src/canvas/history.ts'
 import { createBox, deleteObjects, duplicateObjects, freezeConnectorEnds, groupObjects, lookupOf, parseClipboard, pasteObjects, reorder, serializeClipboard, simplifySamples, strokeFromSamples, strokesAt, withGroups } from '../src/canvas/ops.ts'
@@ -84,6 +84,38 @@ test('hit-test respects z order, rotation, shape outlines and cards above the ca
   assert.equal(hitTest(objects, { x: 950, y: 50 }, 0, lookup)?.id, 'card', 'DOM cards render above the canvas layer')
   const b = boxBounds(objects[3] as never)
   assert.ok(Math.abs(b.w - 20) < 1e-6 && Math.abs(b.h - 200) < 1e-6)
+})
+
+test('interior connector anchors survive document and clipboard round trips, resize and rotation', () => {
+  const a = { ...box('a', 100, 200), type: 'image', rotation: 90, src: 'data:image/png;base64,AAAA', name: 'A' } as BoxObject
+  const b = { ...a, id: 'b', x: 400, rotation: 0 }
+  const point = rotatePoint({ x: 125, y: 260 }, { x: 150, y: 240 }, 90)
+  const connector: ConnectorObject = { id: 'c', type: 'connector', route: 'straight', color: 'default', endArrow: false,
+    from: connectorEndAt(point, a), to: connectorEndAt({ x: 470, y: 216 }, b) }
+  const doc = canvasDocument({ ...emptyCanvas(), objects: [a, b, connector] }, 'blk')
+  const saved = readCanvasDocument(JSON.parse(JSON.stringify(doc))).data.objects
+  const savedConnector = saved.find(o => o.type === 'connector') as ConnectorObject
+  assert.equal(savedConnector.endArrow, false)
+  assert.deepEqual(savedConnector.from.anchor, { u: 0.25, v: 0.75 })
+  assert.deepEqual(connectorEnds(savedConnector, lookupOf(saved)).a, point)
+
+  const resized = { ...a, x: 40, y: 50, w: 200, h: 160 }
+  const frozen = freezeConnectorEnds([resized, b, savedConnector])[2] as ConnectorObject
+  assert.deepEqual(connectorEnds(frozen, lookupOf([b])).a, { x: 100, y: 80 })
+  const clip = parseClipboard(serializeClipboard([resized, b, frozen], new Set(['a', 'b'])))
+  const pasted = pasteObjects(clip!, { x: 700, y: 500 })
+  const pastedConnector = pasted.find(o => o.type === 'connector') as ConnectorObject
+  assert.deepEqual(pastedConnector.to.anchor, { u: 0.7, v: 0.2 })
+  assert.ok(pasted.some(o => o.id === pastedConnector.to.id))
+})
+
+test('text formatting survives saving and is rendered in SVG export', () => {
+  const doc = canvasDocument({ ...emptyCanvas(), objects: [
+    { id: 't', type: 'text', x: 0, y: 0, w: 300, h: 60, text: 'Título', color: 'default', bold: true, italic: true, align: 'right', fontSize: 36 },
+  ] }, 'blk')
+  const saved = readCanvasDocument(JSON.parse(JSON.stringify(doc))).data.objects
+  const svg = canvasToSvg(saved, { palette: LIGHT_PALETTE })
+  assert.match(svg, /font-size="36" font-weight="700" font-style="italic"[^>]+text-anchor="end"/)
 })
 
 test('connectors anchor to facing sides, follow moved objects and fall back when the target is gone', () => {

@@ -24,7 +24,7 @@ export const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
 const n = (v: number) => Math.round(v * 100) / 100
 const measure = (size: number) => (s: string) => s.length * size * 0.56
 
-function text(content: string, r: Rect, size: number, color: string, font: string, align: 'left' | 'center' | 'right' = 'left', middle = false, weight = 400): string {
+function text(content: string, r: Rect, size: number, color: string, font: string, align: 'left' | 'center' | 'right' = 'left', middle = false, weight = 400, italic = false): string {
   if (!content) return ''
   const lines = wrapText(measure(size), content, Math.max(10, r.w), `svg${size}`)
   const lh = size * 1.35
@@ -33,7 +33,7 @@ function text(content: string, r: Rect, size: number, color: string, font: strin
   const top = middle ? r.y + (r.h - shown.length * lh) / 2 : r.y
   const x = align === 'center' ? r.x + r.w / 2 : align === 'right' ? r.x + r.w : r.x
   const anchor = align === 'center' ? 'middle' : align === 'right' ? 'end' : 'start'
-  return `<text x="${n(x)}" y="${n(top)}" font-family="${esc(font)}" font-size="${size}" font-weight="${weight}" fill="${color}" text-anchor="${anchor}">${shown.map((line, i) => `<tspan x="${n(x)}" dy="${i === 0 ? n(size * 1.05) : n(lh)}">${esc(line) || ' '}</tspan>`).join('')}</text>`
+  return `<text x="${n(x)}" y="${n(top)}" font-family="${esc(font)}" font-size="${size}" font-weight="${weight}"${italic ? ' font-style="italic"' : ''} fill="${color}" text-anchor="${anchor}">${shown.map((line, i) => `<tspan x="${n(x)}" dy="${i === 0 ? n(size * 1.05) : n(lh)}">${esc(line) || ' '}</tspan>`).join('')}</text>`
 }
 
 function boxSvg(o: BoxObject, opts: SvgOptions): string {
@@ -51,7 +51,7 @@ function boxSvg(o: BoxObject, opts: SvgOptions): string {
       body = `<rect x="${n(o.x)}" y="${n(o.y)}" width="${n(o.w)}" height="${n(o.h)}" rx="4" fill="${bg}"/>` + (o.sketch ? `<path d="${sketchBoxPath(o, o.sketch)}" fill="none" stroke="${swatch(o.color, dark)[2]}" stroke-width="${n(o.strokeWidth ?? 1.8)}" stroke-linecap="round" stroke-linejoin="round"/>` : '') + text(o.text, { x: o.x + 14, y: o.y + 12, w: o.w - 28, h: o.h - 24 }, NOTE_FONT, fg, font)
       break
     }
-    case 'text': body = text(o.text, o, o.fontSize, o.color === 'default' ? p.text : inkColor(o.color, dark), font, o.align ?? 'left'); break
+    case 'text': body = text(o.text, o, o.fontSize, o.color === 'default' ? p.text : inkColor(o.color, dark), font, o.align ?? 'left', false, o.bold ? 700 : 400, o.italic); break
     case 'shape': {
       const [bg, fg, stroke] = swatch(o.color, dark)
       const width = o.strokeWidth ?? 2

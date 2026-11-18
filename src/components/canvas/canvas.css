@@ -219,3 +219,21 @@
 /* Com o painel lateral aberto (inspetor ou camadas), o minimapa e o zoom saem da frente e vão para a esquerda dele. */
 :has(> .cv-side) > .cv-minimap, :has(> .cv-side) > .cv-zoom { right: calc(248px + var(--space-5) + var(--space-3)); }
 @media (max-width: 720px) { :has(> .cv-side) > .cv-zoom { right: var(--space-4); } }
+
+.cv-text-format { display: grid; gap: 8px; }
+.cv-text-format-row, .cv-text-align { display: flex; align-items: center; gap: 4px; }
+.cv-text-format-row > .cv-num { width: 72px; }
+.cv-format-bar {
+  position: absolute;
+  z-index: 6;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 96px);
+  padding: 8px;
+  background: var(--cv-panel, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px hsl(0 0% 0% / .12);
+}
+.cv-format-bar .cv-text-format { display: flex; flex-wrap: wrap; }

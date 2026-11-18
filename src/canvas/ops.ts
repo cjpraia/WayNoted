@@ -38,7 +38,7 @@ export function createBox(type: BoxObject['type'], at: Point, options: NewObject
 }
 
 export function createConnector(from: ConnectorObject['from'], to: ConnectorObject['to'], arrow = true, route: ConnectorObject['route'] = 'curve'): ConnectorObject {
-  return { id: newObjectId(), type: 'connector', from, to, route, color: 'default', ...(arrow ? { endArrow: true } : {}) }
+  return { id: newObjectId(), type: 'connector', from, to, route, color: 'default', endArrow: arrow }
 }
 
 /** Stores the resolved end points of anchored connectors (fallback if the target disappears). */

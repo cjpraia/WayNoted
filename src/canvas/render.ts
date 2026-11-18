@@ -61,9 +61,9 @@ export function wrapText(measure: (s: string) => number, text: string, maxWidth:
 
 export const NOTE_FONT = 16, SHAPE_FONT = 16, SECTION_FONT = 15, CARD_TITLE_FONT = 15
 
-function textBlock(ctx: Ctx, v: View, text: string, r: Rect, size: number, color: string, palette: CanvasPalette, align: 'left' | 'center' | 'right' = 'left', vAlign: 'top' | 'middle' = 'top', weight = 400, family = palette.font) {
+function textBlock(ctx: Ctx, v: View, text: string, r: Rect, size: number, color: string, palette: CanvasPalette, align: 'left' | 'center' | 'right' = 'left', vAlign: 'top' | 'middle' = 'top', weight = 400, family = palette.font, italic = false) {
   if (!text) return
-  const font = `${weight} ${size}px ${family}`
+  const font = `${italic ? 'italic ' : ''}${weight} ${size}px ${family}`
   ctx.font = font
   const lines = wrapText(s => ctx.measureText(s).width, text, Math.max(10, r.w), font)
   const lineHeight = size * 1.35
@@ -135,7 +135,7 @@ function drawBox(ctx: Ctx, v: View, o: BoxObject, opts: RenderOptions) {
       break
     }
     case 'text':
-      if (!hide) textBlock(ctx, v, o.text, o, o.fontSize, o.color === 'default' ? p.text : inkColor(o.color, dark), p, o.align ?? 'left', 'top', 400, family)
+      if (!hide) textBlock(ctx, v, o.text, o, o.fontSize, o.color === 'default' ? p.text : inkColor(o.color, dark), p, o.align ?? 'left', 'top', o.bold ? 700 : 400, family, o.italic)
       break
     case 'shape': {
       const [bg, fg, stroke] = swatch(o.color, dark)
@@ -301,7 +301,8 @@ export interface Overlay {
   lasso?: Point[] | null
   guides?: Guide[]
   hover?: CanvasObject | null
-  pendingLine?: [Point, Point] | null
+  pendingLine?: ReturnType<typeof connectorGeometry> | null
+  anchor?: Point | null
   stroke?: { samples: number[]; color: string; size: number } | null
   eraser?: { at: Point; radius: number } | null
   highlight?: Set<string>
@@ -391,9 +392,15 @@ export function drawOverlay(ctx: Ctx, v: View, overlay: Overlay, opts: RenderOpt
     ctx.beginPath(); ctx.moveTo(p.x - 4, p.y); ctx.lineTo(p.x + 4, p.y); ctx.moveTo(p.x, p.y - 4); ctx.lineTo(p.x, p.y + 4); ctx.stroke()
   }
   if (overlay.pendingLine) {
-    const [a, b] = overlay.pendingLine.map(S)
-    ctx.strokeStyle = accent; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); ctx.setLineDash([])
+    const g = overlay.pendingLine
+    const [a, b, c, d] = g.points.map(S)
+    ctx.strokeStyle = accent; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(a.x, a.y)
+    if (g.kind === 'bezier') ctx.bezierCurveTo(b.x, b.y, c.x, c.y, d.x, d.y)
+    else ctx.lineTo(b.x, b.y)
+    ctx.stroke()
+    for (const end of [g.ends.a, g.ends.b]) handle(ctx, S(end), accent, true)
   }
+  if (overlay.anchor) handle(ctx, S(overlay.anchor), accent, true)
   if (overlay.stroke && overlay.stroke.samples.length >= 3) {
     const s = overlay.stroke.samples
     ctx.strokeStyle = overlay.stroke.color; ctx.lineCap = 'round'; ctx.lineJoin = 'round'

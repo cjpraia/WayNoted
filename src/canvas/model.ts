@@ -26,14 +26,14 @@ export interface BoxBase extends StyleProps { id: string; x: number; y: number; 
 export interface PageCardObject extends BoxBase { type: 'page'; pageId: string }
 export interface DatabaseCardObject extends BoxBase { type: 'database'; pageId: string }
 export interface NoteObject extends BoxBase { type: 'note'; text: string; color: CanvasColor }
-export interface TextObject extends BoxBase { type: 'text'; text: string; color: CanvasColor; fontSize: number; align?: 'left' | 'center' | 'right' }
+export interface TextObject extends BoxBase { type: 'text'; text: string; color: CanvasColor; fontSize: number; bold?: true; italic?: true; align?: 'left' | 'center' | 'right' }
 export type FillKind = 'tint' | 'solid' | 'none' | 'hachure' | 'cross'
 export interface ShapeObject extends BoxBase { type: 'shape'; shape: ShapeKind; text: string; color: CanvasColor; fill: FillKind; /** Corner radius (rectangles). */ radius?: number }
 export interface DrawObject extends BoxBase { type: 'draw'; points: number[]; color: CanvasColor; size: number }
 export interface ImageObject extends BoxBase { type: 'image'; src: string; name: string }
 export interface FileObject extends BoxBase { type: 'file'; data: string; name: string; size: number; mime: string }
 export interface SectionObject extends BoxBase { type: 'section'; title: string; color: CanvasColor }
-export interface ConnectorEnd { id?: string; side?: Side; x: number; y: number }
+export interface ConnectorEnd { id?: string; side?: Side; anchor?: { u: number; v: number }; x: number; y: number }
 export interface ConnectorObject extends StyleProps { id: string; type: 'connector'; from: ConnectorEnd; to: ConnectorEnd; route: Route; label?: string; color: CanvasColor; startArrow?: boolean; endArrow?: boolean; locked?: boolean; groupId?: string }
 
 export type BoxObject = PageCardObject | DatabaseCardObject | NoteObject | TextObject | ShapeObject | DrawObject | ImageObject | FileObject | SectionObject
@@ -69,8 +69,13 @@ function normalizeEnd(raw: unknown): ConnectorEnd {
   const end = isObj(raw) ? raw : {}
   const out: ConnectorEnd = { x: num(end.x, 0), y: num(end.y, 0) }
   if (typeof end.id === 'string' && end.id) out.id = end.id
-  const s = side(end.side)
-  if (s && s !== 'auto') out.side = s
+  const anchor = end.anchor
+  if (out.id && isObj(anchor) && typeof anchor.u === 'number' && Number.isFinite(anchor.u) && typeof anchor.v === 'number' && Number.isFinite(anchor.v)) {
+    out.anchor = { u: num(anchor.u, 0.5, 0, 1), v: num(anchor.v, 0.5, 0, 1) }
+  } else {
+    const s = side(end.side)
+    if (s && s !== 'auto') out.side = s
+  }
   return out
 }
 
@@ -98,8 +103,10 @@ export function normalizeObject(raw: unknown): CanvasObject | null {
     normalizeStyle(raw, out as unknown as Record<string, unknown>)
     if (typeof raw.label === 'string' && raw.label) out.label = raw.label
     if (raw.startArrow === true) out.startArrow = true
-    if (raw.endArrow !== false) out.endArrow = true
-    if (out.from.id && out.from.id === out.to.id) delete out.to.id
+    out.endArrow = raw.endArrow !== false
+    if (out.from.id && out.from.id === out.to.id && !(out.from.anchor && out.to.anchor)) {
+      out.to = { x: out.to.x, y: out.to.y }
+    }
     return out
   }
   if (!BOX_TYPES.includes(raw.type)) return { ...(raw as object) } as unknown as CanvasObject
@@ -114,6 +121,8 @@ export function normalizeObject(raw: unknown): CanvasObject | null {
       box.pageId = raw.pageId; break
     case 'note': box.text = str(raw.text); box.color = color(raw.color, 'yellow'); break
     case 'text': box.text = str(raw.text); box.color = color(raw.color, 'default'); box.fontSize = num(raw.fontSize, 20, 6, 400)
+      if (raw.bold === true) box.bold = true
+      if (raw.italic === true) box.italic = true
       if (raw.align === 'center' || raw.align === 'right') box.align = raw.align; break
     case 'shape': box.shape = ['rect', 'ellipse', 'diamond'].includes(raw.shape as string) ? raw.shape : 'rect'; box.text = str(raw.text); box.color = color(raw.color, 'blue')
       box.fill = ['solid', 'none', 'hachure', 'cross'].includes(raw.fill as string) ? raw.fill : 'tint'
