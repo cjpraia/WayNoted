@@ -241,3 +241,29 @@ test('SVG export escapes text, draws dead connectors and respects the theme', ()
   assert.match(svg, new RegExp(DARK_PALETTE.bg))
   assert.ok(canvasToSvg([], { palette: LIGHT_PALETTE }).startsWith('<svg'))
 })
+
+test('connector bends preserve the endpoints and survive saving, copying, and export', () => {
+  const base: ConnectorObject = {
+    id: 'c', type: 'connector', from: { x: 0, y: 0 }, to: { x: 300, y: 160 },
+    route: 'orthogonal', color: 'default', bend: { dx: 80, dy: 0 },
+  }
+  const saved = readCanvasDocument(canvasDocument({ ...emptyCanvas(), objects: [base] }, 'bend-doc')).data.objects
+  const elbow = saved[0] as ConnectorObject
+  const geometry = connectorGeometry(elbow, lookupOf(saved))
+  assert.deepEqual(geometry.points, [{ x: 0, y: 0 }, { x: 230, y: 0 }, { x: 230, y: 160 }, { x: 300, y: 160 }])
+  assert.deepEqual(geometry.bendHandle, { point: { x: 230, y: 80 }, axis: 'x' })
+  assert.match(canvasToSvg(saved, { palette: LIGHT_PALETTE }), /L230 160/)
+  const flat = { ...elbow, to: { x: 300, y: 0 }, bend: { dx: 0, dy: 45 } }
+  const detour = connectorGeometry(flat, lookupOf([]))
+  assert.deepEqual(detour.bendHandle, { point: { x: 150, y: 45 }, axis: 'y' })
+  assert.ok(detour.points.slice(1).every((point, i) => point.x === detour.points[i].x || point.y === detour.points[i].y))
+
+  const curve = { ...elbow, route: 'curve' as const, bend: { dx: -30, dy: 60 } }
+  const auto = connectorGeometry({ ...curve, bend: undefined }, lookupOf([]))
+  const manual = connectorGeometry(curve, lookupOf([]))
+  assert.deepEqual(manual.ends, auto.ends)
+  assert.deepEqual(manual.bendHandle?.point, { x: 120, y: 140 })
+  const duplicated = duplicateObjects([curve], new Set([curve.id])).objects[1] as ConnectorObject
+  assert.deepEqual(duplicated.bend, curve.bend)
+  assert.deepEqual(connectorGeometry(duplicated, lookupOf([])).bendHandle?.point, { x: 144, y: 164 })
+})

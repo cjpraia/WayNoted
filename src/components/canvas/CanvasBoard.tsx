@@ -6,7 +6,7 @@ import { actions, getState, subscribe } from '../../store'
 import { useI18n, t as tNow } from '../../i18n'
 import { foldSearch } from '../../workspace'
 import { fontOf, inkColor, BOX_TYPES, DEFAULT_SIZE, GRID_SIZE, isBox, isCard, isConnector, MAX_FILE_BYTES, objectText, rotatable, type BoxObject, type CanvasColor, type CanvasData, type CanvasObject, type ConnectorEnd, type ConnectorObject, type ShapeKind, type TextObject } from '../../canvas/model'
-import { lassoSelect, nearestDistances, alignOffsets, boxBounds, center, connectorEndAt, connectorGeometry, distributeOffsets, distToPolyline, geometryPolyline, handleAt, hitObject, hitTest, midpointOf, normRect, objectBounds, rectsIntersect, containsRect, resizeRect, rotatePoint, rotationFor, sectionMembers, snapRect, snapToGrid, transformObject, translateObject, unionRects, type Align, type Guide, type Handle, type Lookup, type Point, type Rect } from '../../canvas/geometry'
+import { lassoSelect, nearestDistances, alignOffsets, boxBounds, center, connectorEndAt, connectorGeometry, distributeOffsets, distToPolyline, geometryPolyline, handleAt, hitObject, hitTest, midpointOf, normRect, objectBounds, rectsIntersect, containsRect, resizeRect, rotatePoint, rotationFor, sectionMembers, snapRect, snapToGrid, transformObject, translateObject, unionRects, type Align, type ConnectorBendHandle, type Guide, type Handle, type Lookup, type Point, type Rect } from '../../canvas/geometry'
 import { SpatialIndex } from '../../canvas/spatial'
 import { samplePressure, wheelIntent } from '../../canvas/gestures'
 import { CanvasHistory } from '../../canvas/history'
@@ -42,6 +42,7 @@ type Gesture =
   | { kind: 'rotate'; id: string; base: CanvasObject[] }
   | { kind: 'create'; type: 'note' | 'text' | 'shape' | 'section'; shape?: ShapeKind; start: Point; dragged: boolean; base: CanvasObject[]; id: string }
   | { kind: 'line'; start: Point; from: ConnectorEnd; arrow: boolean }
+  | { kind: 'bend'; connector: ConnectorObject; axis: ConnectorBendHandle['axis']; start: Point; base: CanvasObject[] }
   | { kind: 'endpoint'; id: string; which: 'from' | 'to'; start: Point; base: CanvasObject[] }
   | { kind: 'pen'; samples: number[] }
   | { kind: 'erase'; base: CanvasObject[]; removed: Set<string> }
@@ -61,6 +62,9 @@ const lineConnector = (from: ConnectorEnd, to: ConnectorEnd, arrow: boolean): Co
   route: arrow && (from.id || to.id) ? 'curve' : 'straight',
   endArrow: arrow,
 })
+
+const bendCursor = (axis: ConnectorBendHandle['axis']) => axis === 'x' ? 'ew-resize' : axis === 'y' ? 'ns-resize' : 'grab'
+const hitsConnectorHandle = (p: Point, handle: Point, zoom: number) => Math.hypot(p.x - handle.x, p.y - handle.y) <= 8 / zoom
 
 const editableTarget = (target: EventTarget | null) => target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || !!target.closest('[contenteditable="true"]'))
 const viewKey = (pageId: string) => `${COMPAT.record028}${pageId}`
@@ -309,7 +313,7 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
       const editable = !readOnlyRef.current && selected.length > 0 && selected.every(o => !o.locked) && !(single && isConnector(single))
       const showHandles = editable && toolRef.current === 'select' && !editingRef.current
       const quick = showHandles && !gestureRef.current && single && (single.type === 'note' || single.type === 'shape') && v.k >= 0.3 ? quickAddPoints(single, v.k) : undefined
-      drawOverlay(octx, v, { selected, bounds, rotation: single && isBox(single) ? single.rotation ?? 0 : 0, canRotate: editable && !!single && rotatable(single), showHandles, sizeBadge: showHandles && !single?.rotation, quickAdd: quick, ...overlayExtra.current }, { palette, lookup }, dpr)
+      drawOverlay(octx, v, { selected, bounds, rotation: single && isBox(single) ? single.rotation ?? 0 : 0, canRotate: editable && !!single && rotatable(single), showHandles, showConnectorBend: toolRef.current === 'select' && !readOnlyRef.current && !editingRef.current, sizeBadge: showHandles && !single?.rotation, quickAdd: quick, ...overlayExtra.current }, { palette, lookup }, dpr)
     }
     if (worldRef.current) worldRef.current.style.transform = `translate(${v.tx}px, ${v.ty}px) scale(${v.k})`
     const cardKey = cardIds.join(',')
@@ -456,11 +460,16 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
     if (selected.length === 1 && isConnector(selected[0])) {
       const g = connectorGeometry(selected[0], lookup)
       for (const [which, point] of [['from', g.ends.a], ['to', g.ends.b]] as const) {
-        if (Math.hypot(point.x - p.x, point.y - p.y) <= 8 / viewRef.current.k) {
+        if (hitsConnectorHandle(p, point, viewRef.current.k)) {
           e.stopPropagation(); e.preventDefault(); capture(e)
           gestureRef.current = { kind: 'endpoint', id: selected[0].id, which, start: p, base: objectsRef.current }
           return
         }
+      }
+      if (g.bendHandle && hitsConnectorHandle(p, g.bendHandle.point, viewRef.current.k)) {
+        e.stopPropagation(); e.preventDefault(); capture(e)
+        gestureRef.current = { kind: 'bend', connector: selected[0], axis: g.bendHandle.axis, start: p, base: objectsRef.current }
+        setCursor(g.bendHandle.axis ? bendCursor(g.bendHandle.axis) : 'grabbing')
       }
       return
     }
@@ -582,7 +591,10 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
         const single = selected.length === 1 && isBox(selected[0]) ? selected[0] : null
         const bounds = single ? single : unionRects(selected.map(o => objectBounds(o, lookup)))
         const handle = bounds && selected.every(o => !o.locked) && !(selected.length === 1 && isConnector(selected[0])) ? handleAt(bounds, p, v.k, single?.rotation ?? 0, !!single && rotatable(single)) : null
-        const next = handle === 'rotate' ? 'grab' : handle ? `${handle}-resize`.replace(/^(n|s)-/, 'ns-').replace(/^(e|w)-/, 'ew-').replace(/^(ne|sw)-/, 'nesw-').replace(/^(nw|se)-/, 'nwse-') : ''
+        const connector = selected.length === 1 && isConnector(selected[0]) && !selected[0].locked ? connectorGeometry(selected[0], lookup) : null
+        const onBend = connector?.bendHandle && hitsConnectorHandle(p, connector.bendHandle.point, v.k)
+        const onEnd = connector && [connector.ends.a, connector.ends.b].some(end => hitsConnectorHandle(p, end, v.k))
+        const next = onEnd ? 'grab' : onBend ? bendCursor(connector.bendHandle?.axis) : handle === 'rotate' ? 'grab' : handle ? `${handle}-resize`.replace(/^(n|s)-/, 'ns-').replace(/^(e|w)-/, 'ew-').replace(/^(ne|sw)-/, 'nesw-').replace(/^(nw|se)-/, 'nwse-') : ''
         if (next !== cursor) setCursor(next)
       }
       if (toolRef.current === 'arrow' || toolRef.current === 'line') {
@@ -690,6 +702,14 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
         overlayExtra.current.highlight = new Set([g.from.id, to.id].filter((x): x is string => !!x))
         invalidate(); return
       }
+      case 'bend': {
+        const dx = g.axis === 'y' ? 0 : p.x - g.start.x
+        const dy = g.axis === 'x' ? 0 : p.y - g.start.y
+        if (!draftRef.current && Math.hypot(dx, dy) * v.k < 3) return
+        const bend = { dx: (g.connector.bend?.dx ?? 0) + dx, dy: (g.connector.bend?.dy ?? 0) + dy }
+        draftRef.current = g.base.map(o => o.id === g.connector.id ? { ...g.connector, bend } : o)
+        markDirty(); return
+      }
       case 'endpoint': {
         const c = g.base.find(o => o.id === g.id) as ConnectorObject | undefined
         if (!c) return
@@ -758,6 +778,10 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
         setTool('select')
         return
       }
+      case 'bend':
+        setCursor('')
+        if (draftRef.current) commit(draftRef.current)
+        return
       case 'endpoint': {
         const c = g.base.find(o => o.id === g.id) as ConnectorObject | undefined
         if (!c) return

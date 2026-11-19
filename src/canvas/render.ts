@@ -301,6 +301,7 @@ export interface Overlay {
   lasso?: Point[] | null
   guides?: Guide[]
   hover?: CanvasObject | null
+  showConnectorBend?: boolean
   pendingLine?: ReturnType<typeof connectorGeometry> | null
   anchor?: Point | null
   stroke?: { samples: number[]; color: string; size: number } | null
@@ -336,6 +337,16 @@ export function drawOverlay(ctx: Ctx, v: View, overlay: Overlay, opts: RenderOpt
   if (overlay.selected.length === 1 && overlay.selected[0].type === 'connector') {
     const g = connectorGeometry(overlay.selected[0], opts.lookup)
     for (const p of [g.ends.a, g.ends.b].map(S)) handle(ctx, p, accent, true)
+    if (overlay.showConnectorBend && !overlay.selected[0].locked && g.bendHandle) {
+      const p = S(g.bendHandle.point)
+      if ([g.ends.a, g.ends.b].map(S).every(end => Math.hypot(p.x - end.x, p.y - end.y) > 12)) {
+        ctx.save()
+        ctx.translate(p.x, p.y)
+        ctx.rotate(Math.PI / 4)
+        handle(ctx, { x: 0.5, y: 0.5 }, accent, false)
+        ctx.restore()
+      }
+    }
   } else if (overlay.bounds && overlay.showHandles) {
     const b = overlay.bounds, c = center(b), rot = overlay.rotation
     if (overlay.selected.length > 1) { const tl = S(b), br = S({ x: b.x + b.w, y: b.y + b.h }); ctx.strokeStyle = accent; ctx.lineWidth = 1; ctx.strokeRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y) }

@@ -93,7 +93,9 @@ export function connectorEnds(c: ConnectorObject, lookup: Lookup): ConnectorEnds
 
 export type ConnectorGeometry = { kind: 'poly'; points: Point[] } | { kind: 'bezier'; points: [Point, Point, Point, Point] }
 
-export function connectorGeometry(c: ConnectorObject, lookup: Lookup): ConnectorGeometry & { ends: ConnectorEnds } {
+export interface ConnectorBendHandle { point: Point; axis?: 'x' | 'y' }
+
+export function connectorGeometry(c: ConnectorObject, lookup: Lookup): ConnectorGeometry & { ends: ConnectorEnds; bendHandle?: ConnectorBendHandle } {
   const ends = connectorEnds(c, lookup)
   const { a, b, sideA, sideB } = ends
   if (c.route === 'straight') return { kind: 'poly', points: [a, b], ends }
@@ -110,7 +112,12 @@ export function connectorGeometry(c: ConnectorObject, lookup: Lookup): Connector
       return { x: (to.x - from.x) / len, y: (to.y - from.y) / len }
     }
     const na = dir(sideA, c.from, a, b), nb = dir(sideB, c.to, b, a)
-    return { kind: 'bezier', points: [a, { x: a.x + na.x * d, y: a.y + na.y * d }, { x: b.x + nb.x * d, y: b.y + nb.y * d }, b], ends }
+    // Moving both controls by 4/3 of the drag puts the curve's t=.5 point under the handle.
+    const dx = (c.bend?.dx ?? 0) * 4 / 3, dy = (c.bend?.dy ?? 0) * 4 / 3
+    const points: [Point, Point, Point, Point] = [
+      a, { x: a.x + na.x * d + dx, y: a.y + na.y * d + dy }, { x: b.x + nb.x * d + dx, y: b.y + nb.y * d + dy }, b,
+    ]
+    return { kind: 'bezier', points, ends, bendHandle: { point: bezierPoint(points, 0.5) } }
   }
   // Ortogonal: saídas perpendiculares de 20 e cotovelos no meio.
   const stub = 20
@@ -118,13 +125,38 @@ export function connectorGeometry(c: ConnectorObject, lookup: Lookup): Connector
   const a1 = out(a, sideA, b), b1 = out(b, sideB, a)
   const horizontal = (s: Side | null, from: Point, to: Point) => s ? s === 'left' || s === 'right' : Math.abs(to.x - from.x) >= Math.abs(to.y - from.y)
   const ha = horizontal(sideA, a, b), hb = horizontal(sideB, b, a)
+  const mx = (a1.x + b1.x) / 2, my = (a1.y + b1.y) / 2
+  const dx = c.bend?.dx ?? 0, dy = c.bend?.dy ?? 0
   let mid: Point[]
-  if (ha && hb) { const mx = (a1.x + b1.x) / 2; mid = [{ x: mx, y: a1.y }, { x: mx, y: b1.y }] }
-  else if (!ha && !hb) { const my = (a1.y + b1.y) / 2; mid = [{ x: a1.x, y: my }, { x: b1.x, y: my }] }
-  else if (ha) mid = [{ x: b1.x, y: a1.y }]
-  else mid = [{ x: a1.x, y: b1.y }]
-  const points = dedupe([a, a1, ...mid, b1, b])
-  return { kind: 'poly', points, ends }
+  let bendHandle: ConnectorBendHandle
+  if (ha && hb && !dy && Math.abs(a1.y - b1.y) > 0.01) {
+    const x = mx + dx
+    mid = [{ x, y: a1.y }, { x, y: b1.y }]
+    bendHandle = { point: { x, y: my }, axis: 'x' }
+  } else if (!ha && !hb && !dx && Math.abs(a1.x - b1.x) > 0.01) {
+    const y = my + dy
+    mid = [{ x: a1.x, y }, { x: b1.x, y }]
+    bendHandle = { point: { x: mx, y }, axis: 'y' }
+  } else if (ha === hb) {
+    // Aligned ends have a flat middle leg. Pull it away to create an orthogonal detour.
+    const lift = ha ? dy : dx
+    const leadA = sideA ? a1 : { x: (a1.x + mx) / 2, y: (a1.y + my) / 2 }
+    const leadB = sideB ? b1 : { x: (b1.x + mx) / 2, y: (b1.y + my) / 2 }
+    const offset = (p: Point) => ({ x: p.x + (ha ? 0 : lift), y: p.y + (ha ? lift : 0) })
+    const track = (p: Point) => ha ? { x: p.x, y: my + lift } : { x: mx + lift, y: p.y }
+    mid = lift ? [leadA, track(leadA), track(leadB), leadB] : []
+    bendHandle = {
+      point: offset({ x: (leadA.x + leadB.x) / 2, y: (leadA.y + leadB.y) / 2 }),
+      axis: ha ? 'y' : 'x',
+    }
+  } else {
+    const corner = ha ? { x: b1.x + dx, y: a1.y + dy } : { x: a1.x + dx, y: b1.y + dy }
+    mid = ha
+      ? [{ x: corner.x, y: a1.y }, corner, { x: b1.x, y: corner.y }]
+      : [{ x: a1.x, y: corner.y }, corner, { x: corner.x, y: b1.y }]
+    bendHandle = { point: corner }
+  }
+  return { kind: 'poly', points: dedupe([a, a1, ...mid, b1, b]), ends, bendHandle }
 }
 
 function dedupe(points: Point[]): Point[] { return points.filter((p, i) => i === 0 || Math.abs(p.x - points[i - 1].x) > 0.01 || Math.abs(p.y - points[i - 1].y) > 0.01) }
@@ -285,7 +317,7 @@ export function transformObject(o: CanvasObject, from: Rect, to: Rect): CanvasOb
   const mapX = (x: number) => to.x + (x - from.x) * sx, mapY = (y: number) => to.y + (y - from.y) * sy
   if (isConnector(o)) {
     const end = (e: ConnectorEnd) => ({ ...e, x: mapX(e.x), y: mapY(e.y) })
-    return { ...o, from: end(o.from), to: end(o.to) }
+    return { ...o, from: end(o.from), to: end(o.to), bend: o.bend && { dx: o.bend.dx * sx, dy: o.bend.dy * sy } }
   }
   const next = { ...o, x: mapX(o.x), y: mapY(o.y), w: Math.max(o.type === 'draw' ? 1 : MIN_SIZE, o.w * sx), h: Math.max(o.type === 'draw' ? 1 : MIN_SIZE, o.h * sy) } as BoxObject
   if (next.type === 'draw' && o.type === 'draw') next.points = o.points.map((v, i) => i % 3 === 0 ? v * sx : i % 3 === 1 ? v * sy : v)

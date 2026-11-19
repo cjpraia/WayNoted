@@ -118,9 +118,15 @@ export function BoardInspector({ objects, onPatch, onTextFormat, onAlign, onReor
       <Seg<number> value={style.sketch ?? 0} onPick={level => onPatch(o => ({ ...o, sketch: level || undefined }) as CanvasObject)} options={[{ id: 0, label: t('Preciso', 'Crisp') }, ...SKETCH_LEVELS.map(l => ({ id: l.id as number, label: t(l.pt, l.en) }))]} />
     </Section>}
     {only === 'connector' && !locked && <Section title={t('Conector', 'Connector')}>
-      {(['curve', 'straight', 'orthogonal'] as const).map(r => <IconButton key={r} icon={r} size={16} label={r === 'curve' ? t('Curva', 'Curved') : r === 'straight' ? t('Reta', 'Straight') : t('Ortogonal', 'Elbow')} active={style.route === r} onClick={() => onPatch(o => o.type === 'connector' ? { ...o, route: r } : o)} />)}
+      {(['curve', 'straight', 'orthogonal'] as const).map(r => <IconButton key={r} icon={r} size={16} label={r === 'curve' ? t('Curva', 'Curved') : r === 'straight' ? t('Reta', 'Straight') : t('Ortogonal', 'Elbow')} active={style.route === r} onClick={() => onPatch(o => o.type === 'connector' && o.route !== r ? { ...o, route: r, bend: undefined } : o)} />)}
       <IconButton icon="arrowStart" size={16} label={t('Seta no início', 'Start arrow')} active={!!style.startArrow} onClick={() => onPatch(o => o.type === 'connector' ? { ...o, startArrow: !o.startArrow || undefined } : o)} />
       <IconButton icon="arrowEnd" size={16} label={t('Seta no fim', 'End arrow')} active={!!style.endArrow} onClick={() => onPatch(o => o.type === 'connector' ? { ...o, endArrow: !o.endArrow } : o)} />
+      {objects.some(o => o.type === 'connector' && o.bend) && <IconButton icon="undo" size={16}
+        label={t('Restaurar trajeto automático', 'Reset connector path')}
+        onClick={() => onPatch(o => o.type === 'connector' && o.bend ? { ...o, bend: undefined } : o)} />}
+      {first.type === 'connector' && first.route !== 'straight' && <div className="cv-insp-hint">
+        {t('Arraste o losango na seta para ajustar o trajeto.', 'Drag the diamond on the connector to adjust its path.')}
+      </div>}
     </Section>}
     {texty && only !== 'text' && !locked && <Section title={t('Texto', 'Text')}>
       <Seg<FontKind> value={style.font ?? 'sans'} onPick={font => onPatch(o => ({ ...o, font: font === 'sans' ? undefined : font }) as CanvasObject)} options={[{ id: 'sans', label: 'Sans' }, { id: 'hand', label: t('À mão', 'Hand') }, { id: 'mono', label: 'Mono' }]} />

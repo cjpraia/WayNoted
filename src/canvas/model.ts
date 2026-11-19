@@ -34,7 +34,7 @@ export interface ImageObject extends BoxBase { type: 'image'; src: string; name:
 export interface FileObject extends BoxBase { type: 'file'; data: string; name: string; size: number; mime: string }
 export interface SectionObject extends BoxBase { type: 'section'; title: string; color: CanvasColor }
 export interface ConnectorEnd { id?: string; side?: Side; anchor?: { u: number; v: number }; x: number; y: number }
-export interface ConnectorObject extends StyleProps { id: string; type: 'connector'; from: ConnectorEnd; to: ConnectorEnd; route: Route; label?: string; color: CanvasColor; startArrow?: boolean; endArrow?: boolean; locked?: boolean; groupId?: string }
+export interface ConnectorObject extends StyleProps { id: string; type: 'connector'; from: ConnectorEnd; to: ConnectorEnd; route: Route; bend?: { dx: number; dy: number }; label?: string; color: CanvasColor; startArrow?: boolean; endArrow?: boolean; locked?: boolean; groupId?: string }
 
 export type BoxObject = PageCardObject | DatabaseCardObject | NoteObject | TextObject | ShapeObject | DrawObject | ImageObject | FileObject | SectionObject
 export type CanvasObject = BoxObject | ConnectorObject
@@ -100,6 +100,9 @@ export function normalizeObject(raw: unknown): CanvasObject | null {
   if (raw.type === 'connector') {
     const out: ConnectorObject = { ...(base as { id: string }), type: 'connector', from: normalizeEnd(raw.from), to: normalizeEnd(raw.to),
       route: ['straight', 'curve', 'orthogonal'].includes(raw.route as string) ? raw.route as Route : 'curve', color: color(raw.color, 'default') }
+    if (out.route !== 'straight' && isObj(raw.bend) && Number.isFinite(raw.bend.dx) && Number.isFinite(raw.bend.dy)) {
+      out.bend = { dx: num(raw.bend.dx, 0), dy: num(raw.bend.dy, 0) }
+    }
     normalizeStyle(raw, out as unknown as Record<string, unknown>)
     if (typeof raw.label === 'string' && raw.label) out.label = raw.label
     if (raw.startArrow === true) out.startArrow = true
