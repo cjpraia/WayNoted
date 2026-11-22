@@ -4,7 +4,10 @@ import { fileURLToPath } from 'node:url'
 import PRODUCT from '../shared/product.json' with { type: 'json' }
 import COMPAT_RECORDS from '../shared/compatibility.json' with { type: 'json' }
 const root = fileURLToPath(new URL('..', import.meta.url))
-const write = (name, value) => fs.writeFileSync(path.join(root, name), value)
+const write = (name, value) => {
+  const file = path.join(root, name)
+  if (!fs.existsSync(file) || fs.readFileSync(file, 'utf8') !== value) fs.writeFileSync(file, value)
+}
 const json = name => JSON.parse(fs.readFileSync(path.join(root, name), 'utf8'))
 if (!PRODUCT.name.trim() || !/^[a-z][a-z0-9-]*$/.test(PRODUCT.protocol)) throw new Error('Invalid product registry')
 const pkg = json('package.json')

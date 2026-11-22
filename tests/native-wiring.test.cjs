@@ -6,15 +6,17 @@ const vm = require('node:vm')
 const {createRequire} = require('node:module')
 const {pathToFileURL} = require('node:url')
 
-function harness() {
- const filename=path.resolve('electron/main.cjs'), ownRequire=createRequire(filename), handlers=new Map(), events=new Map(), sent=[]
- const electron={app:{setName(){},setPath(){},getPath:()=>"/tmp/workspace-test-appdata",requestSingleInstanceLock:()=>true,quit(){},on(){},whenReady:()=>new Promise(()=>{})},ipcMain:{handle:(name,fn)=>handlers.set(name,fn),on:(name,fn)=>events.set(name,fn)},BrowserWindow:{},Menu:{},shell:{},dialog:{},nativeTheme:{},screen:{},Notification:{},safeStorage:{}}
- const context={require:name=>name==='electron'?electron:ownRequire(name),module:{exports:{}},exports:{},__dirname:path.dirname(filename),process:{env:{},argv:[],platform:'darwin'},console,Buffer,Uint8Array,AbortController,setTimeout,clearTimeout,setInterval,clearInterval,URL}
- vm.runInNewContext(fs.readFileSync(filename,'utf8')+'\nmodule.exports.__test={registerIpc,flushRenderer};',context,{filename})
+function harness(locale, build) {
+ const filename=path.resolve('electron/main.cjs'), ownRequire=createRequire(filename), handlers=new Map(), events=new Map(), sent=[], aboutPanels=[]
+ const electron={app:{isPackaged:!!build,setName(){},setPath(){},getPath:()=>"/tmp/workspace-test-appdata",getVersion:()=>"9.8.7",getAppPath:()=>path.resolve("."),setAboutPanelOptions:options=>aboutPanels.push(options),requestSingleInstanceLock:()=>true,quit(){},on(){},whenReady:()=>new Promise(()=>{})},ipcMain:{handle:(name,fn)=>handlers.set(name,fn),on:(name,fn)=>events.set(name,fn)},BrowserWindow:{getFocusedWindow:()=>win,getAllWindows:()=>[]},Menu:{setApplicationMenu(){},buildFromTemplate:template=>template},shell:{},dialog:{},nativeTheme:{},screen:{},Notification:{},safeStorage:{}}
+ const win={webContents:{id:41}}
+ const context={require:name=>name==='electron'?electron:name==='../package.json'&&build?{workspaceBuildInfo:build}:ownRequire(name),module:{exports:{}},exports:{},__dirname:path.dirname(filename),process:{env:{},argv:[],platform:'darwin'},console,Buffer,Uint8Array,AbortController,setTimeout,clearTimeout,setInterval,clearInterval,URL}
+ vm.runInNewContext(fs.readFileSync(filename,'utf8')+'\nmodule.exports.__test={registerIpc,flushRenderer,buildMenu,contexts};',context,{filename})
  context.module.exports.__test.registerIpc()
  const frame={url:pathToFileURL(path.resolve('dist/index.html')).href}
+ if(locale)context.module.exports.__test.contexts.set(win.webContents.id,{win,locale})
  const sender={id:41,mainFrame:frame,send:(...args)=>sent.push(args)}
- return {handlers,events,sent,sender,frame,api:context.module.exports.__test}
+ return {handlers,events,sent,sender,frame,aboutPanels,api:context.module.exports.__test}
 }
 
 test('every preload invoke has a main-process handler and every handler rejects untrusted frames before side effects',()=>{
@@ -25,6 +27,35 @@ test('every preload invoke has a main-process handler and every handler rejects 
   assert.throws(()=>h.handlers.get(channel)({sender:h.sender,senderFrame:{url:'https://untrusted.example'}},null),/Origem de dados inválida/,channel)
   assert.throws(()=>h.handlers.get(channel)({sender:h.sender,senderFrame:{url:h.frame.url}},null),/Origem de dados inválida/,`${channel}: iframe with same URL`)
  }
+})
+
+test('About exposes the running version without guessing a development build date',()=>{
+ const h=harness()
+ assert.deepEqual(h.handlers.get('np:getAboutInfo')({sender:h.sender,senderFrame:h.frame}), {
+  version:'9.8.7', updated:null, localChanges:false, commitSubject:null,
+ })
+})
+
+test('native About shows both unavailable messages in the profile language',()=>{
+ for(const [locale,credits] of [
+  ['pt-BR','Data da atualização indisponível\nDescrição da atualização indisponível'],
+  ['en-US','Update date unavailable\nUpdate description unavailable'],
+ ]){
+  const h=harness(locale)
+  h.api.buildMenu()
+  assert.equal(h.aboutPanels.at(-1).applicationVersion,'9.8.7')
+  assert.equal(h.aboutPanels.at(-1).credits,credits)
+ }
+})
+
+test('native About identifies the base commit separately from local changes',()=>{
+ const h=harness('pt-BR',{updatedAt:'2025-11-03T01:09:00Z',localChanges:true,commitSubject:'Update app code'})
+ h.api.buildMenu()
+ assert.equal(h.aboutPanels.at(-1).credits,[
+  'Atualizado em 02/11/2025 às 22:09 (BRT)',
+  'Inclui alterações locais (descrição indisponível)',
+  'Último commit da base: Update app code',
+ ].join('\n'))
 })
 
 test('native close handshake accepts only the matching top-level renderer and propagates persistence failure',async()=>{

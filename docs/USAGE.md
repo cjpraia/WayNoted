@@ -60,3 +60,7 @@ The interface supports English and Brazilian Portuguese, light/dark themes, keyb
 Accessibility coverage is partial. Real VoiceOver validation is still needed: check Tab navigation, dialog opening and dismissal, focus restoration, search, tables, and the editor in both languages. DOM tests do not replace this check.
 
 For AI or agents, see [AI](AI.md) and [Local integrations](LOCAL-INTEGRATIONS.md).
+
+## About
+
+**Settings → About** shows the running version. A verified macOS package also shows when its app code was last updated, in Brasília time. When the source matches Git, the description is the latest relevant commit subject. If the build includes local changes, About labels their description as unavailable and separately shows the latest commit subject from the base. The app marks the date or description as unavailable when either cannot be verified. The macOS application menu shows the same details.

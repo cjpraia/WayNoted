@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld('api', {
   openExternalPage: (url) => ipcRenderer.invoke('np:openExternalPage', url),
   checkForUpdates: (feedUrl) => ipcRenderer.invoke('np:checkForUpdates', feedUrl),
   openUpdatePage: () => ipcRenderer.invoke('np:openUpdatePage'),
+  getAboutInfo: () => ipcRenderer.invoke('np:getAboutInfo'),
   readThirdPartyNotices: () => ipcRenderer.invoke('np:readThirdPartyNotices'),
   revealThirdPartyNotices: () => ipcRenderer.invoke('np:revealThirdPartyNotices'),
   exportPDF: (name) => ipcRenderer.invoke('np:exportPDF', name),

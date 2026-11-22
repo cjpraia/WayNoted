@@ -20,6 +20,7 @@ import { ShortcutList } from '../shortcuts/ShortcutList'
 import { Sparkles } from 'lucide-react'
 import { AISettingsSection } from '../ai/AISettings'
 import { UpdateCheck } from './UpdateCheck'
+import { AboutBuildInfo } from './AboutBuildInfo'
 import { ThirdPartyNotices } from './ThirdPartyNotices'
 import { Logo } from '../ui/Logo'
 import { HelpCircle } from 'lucide-react'
@@ -412,7 +413,7 @@ export function SettingsModal() {
                 {showNotices ? <ThirdPartyNotices onClose={() => setShowNotices(false)} /> : <>
                 <div className="st-about">
                   <Logo size={36} className="st-about-name" />
-                  <div className="st-hint">{t('Versão 1.0.0', 'Version 1.0.0')}</div>
+                  <AboutBuildInfo />
                   <p className="st-p">{t('App de notas local para macOS e Windows', 'Local notes app for macOS and Windows')}</p>
                   <Button onClick={() => setShowNotices(true)}>{t('Avisos de terceiros e licenças', 'Third-party notices and licenses')}</Button>
                 </div>

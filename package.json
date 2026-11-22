@@ -1,7 +1,7 @@
 {
   "name": "workspace-desktop",
   "productName": "WayNoted",
-  "version": "1.0.3",
+  "version": "1.0.7",
   "description": "WayNoted — local workspace for macOS and Windows",
   "main": "electron/main.cjs",
   "scripts": {
@@ -12,12 +12,12 @@
     "build:agent": "node build/build-agent-runtime.mjs",
     "typecheck": "tsc --noEmit",
     "start": "npm run build && npm run build:agent && node scripts/run-electron.mjs",
-    "dist": "npm run configure && npm run build && npm run build:native && npm run build:agent && node build/package.mjs",
+    "dist": "npm run configure && npm run build && npm run build:native -- --force && npm run build:agent && node build/package.mjs",
     "test": "node scripts/run-tests.mjs",
     "test:raw": "node --experimental-strip-types --test tests/*.test.*",
     "mcp": "node electron/mcp-server.cjs",
     "cli": "node electron/cli.cjs",
-    "dist:test": "npm run configure && npm run build && npm run build:native && npm run build:agent && node build/package.mjs --test",
+    "dist:test": "npm run configure && npm run build && npm run build:native -- --force && npm run build:agent && node build/package.mjs --test",
     "configure": "node build/configure-product.mjs",
     "predev": "npm run configure",
     "prebuild": "npm run configure",

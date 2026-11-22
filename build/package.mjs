@@ -4,6 +4,12 @@ import path from 'node:path'
 import fs from 'node:fs'
 import PRODUCT from '../shared/product.json' with { type: 'json' }
 import COMPAT from '../shared/compatibility.mjs'
+import { captureSourceBuild, sourceStampFile, verifiedBuildInfo } from './source-build-info.mjs'
+
+const readStamp = root => {
+  try { return JSON.parse(fs.readFileSync(path.join(root, 'dist', sourceStampFile), 'utf8')) }
+  catch { return null }
+}
 const test = process.argv.includes('--test')
 const out = test ? 'release-test' : 'release'
 const argument = name => process.argv.find(value => value.startsWith(`--${name}=`))?.split('=')[1]
@@ -25,13 +31,19 @@ if (platform === 'win32') {
     extraResources: [{ from: nativeFile, to: 'workspace-native.exe' }, { from: path.join(nativeDirectory, 'bin'), to: 'bin' }, { from: path.join(nativeDirectory, 'native-licenses'), to: 'native-licenses' }],
   } })
 } else {
+const sourceBeforeCopy = captureSourceBuild(process.cwd())
 const paths = await packager({
   dir: '.', name: PRODUCT.executable, executableName: PRODUCT.executable,
-  afterCopy: test ? [({ buildPath }) => {
+  afterCopy: [({ buildPath }) => {
     const metadataPath = path.join(buildPath, 'package.json')
     const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'))
-    fs.writeFileSync(metadataPath, JSON.stringify({ ...metadata, workspaceTestBuild: true }, null, 2))
-  }] : [],
+    const copiedStamp = readStamp(buildPath)
+    const workspaceBuildInfo = verifiedBuildInfo(copiedStamp, sourceBeforeCopy) &&
+      verifiedBuildInfo(copiedStamp, captureSourceBuild(process.cwd()))
+    fs.writeFileSync(metadataPath, JSON.stringify({
+      ...metadata, workspaceBuildInfo, ...(test ? { workspaceTestBuild: true } : {}),
+    }, null, 2))
+  }],
   platform, arch, out, overwrite: true, icon: platform === 'win32' ? 'build/icon.ico' : 'build/icon.icns', prune: false,
   ...(platform === 'darwin' ? { appBundleId: PRODUCT.bundleId + (test ? '.test' : ''), extendInfo: 'build/app-info.plist' } : {}),
   protocols: [{ name: PRODUCT.name, schemes: [PRODUCT.protocol, COMPAT.previousProtocol, ...(PRODUCT.protocolAliases ?? [])] }],

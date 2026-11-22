@@ -12,7 +12,7 @@ const dom=new JSDOM('<!doctype html><body><div id="app"></div></body>',{url:'htt
 for(const name of ['window','document','navigator','HTMLElement'])Object.defineProperty(globalThis,name,{configurable:true,value:dom.window[name]})
 globalThis.IS_REACT_ACT_ENVIRONMENT=true
 const t=(_pt,en,vars)=>en.replace(/\{(\w+)\}/g,(_,key)=>String(vars?.[key]??''))
-const api={securityInfo:async()=>({enabled:true}),localApiInfo:async()=>({enabled:false}),listActivity:async()=>[],listAutoBackups:async()=>[],webhookStatus:async()=>[],listDocumentConflicts:async()=>[]}
+const api={securityInfo:async()=>({enabled:true}),localApiInfo:async()=>({enabled:false}),listActivity:async()=>[],listAutoBackups:async()=>[],webhookStatus:async()=>[],listDocumentConflicts:async()=>[],getAboutInfo:async()=>({version:'9.8.7',updated:{date:'22/11/2026',time:'13:45'},localChanges:true,commitSubject:'Update app code'})}
 window.api=api
 const mocks={t,useI18n:()=>({locale:'en-US',t}),api,actions:{flushMeta:async()=>{},setSettingsOpen:()=>{}},selectors:{isLive:()=>true,trash:()=>[]},useStore:()=>({settings:{locale:'en-US',theme:'system',userName:'',workspaceName:'Workspace',historyLimit:0},pages:{}})}
 globalThis.__settingsLanguage=mocks
@@ -30,6 +30,10 @@ source=source.replace("import { HelpSettings } from './HelpSettings'",'const Hel
 source=source.replace("import { UpdateCheck } from './UpdateCheck'",'const UpdateCheck=()=>null')
 source=source.replace("import { ThirdPartyNotices } from './ThirdPartyNotices'",'const ThirdPartyNotices=()=>null')
 source=source.replace("import { BackupSettingsCard } from '../backup/BackupSettings'",'const BackupSettingsCard=()=>null').replace("import { MirrorSettingsCard } from '../mirror/MirrorSettings'",'const MirrorSettingsCard=()=>null').replace("import { AgentSettingsCards } from '../../agent/AgentSettings'",'const AgentSettingsCards=()=>null')
+const aboutSource=(await readFile(new URL('../src/components/modals/AboutBuildInfo.tsx',import.meta.url),'utf8'))
+ .replace(/^import .*$/gm,'').replace('export function AboutBuildInfo','function AboutBuildInfo')
+source=source.replace("import { AboutBuildInfo } from './AboutBuildInfo'",()=>`const version='0.0.0'
+${aboutSource}`)
 const out=await transformWithOxc(shimUi(source),'SettingsModal.tsx',{jsx:{runtime:'automatic'}})
 const code=out.code.replace(/from ["'](react(?:\/jsx-runtime)?|lucide-react)["']/g,(_m,name)=>`from ${JSON.stringify(import.meta.resolve(name))}`)
 const {SettingsModal}=await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`)
@@ -45,9 +49,33 @@ test('every Settings section renders its labels in English, including native dat
    assert.match(document.body.textContent,/File protection/);assert.match(document.body.textContent,/Local API for integrations/)
    assert.match(document.body.textContent,/Version history/);assert.match(document.body.textContent,/Export backup/)
   }
+  if(section==='About'){
+   assert.match(document.querySelector('.st-about').textContent,/Version 9\.8\.7/)
+   assert.match(document.querySelector('.st-about').textContent,/Updated on 22\/11\/2026 at 13:45 \(BRT\)/)
+   assert.match(document.querySelector('.st-about').textContent,/Includes local changes \(description unavailable\)/)
+   assert.match(document.querySelector('.st-about').textContent,/Latest base commit: Update app code/)
+  }
   if(section==='Shortcuts')assert.match(document.querySelector('table').textContent,/New page.*New tab.*Reopen last closed tab.*Close tab/)
  }
  await act(async()=>root.unmount())
+})
+
+test('About explains when the package has no update metadata',async()=>{
+ const load=api.getAboutInfo
+ api.getAboutInfo=async()=>({version:'9.8.7',updated:null,localChanges:false,commitSubject:null})
+ const root=createRoot(document.getElementById('app'))
+ try {
+  await act(async()=>root.render(React.createElement(SettingsModal)))
+  const button=[...document.querySelectorAll('nav button')].find(button=>button.textContent.trim()==='About')
+  await act(async()=>button.click())
+  const text=document.querySelector('.st-about').textContent
+  assert.match(text,/Version 9\.8\.7/)
+  assert.match(text,/Update date unavailable/)
+  assert.match(text,/Update description unavailable/)
+ } finally {
+  await act(async()=>root.unmount())
+  api.getAboutInfo=load
+ }
 })
 
 test('API token is copied through native IPC without renderer clipboard permission',async()=>{

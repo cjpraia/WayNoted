@@ -1,5 +1,7 @@
 const PRODUCT = require('../shared/product.json')
-const TEST_BUILD = require('../package.json').workspaceTestBuild === true
+const PACKAGE = require('../package.json')
+const TEST_BUILD = PACKAGE.workspaceTestBuild === true
+const { aboutInfo } = require('./about-info.cjs')
 const COMPAT = require('../shared/compatibility.cjs')
 require('./brand.cjs').legacyEnv()
 const { app, BrowserWindow, Menu, shell, dialog, ipcMain, nativeTheme, screen, Notification, safeStorage: electronSafeStorage, clipboard, systemPreferences, powerMonitor } = require('electron')
@@ -65,6 +67,7 @@ const IS_DEV = process.env.WORKSPACE_DEV === '1'
 const DEV_URL = process.env.WORKSPACE_DEV_URL || 'http://localhost:5310'
 const ENTRY_FILE = path.resolve(__dirname, '..', 'dist', 'index.html')
 const POLICY = { isDev: IS_DEV, devURL: DEV_URL, entryFile: ENTRY_FILE }
+const APP_ABOUT = aboutInfo(app.getVersion(), app.isPackaged && !IS_DEV ? PACKAGE.workspaceBuildInfo : null)
 
 const gotLock = app.requestSingleInstanceLock()
 if (!gotLock) app.quit()
@@ -126,6 +129,7 @@ function registerIpc() {
   // B5: abrir .md avulso sem importar (o renderer só conhece fileId, nunca caminhos).
   registerOpenFileIpc({ trustedHandler, context, dialog, nativeT, openFiles })
   registerNoticesIpc({ trustedHandler, app, shell })
+  trustedHandler('np:getAboutInfo', () => APP_ABOUT)
   // D3b: importar Apple Notes por Automação (somente leitura; o macOS pede a permissão uma vez).
   registerAppleNotesIpc({ trustedHandler })
   registerBundleImport({ handle: trustedHandler, dialog, windowFor: event => context(event).win, translate: nativeT })
@@ -626,6 +630,21 @@ let recordingShortcut = false
 const accel = (id, fallback) => recordingShortcut ? undefined : shortcutAccelerators[id] || fallback
 
 function buildMenu() {
+  const updated = APP_ABOUT.updated
+  const dateLine = updated
+    ? nativeT(`Atualizado em ${updated.date} às ${updated.time} (BRT)`, `Updated on ${updated.date} at ${updated.time} (BRT)`)
+    : nativeT('Data da atualização indisponível', 'Update date unavailable')
+  const description = APP_ABOUT.localChanges
+    ? nativeT('Inclui alterações locais (descrição indisponível)', 'Includes local changes (description unavailable)')
+    : APP_ABOUT.commitSubject ?? nativeT('Descrição da atualização indisponível', 'Update description unavailable')
+  const baseCommit = APP_ABOUT.localChanges && APP_ABOUT.commitSubject
+    ? nativeT(`Último commit da base: ${APP_ABOUT.commitSubject}`, `Latest base commit: ${APP_ABOUT.commitSubject}`)
+    : null
+  app.setAboutPanelOptions({
+    applicationName: PRODUCT.name,
+    applicationVersion: APP_ABOUT.version,
+    credits: [dateLine, description, baseCommit].filter(Boolean).join('\n'),
+  })
   const template = [
     {
       label: `${PRODUCT.name}`,

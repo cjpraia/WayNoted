@@ -463,6 +463,7 @@ export interface NativeApi {
   checkForUpdates?(feedUrl: string): Promise<UpdateCheckResult>
   /** Abre no navegador a página de download do último resultado "available". */
   openUpdatePage?(): Promise<void>
+  getAboutInfo?(): Promise<AboutInfo>
   /** Lê THIRD-PARTY-NOTICES.md do app (caminho fixo no processo principal) e a versão do app. */
   readThirdPartyNotices?(): Promise<{ found: boolean; text: string; version: string }>
   revealThirdPartyNotices?(): Promise<void>
@@ -578,4 +579,11 @@ declare global {
   interface Window {
     api?: NativeApi
   }
+}
+
+export type AboutInfo = {
+  version: string
+  updated: { date: string; time: string } | null
+  localChanges: boolean
+  commitSubject: string | null
 }
