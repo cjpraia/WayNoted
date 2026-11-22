@@ -15,12 +15,13 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true
 const t = (pt, en, vars = {}) => en.replace(/\{(\w+)\}/g, (_m, key) => vars[key] ?? '')
 let state
 const unpinned = []
+const reordered = []
 const noop = () => {}
 globalThis.__topbar = {
   t, getLocale: () => 'en-US',
   useStore: () => state,
   selectors: new Proxy({ canGoBack: () => false, canGoForward: () => false, page: () => undefined, ancestors: () => [] }, { get: (target, key) => target[key] ?? (() => undefined) }),
-  actions: new Proxy({ pinTab: id => { unpinned.push(id); state = { ...state, settings: { ...state.settings, openTabs: state.settings.openTabs.map(tab => tab.id === id ? { ...tab, pinned: !tab.pinned } : tab) } } } }, { get: (target, key) => target[key] ?? noop }),
+  actions: new Proxy({ reorderTab: (...args) => reordered.push(args), pinTab: id => { unpinned.push(id); state = { ...state, settings: { ...state.settings, openTabs: state.settings.openTabs.map(tab => tab.id === id ? { ...tab, pinned: !tab.pinned } : tab) } } } }, { get: (target, key) => target[key] ?? noop }),
   shortcutHint: () => '', TabMenu: () => null, PageMenu: () => null, Popover: () => null, relativeTime: () => '', PageIcon: () => null, PageComments: () => null, MovePageDialog: () => null, BlockIcon: () => null, Icon: () => null, copyText: noop,
   useGraphSettings: () => ({ local: { open: false } }), toggleLocalGraph: noop,
 }
@@ -55,5 +56,32 @@ test('pinned tabs keep their title, show a pin button and unpin on click', async
   const after = [...document.querySelectorAll('.shell-tab')]
   assert.ok(after[0].querySelector('.shell-tab-pin') === null, 'unpinned tab lost its pin')
   assert.ok(after[0].querySelector('.shell-tab-close'))
+  await act(async () => root.unmount())
+})
+
+test('dragging a tab title drops on the chosen side of a pinned tab', async () => {
+  state = { route: { type: 'home' }, settings: { activeTabId: 'normal', openTabs: [
+    { id: 'pinned', route: { type: 'home' }, pinned: true },
+    { id: 'normal', route: { type: 'home' } },
+  ] } }
+  const root = createRoot(document.getElementById('app'))
+  await act(async () => root.render(React.createElement(Topbar)))
+  const [pinned, normal] = document.querySelectorAll('.shell-tab')
+  pinned.getBoundingClientRect = () => ({ left: 100, width: 160 })
+  const payload = { setData: () => {} }
+  const dispatch = (element, type) => {
+    const event = new window.MouseEvent(type, { bubbles: true, cancelable: true, clientX: 110 })
+    Object.defineProperty(event, 'dataTransfer', { value: payload })
+    element.dispatchEvent(event)
+    return event
+  }
+  const title = normal.querySelector('[role="tab"]')
+  assert.equal(title.draggable, true)
+  await act(async () => dispatch(title, 'dragstart'))
+  await act(async () => assert.equal(dispatch(pinned, 'dragover').defaultPrevented, true))
+  assert.ok(pinned.classList.contains('is-drop-before'))
+  await act(async () => dispatch(pinned, 'drop'))
+  assert.deepEqual(reordered, [['normal', 'pinned', false]])
+  assert.ok(!pinned.classList.contains('is-drop-before'))
   await act(async () => root.unmount())
 })

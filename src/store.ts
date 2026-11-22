@@ -1484,13 +1484,42 @@ export const actions = {
     if (!tab) return
     actions.openInNewTab(validRoute(tab.route))
     const id = state.settings.activeTabId!
-    const restored = (state.settings.openTabs ?? []).map(item => item.id === id ? { ...item, pinned: tab.pinned, group: tab.group } : item)
-    actions.updateSettings({ openTabs: [...restored.filter(item => item.pinned), ...restored.filter(item => !item.pinned)] })
+    const tabs = state.settings.openTabs ?? []
+    const item = tabs.find(tab => tab.id === id)!
+    const others = tabs.filter(tab => tab.id !== id)
+    const firstFlexible = others.findIndex(tab => !tab.pinned)
+    const groupEnd = tab.group ? others.findLastIndex(item => item.group?.id === tab.group?.id) : -1
+    const index = tab.pinned && firstFlexible >= 0 ? firstFlexible : groupEnd >= 0 ? groupEnd + 1 : others.length
+    others.splice(index, 0, { ...item, pinned: tab.pinned, group: tab.group })
+    actions.updateSettings({ openTabs: others })
+  },
+
+  reorderTab(id: string, targetId: string, after: boolean) {
+    if (id === targetId) return
+    const tabs = state.settings.openTabs ?? []
+    const source = tabs.find(tab => tab.id === id)
+    const target = tabs.find(tab => tab.id === targetId)
+    if (!source || !target) return
+
+    const sameGroup = source.group?.id === target.group?.id
+    const moving = source.group && !sameGroup ? tabs.filter(tab => tab.group?.id === source.group?.id) : [source]
+    const remaining = tabs.filter(tab => !moving.includes(tab))
+    // A drop from another group uses the target group's outer edge.
+    const matchesTarget = (tab: typeof target) => target.group && !sameGroup
+      ? tab.group?.id === target.group.id : tab.id === targetId
+    const index = after ? remaining.findLastIndex(matchesTarget) + 1 : remaining.findIndex(matchesTarget)
+    remaining.splice(index, 0, ...moving)
+    if (remaining.some((tab, i) => tab !== tabs[i])) actions.updateSettings({ openTabs: remaining })
   },
 
   pinTab(id: string) {
-    const tabs = (state.settings.openTabs ?? []).map(tab => tab.id === id ? { ...tab, pinned: !tab.pinned, group: undefined } : tab)
-    actions.updateSettings({ openTabs: [...tabs.filter(tab => tab.pinned), ...tabs.filter(tab => !tab.pinned)] })
+    const tabs = state.settings.openTabs ?? []
+    const tab = tabs.find(tab => tab.id === id)
+    if (!tab) return
+    const others = tabs.filter(item => item.id !== id)
+    const firstFlexible = others.findIndex(item => !item.pinned)
+    others.splice(firstFlexible < 0 ? others.length : firstFlexible, 0, { ...tab, pinned: !tab.pinned, group: undefined })
+    actions.updateSettings({ openTabs: others })
   },
 
   groupTab(id: string, group?: { id: string; name: string }) {

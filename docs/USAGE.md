@@ -8,6 +8,8 @@ Pages can contain subpages, columns, and toggle lists. Internal links use `works
 
 When pasting a URL, the menu offers the representations available for that link: mention, URL, bookmark, or embed. Previews and embedded content depend on the website and remote-content permissions.
 
+Drag a tab by its title to the left or right side of another tab to reorder it. Pinned tabs keep their pinned status. Tabs in a group can move within that group, and dragging one outside it moves the entire group.
+
 ## Databases and object types
 
 A database organizes pages as rows with properties. Use column headers and view settings to configure properties, filters, sorting, grouping, text wrapping, and frozen columns. Formulas and rollups are calculated; relations connect database records.

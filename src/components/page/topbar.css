@@ -11,6 +11,9 @@
 .shell-tabs-list { display: flex; align-items: stretch; min-width: 0; overflow: auto hidden; scrollbar-width: none; }
 .shell-tabs-list::-webkit-scrollbar { display: none; }
 .shell-tab { position: relative; display: flex; align-items: center; width: 200px; min-width: 96px; max-width: 220px; flex: 0 1 200px; background: transparent; color: var(--text-secondary); box-shadow: inset -1px 0 0 var(--chrome-line); transition: background 120ms ease; -webkit-app-region: no-drag; }
+.shell-tab.is-drop-before::after, .shell-tab.is-drop-after::after { content: ""; position: absolute; inset-block: 5px; width: 2px; background: var(--accent); border-radius: 1px; pointer-events: none; }
+.shell-tab.is-drop-before::after { left: 0; }
+.shell-tab.is-drop-after::after { right: 0; }
 .shell-tab:hover { background: var(--bg-hover); }
 .shell-tab.is-active { color: var(--text); background: var(--bg); }
 .shell-tab-select { align-self: stretch; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 0 4px 0 14px; font-size: 13px; font-weight: 400; line-height: 1.2; flex: 1; text-align: left; border-radius: 0; }

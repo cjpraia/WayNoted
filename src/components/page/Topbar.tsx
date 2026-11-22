@@ -1,6 +1,6 @@
 import { t, getLocale } from '../../i18n'
 // Barra superior: navegação, breadcrumbs e ações da página.
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type DragEvent } from 'react'
 import { ChevronLeft, ChevronRight, PanelLeft, Lock, MoreHorizontal, Star, Plus, X, FolderInput } from 'lucide-react'
 import { actions, selectors, useStore } from '../../store'
 import type { Page } from '../../types'
@@ -156,6 +156,18 @@ export function Topbar() {
   useEffect(() => { setMenuOpen(false); setMoving(false) }, [route])
 
   const tabs = settings.openTabs ?? []
+  const draggedTab = useRef<string | null>(null)
+  const [dropTarget, setDropTarget] = useState<{ id: string; after: boolean } | null>(null)
+
+  function clearTabDrag() {
+    draggedTab.current = null
+    setDropTarget(null)
+  }
+
+  function tabDropSide(event: DragEvent<HTMLDivElement>) {
+    const { left, width } = event.currentTarget.getBoundingClientRect()
+    return event.clientX >= left + width / 2
+  }
   // Painel de calendário (src/daily): desligado por padrão; ⌘⇧C alterna.
   const calendarOpen = !!settings.dailyFlow?.panelOpen
   const calendarToggle = <button className={`pg-tb-btn${calendarOpen ? ' is-active' : ''}`} title={`${t("Painel de calendário", "Calendar panel")} (${shortcutHint('calendar-panel')})`} aria-label={t("Painel de calendário", "Calendar panel")} aria-pressed={calendarOpen} onClick={() => toggleCalendarPanel()}><CalendarDays size={18} strokeWidth={1.7} /></button>
@@ -186,9 +198,36 @@ export function Topbar() {
           const tabType = tab.route.type === 'objectType' ? settings.objectTypes?.find(type => type.id === (tab.route as { id: string }).id) : undefined
           const title = tabType ? tabType.name : tab.route.type === 'home' ? t("Meu dia", "My day") : tab.route.type === 'graph' ? t("Grafo", "Graph") : tab.route.type === 'productivity' ? t("Produtividade", "Productivity") : tab.route.type === 'tasks' ? t("Tarefas", "Tasks") : tab.route.type === 'review' ? t("Revisão", "Review") : tabPage?.title || (tabPage?.database ? t("Sem título", "Untitled") : t("Nova página", "New page"))
           const active = settings.activeTabId === tab.id
-          return <div className={`shell-tab${active ? ' is-active' : ''}${tab.pinned ? ' is-pinned' : ''}${tab.pinned && !tabs[tabs.indexOf(tab) + 1]?.pinned ? ' is-pin-end' : ''}${tab.group ? ' is-grouped' : ''}`} key={tab.id} onContextMenu={event => { event.preventDefault(); setTabMenu({ id: tab.id, anchor: event.currentTarget }) }}>
+          return <div className={`shell-tab${dropTarget?.id === tab.id ? (dropTarget.after ? ' is-drop-after' : ' is-drop-before') : ''}${active ? ' is-active' : ''}${tab.pinned ? ' is-pinned' : ''}${tab.pinned && !tabs[tabs.indexOf(tab) + 1]?.pinned ? ' is-pin-end' : ''}${tab.group ? ' is-grouped' : ''}`} key={tab.id}
+            onDragOver={event => {
+              if (!draggedTab.current || draggedTab.current === tab.id) {
+                setDropTarget(null)
+                return
+              }
+              event.preventDefault()
+              event.dataTransfer.dropEffect = 'move'
+              const after = tabDropSide(event)
+              setDropTarget(target => target?.id === tab.id && target.after === after ? target : { id: tab.id, after })
+            }}
+            onDragLeave={event => {
+              if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return
+              setDropTarget(target => target?.id === tab.id ? null : target)
+            }}
+            onDrop={event => {
+              const source = draggedTab.current
+              if (!source) return
+              event.preventDefault()
+              actions.reorderTab(source, tab.id, tabDropSide(event))
+              clearTabDrag()
+            }}
+            onContextMenu={event => { event.preventDefault(); setTabMenu({ id: tab.id, anchor: event.currentTarget }) }}>
             {tab.group && tabs.find(item => item.group?.id === tab.group?.id)?.id === tab.id && <span className="shell-tab-group">{tab.group.name}</span>}
-            <button className="shell-tab-select" role="tab" aria-selected={active} tabIndex={active ? 0 : -1} onClick={() => actions.activateTab(tab.id)} onKeyDown={event => {
+            <button className="shell-tab-select" role="tab" draggable={tabs.length > 1} onDragStart={event => {
+              draggedTab.current = tab.id
+              setTabMenu(null)
+              event.dataTransfer.effectAllowed = 'move'
+              event.dataTransfer.setData('application/x-waynoted-tab', tab.id)
+            }} onDragEnd={clearTabDrag} aria-selected={active} tabIndex={active ? 0 : -1} onClick={() => actions.activateTab(tab.id)} onKeyDown={event => {
               if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) { event.preventDefault(); setTabMenu({ id: tab.id, anchor: event.currentTarget }); return }
               const index = tabs.findIndex(item => item.id === tab.id)
               const next = event.key === 'ArrowRight' ? (index + 1) % tabs.length : event.key === 'ArrowLeft' ? (index - 1 + tabs.length) % tabs.length : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : -1

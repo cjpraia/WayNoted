@@ -442,3 +442,23 @@ test('tabs pin, group, close in bulk and reopen without duplicating pages', () =
   assert.equal(getState().settings.openTabs![0].pinned, true)
   assert.equal(Object.keys(getState().pages).length, before)
 })
+
+test('tab reordering keeps the active tab, pins, and group membership', () => {
+  const route = { type: 'home' } as const
+  const pinned = { id: 'pinned', pinned: true, route }
+  const ordinary = { id: 'ordinary', route }
+  const group = { id: 'project', name: 'Project' }
+  const first = { id: 'first', group, route }
+  const second = { id: 'second', group, route }
+  actions.updateSettings({ openTabs: [pinned, ordinary, first, second], activeTabId: ordinary.id })
+
+  actions.reorderTab(ordinary.id, pinned.id, false)
+  assert.deepEqual(getState().settings.openTabs, [ordinary, pinned, first, second])
+  actions.reorderTab(second.id, first.id, false)
+  assert.deepEqual(getState().settings.openTabs, [ordinary, pinned, second, first])
+  actions.reorderTab(first.id, ordinary.id, false)
+  assert.deepEqual(getState().settings.openTabs, [second, first, ordinary, pinned])
+  actions.reorderTab(pinned.id, second.id, true)
+  assert.deepEqual(getState().settings.openTabs, [second, first, pinned, ordinary])
+  assert.equal(getState().settings.activeTabId, ordinary.id)
+})
