@@ -16,6 +16,7 @@ import '@blocknote/mantine/style.css'
 import { CalendarDays, ChevronDown, ChevronUp, Link2, X } from 'lucide-react'
 import { actions, api, selectors, useStore } from '../../store'
 import { copyText } from '../../clipboard'
+import { BLOCKNOTE_CLIPBOARD, blockClipboardFormats, writeBlockClipboard } from './blockClipboard'
 import { schema, type PageEditorType } from './schema'
 import { dailyNoteLink, editorLinks, localPageLink } from './links'
 import { mentionFromText } from '../../nlp/mention'
@@ -120,7 +121,7 @@ export function PageEditor({ pageId, initial, theme, editable, onReady }: Props)
     extensions: [...editorExtensions(), BlockDropExtension()],
     uploadFile,
     pasteHandler: ({ event, editor: pasteEditor, defaultPasteHandler }) => {
-      const url = singlePastedUrl(event)
+      const url = event.clipboardData?.types.includes(BLOCKNOTE_CLIPBOARD) ? null : singlePastedUrl(event)
       if (!url) return pasteKeepingPageCopies(pageId, pasteEditor as unknown as PageEditorType, () => smartPaste.handle(event, pasteEditor as unknown as SmartPasteEditor, defaultPasteHandler))
       const current = pasteEditor as unknown as PasteEditor
       const capture = pasteUrlAndCapture(current, url)
@@ -221,6 +222,22 @@ export function PageEditor({ pageId, initial, theme, editable, onReady }: Props)
     }
     walk(editor.document as never)
     setMatchIndex(0)
+  }
+
+  const copyBlock = async (blockId: string) => {
+    try {
+      const block = editor.getBlock(blockId)
+      if (!block) throw new Error('Missing block')
+      const formats = blockClipboardFormats(editor, block, t('Bloco sem representação portátil', 'Block has no portable representation'))
+      const rich = await writeBlockClipboard(formats)
+      setBlockAction(formats.limited
+        ? t('Bloco copiado com limitações. Tipos especiais foram convertidos em texto.', 'Block copied with limitations. Special types were converted to text.')
+        : rich
+          ? t('Bloco copiado.', 'Block copied.')
+          : t('Bloco copiado como HTML e texto. A estrutura original pode mudar ao colar.', 'Block copied as HTML and text. The original structure may change when pasted.'))
+    } catch {
+      setBlockAction(t('Não foi possível copiar o bloco.', 'Could not copy the block.'))
+    }
   }
 
   const copyBlockLink = async (targetBlockId?: string) => {
@@ -589,7 +606,7 @@ export function PageEditor({ pageId, initial, theme, editable, onReady }: Props)
       formattingToolbar={false}
     >
       <FormattingToolbarController formattingToolbar={formattingToolbar} />
-      <SideMenuController sideMenu={() => <EditorSideMenu editable={editable} updatedBy={lastPage.current?.updatedBy} updatedAt={lastPage.current?.updatedAt} onCommand={(item, blockId) => { if (editable || item.operation === 'action:copy-link') { recordSlashUse(item.id); void executeSlashCommand(item, slashContext('', blockId)) } }} onSuggest={(blockId) => { if (editable) commentSelection(blockId, true) }} onExtractText={setExtractTarget} />} />
+      <SideMenuController sideMenu={() => <EditorSideMenu editable={editable} onCopyBlock={(blockId) => void copyBlock(blockId)} updatedBy={lastPage.current?.updatedBy} updatedAt={lastPage.current?.updatedAt} onCommand={(item, blockId) => { if (editable || item.operation === 'action:copy-link') { recordSlashUse(item.id); void executeSlashCommand(item, slashContext('', blockId)) } }} onSuggest={(blockId) => { if (editable) commentSelection(blockId, true) }} onExtractText={setExtractTarget} />} />
       <SuggestionMenuController triggerCharacter="/" getItems={getItems} suggestionMenuComponent={LocalSlashMenu} />
       <SuggestionMenuController triggerCharacter="@" getItems={getMentions} />
     </BlockNoteView>

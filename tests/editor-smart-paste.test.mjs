@@ -25,7 +25,7 @@ const el = (tag, cls, text) => { const node = document.createElement(tag); if (c
 const callout = createBlockSpec({ type: 'callout', propSchema: { icon: { default: '💡' } }, content: 'inline' }, { render: (block) => { const dom = el('div', 'pg-callout'); const contentDOM = el('div'); dom.append(el('span', '', block.props.icon), contentDOM); return { dom, contentDOM } } })
 const equation = createBlockSpec({ type: 'equation', propSchema: { latex: { default: 'x^2' } }, content: 'none' }, { render: (block) => ({ dom: el('div', 'pg-equation', block.props.latex) }) })
 const inlineEquation = createInlineContentSpec({ type: 'inlineEquation', propSchema: { id: { default: '' }, latex: { default: 'x^2' } }, content: 'none' }, { render: (content) => ({ dom: el('span', 'pg-inline-eq', content.props.latex) }) })
-const schema = BlockNoteSchema.create({ blockSpecs: { ...defaultBlockSpecs, callout: callout(), equation: equation() }, inlineContentSpecs: { ...defaultInlineContentSpecs, inlineEquation }, styleSpecs: editorStyleSpecs })
+const schema = BlockNoteSchema.create({ blockSpecs: { ...defaultBlockSpecs, callout: callout(), equation: equation(), htmlSandbox: createBlockSpec({ type: 'htmlSandbox', propSchema: { html: { default: '' } }, content: 'none' }, { render: () => ({ dom: el('div') }) })() }, inlineContentSpecs: { ...defaultInlineContentSpecs, inlineEquation }, styleSpecs: editorStyleSpecs })
 
 let plainNext = false, lastResult = null
 function setup(initialContent = [{ id: 'target', type: 'paragraph' }]) {
@@ -217,4 +217,80 @@ test('colar Markdown no meio de um parágrafo com texto preserva o título colad
     editor.undo()
     assert.equal(editor.document.length, 1); assert.equal(text(editor.document[0]), 'Texto existente')
   } finally { done() }
+})
+
+const { blockClipboardFormats, writeBlockClipboard, BLOCKNOTE_CLIPBOARD } = await import('../src/components/page/blockClipboard.ts')
+
+test('Copy block round-trips an entire formatted table and provides a spreadsheet-friendly TSV', () => {
+  const { editor, done } = setup([{ id: 'source', type: 'table', content: {
+    type: 'tableContent', rows: [
+      { cells: [[{ type: 'text', text: 'Produto', styles: { bold: true } }], 'Preço', 'Status'] },
+      { cells: ['Caneta', 'R$ 2,50', ''] },
+      { cells: ['Caderno', 'R$ 15,00', 'OK'] },
+    ],
+  } }])
+  const target = setup()
+  try {
+    const original = JSON.stringify(editor.document)
+    const formats = blockClipboardFormats(editor, editor.document[0], 'Unavailable')
+    assert.equal(formats.limited, false)
+    assert.match(formats.html, /<table[\s>]/)
+    assert.match(formats.html, /<strong>Produto<\/strong>/)
+    assert.equal(formats.text, 'Produto\tPreço\tStatus\nCaneta\tR$ 2,50\t\nCaderno\tR$ 15,00\tOK')
+    const data = { [BLOCKNOTE_CLIPBOARD]: formats.internal, 'text/html': formats.html, 'text/plain': formats.text }
+    paste(target.editor, data)
+    const copy = target.editor.document[0]
+    assert.equal(copy.type, 'table')
+    assert.notEqual(copy.id, 'source')
+    assert.deepEqual(copy.content, editor.document[0].content)
+    assert.equal(JSON.stringify(editor.document), original)
+    target.editor.setTextCursorPosition(target.editor.document.at(-1).id, 'end')
+    if (target.editor.getTextCursorPosition().block.type === 'table') {
+      const [after] = target.editor.insertBlocks([{ type: 'paragraph' }], copy.id, 'after')
+      target.editor.setTextCursorPosition(after.id, 'start')
+    }
+    paste(target.editor, data)
+    const copies = target.editor.document.filter(block => block.type === 'table')
+    assert.equal(copies.length, 2)
+    assert.notEqual(copies[0].id, copies[1].id)
+  } finally { done(); target.done() }
+})
+
+test('Copy block preserves children and degrades unsupported types to readable text', () => {
+  const { editor, done } = setup([{ id: 'source', type: 'heading', props: { level: 2 }, content: 'Parent', children: [
+    { id: 'item', type: 'checkListItem', props: { checked: true }, content: 'Task' },
+    { id: 'special', type: 'htmlSandbox', props: { html: '<strong>sample content</strong>' } },
+  ] }])
+  const target = setup()
+  try {
+    const formats = blockClipboardFormats(editor, editor.document[0], 'Unavailable')
+    assert.equal(formats.limited, true)
+    assert.match(formats.text, /Parent\n  Task\n  sample content/)
+    paste(target.editor, { [BLOCKNOTE_CLIPBOARD]: formats.internal, 'text/html': formats.html, 'text/plain': formats.text })
+    const [parent] = target.editor.document
+    assert.equal(parent.type, 'heading')
+    assert.equal(parent.props.level, 2)
+    assert.equal(parent.children[0].props.checked, true)
+    assert.equal(parent.children[1].type, 'paragraph')
+    assert.equal(text(parent.children[1]), 'sample content')
+    assert.notEqual(parent.children[0].id, 'item')
+    assert.equal(editor.document[0].children[1].type, 'htmlSandbox')
+  } finally { done(); target.done() }
+})
+
+test('Copy block writes the internal, HTML and text fallback clipboard representations', async () => {
+  const formats = { internal: '<div>internal</div>', html: '<p>external</p>', text: 'external', limited: false }
+  const data = new Map()
+  const previous = document.execCommand
+  document.execCommand = (command) => {
+    assert.equal(command, 'copy')
+    const event = new globalThis.ClipboardEvent('copy', { cancelable: true })
+    Object.defineProperty(event, 'clipboardData', { value: { setData: (key, value) => data.set(key, value) } })
+    document.dispatchEvent(event)
+    return event.defaultPrevented
+  }
+  try {
+    assert.equal(await writeBlockClipboard(formats), true)
+    assert.deepEqual(Object.fromEntries(data), { 'text/html': formats.html, 'text/plain': formats.text, [BLOCKNOTE_CLIPBOARD]: formats.internal })
+  } finally { document.execCommand = previous }
 })

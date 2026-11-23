@@ -40,9 +40,9 @@ const AUTOLINK_LIMIT = 20_000
 export function planPaste(data: ClipboardLike, options: PlanOptions): PastePlan {
   const types = Array.from(data.types)
   const text = types.includes('text/plain') ? data.getData('text/plain') : ''
-  if (types.includes('blocknote/html')) return { kind: 'default' }
   if (options.inCode) return text ? { kind: 'plain', text } : { kind: 'default' }
   if (options.plain) return text ? { kind: 'plain', text } : { kind: 'default' }
+  if (types.includes('blocknote/html')) return { kind: 'default' }
   if (types.includes('vscode-editor-data')) {
     let mode = ''
     try { mode = String(JSON.parse(data.getData('vscode-editor-data'))?.mode ?? '') } catch { /* dado inválido */ }

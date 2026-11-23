@@ -22,11 +22,12 @@ export interface BlockHandleMenuProps {
   updatedAt?: number
   onCommand: (command: SlashCommand, blockId: string) => void
   onSuggest: (blockId: string) => void
+  onCopyBlock: (blockId: string) => void
   /** "Extrair texto" de imagem/PDF (B6a): abre a prévia editável. */
   onExtractText?: (target: ExtractTarget) => void
 }
 
-export function BlockHandleMenu({ editable, updatedBy, updatedAt, onCommand, onSuggest, onExtractText }: BlockHandleMenuProps) {
+export function BlockHandleMenu({ editable, updatedBy, updatedAt, onCommand, onSuggest, onCopyBlock, onExtractText }: BlockHandleMenuProps) {
   const Components = useComponentsContext()!
   const block = useExtensionState(SideMenuExtension, { selector: (state) => state?.block })
   const editor = useBlockNoteEditor()
@@ -60,6 +61,12 @@ export function BlockHandleMenu({ editable, updatedBy, updatedAt, onCommand, onS
   const extractLabel = t('Extrair texto', 'Extract text')
   const showExtract = !!extract && (extract.kind === 'pdf' || ocrAvailable()) && (!normalized || [extractLabel, 'extract text', 'extrair texto', 'ocr'].some(value => value.toLocaleLowerCase(locale).includes(normalized)))
   const extractItem = showExtract ? <Components.Generic.Menu.Item className="pg-block-menu-item" key="extract-text" onClick={() => onExtractText!(extract!)}><span className="pg-block-menu-label"><ScanText size={16} />{extractLabel}</span></Components.Generic.Menu.Item> : null
+  const copyLabel = t('Copiar bloco', 'Copy block')
+  const copyBlockItem = block && (!normalized || copyLabel.toLocaleLowerCase(locale).includes(normalized)) && (
+    <Components.Generic.Menu.Item className="pg-block-menu-item" onClick={() => onCopyBlock(block.id)}>
+      <span className="pg-block-menu-label"><BlockIcon name="duplicate" size={16} />{copyLabel}</span>
+    </Components.Generic.Menu.Item>
+  )
   if (!block) return null
   return <Components.Generic.Menu.Dropdown className="bn-menu-dropdown pg-block-menu">
     <input autoFocus className="pg-block-menu-search" aria-label={t('Pesquisar ações', 'Search actions')} placeholder={t('Pesquisar ações…', 'Search actions…')} value={search} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (!['Escape', 'ArrowUp', 'ArrowDown', 'Enter'].includes(event.key)) event.stopPropagation() }} />
@@ -69,6 +76,7 @@ export function BlockHandleMenu({ editable, updatedBy, updatedAt, onCommand, onS
         <button type="button" className="pg-block-menu-row" disabled={!editable} onClick={() => setSection('turn')}><span className="pg-block-menu-label"><Repeat2 size={16} />{t('Transformar em', 'Turn into')}</span><ChevronRight size={16} /></button>
         <button type="button" className="pg-block-menu-row" disabled={!editable} onClick={() => setSection('color')}><span className="pg-block-menu-label"><PaintRoller size={16} />{t('Cor', 'Color')}</span><ChevronRight size={16} /></button>
         <hr />
+        {copyBlockItem}
         {showAction('copy-link', t('Copiar link do bloco', 'Copy link to block'), false)}
         {showAction('duplicate', t('Duplicar', 'Duplicate'))}
         {showAction('move-to', t('Mover para', 'Move to'))}
@@ -86,7 +94,7 @@ export function BlockHandleMenu({ editable, updatedBy, updatedAt, onCommand, onS
       </>}
     </>}
     {(normalized || section !== 'main') && <div className="pg-block-menu-results">{filtered.map((item) => <Components.Generic.Menu.Item key={item.id} className={`pg-block-menu-item${!editable ? ' is-disabled' : ''}`} onClick={() => { if (editable) onCommand(item, block.id) }}><span className="pg-block-menu-label"><BlockIcon name={item.id} size={16} />{locale === 'en-US' ? item.en : item.pt}</span>{normalized && <small>{item.category}</small>}</Components.Generic.Menu.Item>)}
-      {normalized && <>{extractItem}{undoColumnsItem}{deleteColumnsItem}{['copy-link', 'duplicate', 'move-to', 'delete', 'comment', 'ask-ai'].map((id) => showAction(id, locale === 'en-US' ? action(id)?.en ?? '' : action(id)?.pt ?? '', id !== 'copy-link'))}{['suggest', 'skills'].filter((id) => (id === 'suggest' ? t('Sugerir edições', 'Suggest edits') : t('Habilidades', 'Skills')).toLocaleLowerCase(locale).includes(normalized)).map((id) => id === 'suggest' ? <Components.Generic.Menu.Item key={id} className={`pg-block-menu-item${!editable || !text ? ' is-disabled' : ''}`} onClick={() => { if (editable && text) onSuggest(block.id) }}>{t('Sugerir edições', 'Suggest edits')}</Components.Generic.Menu.Item> : <button key={id} type="button" className="pg-block-menu-row" disabled>{t('Habilidades (indisponível offline)', 'Skills (unavailable offline)')}</button>)}</>}
+      {normalized && <>{copyBlockItem}{extractItem}{undoColumnsItem}{deleteColumnsItem}{['copy-link', 'duplicate', 'move-to', 'delete', 'comment', 'ask-ai'].map((id) => showAction(id, locale === 'en-US' ? action(id)?.en ?? '' : action(id)?.pt ?? '', id !== 'copy-link'))}{['suggest', 'skills'].filter((id) => (id === 'suggest' ? t('Sugerir edições', 'Suggest edits') : t('Habilidades', 'Skills')).toLocaleLowerCase(locale).includes(normalized)).map((id) => id === 'suggest' ? <Components.Generic.Menu.Item key={id} className={`pg-block-menu-item${!editable || !text ? ' is-disabled' : ''}`} onClick={() => { if (editable && text) onSuggest(block.id) }}>{t('Sugerir edições', 'Suggest edits')}</Components.Generic.Menu.Item> : <button key={id} type="button" className="pg-block-menu-row" disabled>{t('Habilidades (indisponível offline)', 'Skills (unavailable offline)')}</button>)}</>}
       {!filtered.length && !normalized && <div className="pg-block-menu-empty">{t('Nenhum comando', 'No commands')}</div>}
     </div>}
     <footer className="pg-block-menu-footer">
