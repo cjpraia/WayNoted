@@ -1,7 +1,7 @@
 // Menu de uma propriedade (cabeçalho da coluna / painel de propriedades): renomear, tipo,
 // ordenar, filtrar, ocultar, duplicar e excluir.
 import { useEffect, useRef, useState } from 'react'
-import { ArrowDown, ArrowUp, ChevronRight, Copy, EyeOff, ListFilter, Trash2, Pin, PinOff, WrapText, ArrowRightToLine, Smile, Group, ArrowDownUp, Calendar, Clock, Hash, Plus, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronRight, ClipboardPaste, Copy, EyeOff, ListFilter, Trash2, Pin, PinOff, WrapText, ArrowRightToLine, Smile, Group, ArrowDownUp, Calendar, Clock, Hash, Plus, X } from 'lucide-react'
 import { actions, getState } from '../../store'
 import { resolveLinkedRoot } from './linkedSource'
 import type { Filter, Property, PropType, SelectOption, View } from '../../types'
@@ -43,6 +43,8 @@ export function PropertyMenu(props: {
   properties?: Property[]
   /** Foca e seleciona o nome ao abrir (propriedade recém-criada). */
   autoRename?: boolean
+  onCopyColumn?: () => void
+  onSelectColumn?: () => void
   onClose: () => void
 }) {
   const { dbId, property, view, readOnly } = props
@@ -158,6 +160,12 @@ export function PropertyMenu(props: {
           </div>
         )}
         {readOnly && <div className="dbv-propmenu-title"><span className="dbv-menu-icon"><PropTypeIcon type={property.type} /></span><span>{property.name}</span></div>}
+
+        {(props.onCopyColumn || props.onSelectColumn) && <>
+          <MenuSep />
+          {props.onCopyColumn && <MenuItem icon={<Copy size={16} />} label={t('Copiar valores da coluna', 'Copy column values')} onClick={() => { props.onCopyColumn?.(); close() }} />}
+          {props.onSelectColumn && <MenuItem icon={<ClipboardPaste size={16} />} label={t('Selecionar coluna para colar', 'Select column for paste')} onClick={() => { props.onSelectColumn?.(); close() }} />}
+        </>}
 
         {/* Tipo e opções do tipo */}
         {!readOnly && !isTitle && (

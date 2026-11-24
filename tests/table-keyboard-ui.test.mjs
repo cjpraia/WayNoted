@@ -17,6 +17,7 @@ const nav=await import('../src/components/database/tableNav.ts')
 const clip=await import('../src/components/database/tableClipboard.ts')
 const sel=await import('../src/components/database/rowSelection.ts')
 const virt=await import('../src/components/database/virtual/useVirtualRows.ts')
+const {lockedAncestor}=await import('../src/security/pageLock.ts')
 const derived=await import('../src/components/database/derived.ts')
 
 const props=[{id:'title',name:'Name',type:'title'},{id:'txt',name:'Note',type:'text'},{id:'num',name:'Value',type:'number'},{id:'chk',name:'Done',type:'checkbox'},{id:'sel',name:'State',type:'select',options:[{id:'a',name:'Open',color:'blue'}]}]
@@ -29,12 +30,12 @@ const store={
  trackRowsUndo:(label,ids,fn)=>{undoLabels.push([label,ids.length]);return fn()},
  createRow:()=>'new',createPage:()=>'new',movePage:()=>{},duplicatePage:async()=>{},trashPage:()=>{},updateView:()=>{},
 }
-const mocks={t,getLocale:()=>'en-US',actions:store,getState:()=>({pages:data}),selectors:{rows:()=>Object.values(data)},
+const mocks={t,getLocale:()=>'en-US',actions:store,getState:()=>({pages:{db:{id:'db',parentId:null},...data}}),selectors:{rows:()=>Object.values(data)},
  defaultsForNewRow:()=>({}),getValue:(row,prop)=>prop.type==='title'?row.title:row.props?.[prop.id]??null,isEmptyValue:v=>v===null||v===''||(Array.isArray(v)&&!v.length),
  PropDisplay:({value})=>React.createElement('span',null,value==null?'':String(value)),PropTypeIcon:()=>null,
  PropertyEditor:function MockEditor(p){React.useEffect(()=>{const h=e=>{if(e.key==='Escape')p.onClose('escape')};document.addEventListener('keydown',h);return()=>document.removeEventListener('keydown',h)},[]);return React.createElement('div',{'data-editor':p.property.id,'data-seed':p.seed??''})},
- openUrl:()=>{},NewPropertyMenu:()=>null,PropertyMenu:()=>null,DbPopover:()=>null,Menu:()=>null,MenuItem:()=>null,MenuSep:()=>null,
- addProperty:()=>'p',moveProperty:()=>{},isComputedProperty:derived.isComputedProperty,BulkBar:()=>null,TableFooterCalc:()=>null,PageIcon:()=>null,
+ openUrl:()=>{},NewPropertyMenu:({onSelectColumn})=>onSelectColumn ? React.createElement('button',{'data-select-column':true,onClick:onSelectColumn}) : null,PropertyMenu:({onSelectColumn})=>onSelectColumn ? React.createElement('button',{'data-select-column':true,onClick:onSelectColumn}) : null,DbPopover:()=>null,Menu:()=>null,MenuItem:()=>null,MenuSep:()=>null,
+ addProperty:()=>'p',moveProperty:()=>{},lockedAncestor,isLivePage:derived.isLivePage,isComputedProperty:derived.isComputedProperty,BulkBar:()=>null,TableFooterCalc:()=>null,PageIcon:()=>null,
  matchingRowColor:()=>undefined,CellComments:()=>null,...sel,...virt,...nav,...clip}
 globalThis.__tableKb=mocks
 async function load(file){
@@ -63,7 +64,7 @@ const cellId=(row,prop)=>document.querySelector(`[data-cell="${row}:${prop}"]`).
 const activeId=(g=0)=>grids()[g].getAttribute('aria-activedescendant')
 const press=async(key,init={},g=0)=>{const grid=grids()[g];grid.focus();await act(async()=>{grid.dispatchEvent(new dom.window.KeyboardEvent('keydown',{key,bubbles:true,cancelable:true,...init}))})}
 const click=async(row,prop)=>{await act(async()=>document.querySelector(`[data-cell="${row}:${prop}"]`).dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})))}
-const paste=async text=>{const grid=grids()[0];grid.focus();await act(async()=>{const ev=new dom.window.Event('paste',{bubbles:true,cancelable:true});ev.clipboardData={getData:()=>text};grid.dispatchEvent(ev)})}
+const paste=async (text, clipboard)=>{const grid=grids()[0];grid.focus();await act(async()=>{const ev=new dom.window.Event('paste',{bubbles:true,cancelable:true});ev.clipboardData=clipboard??{getData:kind=>kind==='text/plain'?text:''};grid.dispatchEvent(ev)})}
 const closeEditor=async()=>{await act(async()=>{document.dispatchEvent(new dom.window.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await new Promise(r=>setTimeout(r,10))})}
 const editor=()=>document.querySelector('[data-editor]')
 test.after(async()=>{await act(async()=>root.unmount())})
@@ -162,4 +163,20 @@ test('Shift+setas estendem a seleção de linhas',async()=>{
  assert.deepEqual(rows,['r1','r2','r3'])
  await press('ArrowUp',{shiftKey:true})
  assert.equal(document.querySelectorAll('[role="row"][aria-selected="true"]').length,2)
+})
+
+test('coluna selecionada anuncia o cabeçalho e rejeita planilha incompatível sem gravar parcialmente', async () => {
+ reset();await mount()
+ await act(async()=>document.querySelector('[data-col="num"]').click())
+ await act(async()=>document.querySelector('[data-select-column]').click())
+ const header = document.querySelector('[data-col="num"]')
+ assert.equal(activeId(),header.id)
+ assert.equal(document.activeElement,grids()[0])
+ calls.length=0;undoLabels.length=0
+ await paste('1\n2\ninvalid\n4')
+ assert.equal(calls.length,0)
+ assert.match(document.querySelector('.tb-note').textContent,/Nothing was pasted/)
+ await paste('1\n2\n3\n4')
+ assert.deepEqual(calls.map(call=>call.slice(1)),[['r0','num',1],['r1','num',2],['r2','num',3],['r3','num',4]])
+ assert.deepEqual(undoLabels,[['Paste into cells',4]])
 })

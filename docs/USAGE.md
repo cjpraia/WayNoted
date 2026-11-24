@@ -16,6 +16,10 @@ Drag a tab by its title to the left or right side of another tab to reorder it. 
 
 A database organizes pages as rows with properties. Use column headers and view settings to configure properties, filters, sorting, grouping, text wrapping, and frozen columns. Formulas and rollups are calculated; relations connect database records.
 
+In a table, right-click a cell to copy it or select it for paste. Use the column header menu to copy the values in the visible rows (or the current group) or select a destination column. Press **⌘V** or **Ctrl+V** to paste. A column paste needs the same number of rows (up to 2,000). When both columns contain the same rows, values follow the rows even if sorted differently. Between non-overlapping sets, values follow the displayed order. A paste can replace existing values, including with blank cells, and can be undone in one step.
+
+WayNoted preserves compatible values within the same open window. Relations must point to the same source, and select options must exist at the destination. Locked or incompatible destinations reject a typed paste or an entire column. The clipboard also contains readable text for other apps, such as relation names rather than links. Copy again if the window has been reloaded.
+
 Linked views display the same source with a different presentation. Editing their data changes the shared source. Open a row to edit its page in a resizable preview or as a full page.
 
 Object types add fields and templates to pages without moving them into a database. A type collection gathers pages assigned to that type.

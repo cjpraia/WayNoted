@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { moveCell, keyToAction, parseTsv, planPaste, seedFor, MAX_PASTE_CELLS } from '../src/components/database/tableNav.ts'
 import { moveInGrid, moveInColumns } from '../src/components/database/views/shared/cardNav.ts'
-import { cellText, emptyValueFor, pasteValue, pasteable } from '../src/components/database/tableClipboard.ts'
+import { cellText, emptyValueFor, pasteValue, pasteable, typedPasteValue, orderColumn, readTableClipboard, writeTableClipboard } from '../src/components/database/tableClipboard.ts'
 import { toggleSelection } from '../src/components/database/rowSelection.ts'
 
 test('setas respeitam as bordas e sinalizam a saída para o grupo vizinho', () => {
@@ -140,4 +140,44 @@ test('cartões: grade, lista e colunas do quadro', () => {
   assert.deepEqual(moveInColumns([3, 0, 2], { col: 2, index: 1 }, 'ArrowRight'), { col: 2, index: 1 })
   assert.deepEqual(moveInColumns([3, 0, 2], { col: 0, index: 2 }, 'ArrowDown'), { col: 0, index: 2 })
   assert.deepEqual(moveInColumns([3, 0, 2], { col: 0, index: 0 }, 'ArrowUp'), { col: 0, index: 0 })
+})
+
+
+test('typed clipboard keeps all relation IDs while plain text contains page titles', () => {
+  const property = { id: 'r', name: 'Apps', type: 'relation', relationDatabaseId: 'db' } as const
+  const pages = {
+    db: { parentId: null, database: {} },
+    a: { parentId: 'db', title: 'Saas' },
+    b: { parentId: 'db', title: 'Onboarding' },
+    c: { parentId: 'db', title: 'Apps' },
+  } as unknown as Parameters<typeof typedPasteValue>[3]
+  const entries = [{ rowId: 'row', value: ['a', 'b', 'c'] }]
+  const data = new Map<string, string>()
+  const clipboard = { setData: (kind: string, value: string) => data.set(kind, value), getData: (kind: string) => data.get(kind) ?? '' } as DataTransfer
+  writeTableClipboard(clipboard, { kind: 'cell', property, entries }, pages)
+  assert.equal(clipboard.getData('text/plain'), 'Saas, Onboarding, Apps')
+  data.delete('application/x-waynoted-table')
+  const copied = readTableClipboard(clipboard)
+  assert.ok(copied)
+  assert.deepEqual(typedPasteValue(copied.entries[0].value, copied.property, property, pages), ['a', 'b', 'c'])
+  assert.equal(typedPasteValue(copied.entries[0].value, copied.property, { ...property, relationDatabaseId: 'other' }, pages), undefined)
+  assert.equal(typedPasteValue(['a', 'missing'], property, property, pages), undefined)
+})
+
+test('typed clipboard maps every option or declines the entire value', () => {
+  const source = { id: 's', name: 'Tags', type: 'multiSelect', options: [{ id: 'aa', name: 'Apps', color: 'blue' }, { id: 'bb', name: 'Docs', color: 'gray' }] } as const
+  const target = { ...source, id: 't', options: [{ ...source.options[0], id: 'a' }, { ...source.options[1], id: 'b' }] }
+  const sourceProp = { ...source, options: [...source.options] }
+  assert.deepEqual(typedPasteValue(['aa', 'bb'], sourceProp, target, {}), ['a', 'b'])
+  assert.equal(typedPasteValue(['aa', 'missing'], sourceProp, target, {}), undefined)
+  assert.equal(pasteValue('Apps, Unknown', target), undefined)
+  assert.equal(pasteValue('maybe', { id: 'x', name: 'Done', type: 'checkbox' }), undefined)
+})
+
+test('column paste reconciles reordered rows and rejects partial overlaps', () => {
+  const entries = [{ rowId: 'a', value: 0 }, { rowId: 'b', value: 1 }]
+  assert.deepEqual(orderColumn(entries, ['b', 'a'])?.map(entry => entry.value), [1, 0])
+  assert.deepEqual(orderColumn(entries, ['x', 'y'])?.map(entry => entry.value), [0, 1])
+  assert.equal(orderColumn(entries, ['a', 'x']), undefined)
+  assert.equal(orderColumn(entries, ['b']), undefined)
 })

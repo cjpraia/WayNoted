@@ -102,7 +102,7 @@ test('busca ⌘K: combobox + listbox + opções com aria-selected e contagem de 
 
 test('tabela de banco: grid com contagem de linhas/colunas, posição, seleção e ordenação anunciadas', () => {
   const table = read('src/components/database/TableView.tsx')
-  for (const needle of ['role="grid"', 'aria-rowcount={rows.length + 1}', 'aria-colcount=', 'aria-activedescendant={activeDomId}', 'role="columnheader"', 'aria-sort=', 'role="rowgroup"', 'aria-rowindex={props.rowIndex}', 'role="gridcell"', 'aria-colindex={props.colIndex}']) assert.ok(table.includes(needle), needle)
+  for (const needle of ['role="grid"', 'aria-rowcount={rows.length + 1}', 'aria-colcount=', 'aria-activedescendant=', 'role="columnheader"', 'aria-sort=', 'role="rowgroup"', 'aria-rowindex={props.rowIndex}', 'role="gridcell"', 'aria-colindex={props.colIndex}']) assert.ok(table.includes(needle), needle)
 })
 
 test('Configurações: diálogo modal nomeado com foco preso e devolvido', () => {

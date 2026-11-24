@@ -1,7 +1,7 @@
 // Visualização em tabela: cabeçalhos com menu, redimensionar/reordenar colunas, edição de células,
 // reordenação de linhas, menu de contexto e criação de linhas/propriedades.
 import { memo, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
-import { ArrowUpRight, ChevronDown, Copy, GripVertical, Maximize2, MoreHorizontal, Plus, Trash2 } from 'lucide-react'
+import { ArrowUpRight, ChevronDown, ClipboardPaste, Copy, GripVertical, Maximize2, MoreHorizontal, Plus, Trash2 } from 'lucide-react'
 import { actions, getState, selectors } from '../../store'
 import type { Page, Property, PropValue } from '../../types'
 import { defaultsForNewRow, getValue, isEmptyValue, type ViewProps } from './lib'
@@ -12,7 +12,7 @@ import { openUrl } from './editors/TextEditor'
 import { NewPropertyMenu, PropertyMenu } from './PropertyMenu'
 import { DbPopover, Menu, MenuItem, MenuSep } from './ui/Popover'
 import { addProperty, moveProperty } from './schemaOps'
-import { isComputedProperty } from './derived'
+import { isComputedProperty, isLivePage } from './derived'
 import { BulkBar } from './BulkBar'
 import { useRowSelection } from './rowSelection'
 import { TableFooterCalc } from './TableFooterCalc'
@@ -21,8 +21,11 @@ import { matchingRowColor } from './colorRules'
 import { CellComments } from './CellComments'
 import { getLocale, t } from '../../i18n'
 import { useVirtualRows } from './virtual/useVirtualRows'
-import { keyToAction, moveCell, parseTsv, planPaste, type NavDir, type Overflow } from './tableNav'
-import { cellText, emptyValueFor, pasteValue } from './tableClipboard'
+import { keyToAction, MAX_PASTE_CELLS, moveCell, parseTsv, planPaste, type NavDir, type Overflow } from './tableNav'
+import { copyTableFromMenu, emptyValueFor, orderColumn, pasteValue, readTableClipboard, typedPasteValue, writeTableClipboard, type TableClipboard } from './tableClipboard'
+import { lockedAncestor } from '../../security/pageLock'
+import { planRelationMirror } from './engines'
+import { dependentOptions } from './dependentOptions'
 import './table.css'
 
 const MIN_W = 80
@@ -44,6 +47,7 @@ export function TableView(props: ViewProps) {
   const [editEl, setEditEl] = useState<Element | null>(null)
   // Célula ativa (foco do teclado) e texto digitado que abriu a edição substituindo o conteúdo.
   const [active, setActive] = useState<Cell | null>(null)
+  const [selectedColumnId, setSelectedColumnId] = useState<string | null>(null)
   const [seed, setSeed] = useState<string | undefined>(undefined)
   const [note, setNote] = useState('')
   const gridId = useId()
@@ -66,7 +70,7 @@ export function TableView(props: ViewProps) {
   const [propMenu, setPropMenu] = useState<{ propId: string; autoRename?: boolean } | null>(null)
   const [propMenuEl, setPropMenuEl] = useState<Element | null>(null)
   const [addColEl, setAddColEl] = useState<Element | null>(null)
-  const [rowMenu, setRowMenu] = useState<{ rowId: string; at: { x: number; y: number } | Element } | null>(null)
+  const [rowMenu, setRowMenu] = useState<{ rowId: string; propId?: string; at: { x: number; y: number } | Element } | null>(null)
   const [resize, setResize] = useState<{ propId: string; width: number } | null>(null)
   const [colDrop, setColDrop] = useState<{ propId: string; after: boolean } | null>(null)
   const [rowDrop, setRowDrop] = useState<{ rowId: string; after: boolean } | null>(null)
@@ -126,8 +130,9 @@ export function TableView(props: ViewProps) {
   }
 
   const startEdit = (row: Page, prop: Property, seedText?: string) => {
+    setSelectedColumnId(null)
     setActive({ rowId: row.id, propId: prop.id })
-    if (readOnly || row.locked || isComputedProperty(prop)) return
+    if (readOnly || db.locked || row.locked || isComputedProperty(prop)) return
     if (prop.type === 'checkbox') return setValue(row, prop, getValue(row, prop) !== true)
     setSeed(seedText)
     setEditing({ rowId: row.id, propId: prop.id })
@@ -236,6 +241,7 @@ export function TableView(props: ViewProps) {
   const onGridKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     // Só quando o foco está na própria grade: campos, editores e popovers (portais) ficam de fora.
     if (e.target !== e.currentTarget || e.defaultPrevented) return
+    if (selectedColumnId && !e.metaKey && !e.ctrlKey && !e.altKey) setSelectedColumnId(null)
     if (!activeCell) {
       if (rows.length && ['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Enter', 'PageDown', 'PageUp'].includes(e.key)) {
         e.preventDefault()
@@ -244,7 +250,7 @@ export function TableView(props: ViewProps) {
       return
     }
     const row = rows[activeRowIdx], prop = visibleProps[activeColIdx]
-    const canEdit = !readOnly && !row.locked && !isComputedProperty(prop)
+    const canEdit = !readOnly && !db.locked && !row.locked && !isComputedProperty(prop)
     const action = keyToAction({ key: e.key, shiftKey: e.shiftKey, metaKey: e.metaKey, ctrlKey: e.ctrlKey, altKey: e.altKey, isComposing: e.nativeEvent.isComposing }, { type: prop.type, canEdit })
     if (!action) return
     switch (action.type) {
@@ -284,36 +290,113 @@ export function TableView(props: ViewProps) {
     }
   }
 
+  const selectedColumn = visibleProps.find(p => p.id === selectedColumnId)
+  const makeCopy = (prop: Property, kind: TableClipboard['kind'], sourceRows: Page[]): TableClipboard => ({
+    kind, property: prop,
+    // Use stored relation IDs so a missing page is rejected on paste instead of disappearing.
+    entries: sourceRows.map(row => ({ rowId: row.id, value: prop.type === 'relation' ? row.props?.[prop.id] ?? null : getValue(row, prop) })),
+  })
+  const canCopyRows = (sourceRows: Page[]) => {
+    const pages = getState().pages
+    return sourceRows.length > 0 && sourceRows.every(row => !lockedAncestor(pages, row.id))
+  }
+  const copyNotice = (ok: boolean, kind: TableClipboard['kind']) => say(!ok
+    ? t('Não foi possível copiar.', 'Could not copy.')
+    : kind === 'column' ? t('Valores da coluna copiados.', 'Column values copied.') : t('Célula copiada.', 'Cell copied.'))
+  const copySelected = (prop: Property, kind: TableClipboard['kind'], sourceRows: Page[]) => {
+    if (sourceRows.length > MAX_PASTE_CELLS) return say(t('A cópia de coluna aceita até {n} linhas.', 'Column copy supports up to {n} rows.', { n: MAX_PASTE_CELLS }))
+    const ok = canCopyRows(sourceRows) && copyTableFromMenu(makeCopy(prop, kind, sourceRows), getState().pages)
+    copyNotice(ok, kind)
+  }
+  const pasteHint = () => say(t('Use ⌘V ou Ctrl+V para colar no destino selecionado.', 'Use ⌘V or Ctrl+V to paste into the selected destination.'))
+
   const onGridCopy = (e: React.ClipboardEvent<HTMLDivElement>) => {
-    if (e.target !== e.currentTarget || !activeCell) return
-    const text = cellText(getValue(rows[activeRowIdx], visibleProps[activeColIdx]), visibleProps[activeColIdx], getState().pages)
-    // Valores com tabulação, quebra de linha ou aspas vão entre aspas (como no Excel), para colar de volta sem dividir.
-    e.clipboardData.setData('text/plain', /[\t\n\r"]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text)
+    if (e.target !== e.currentTarget || !selectedColumn && !activeCell) return
     e.preventDefault()
+    const kind = selectedColumn ? 'column' : 'cell'
+    if (selectedColumn && rows.length > MAX_PASTE_CELLS) return say(t('A cópia de coluna aceita até {n} linhas.', 'Column copy supports up to {n} rows.', { n: MAX_PASTE_CELLS }))
+    if (!canCopyRows(selectedColumn ? rows : [rows[activeRowIdx]])) return copyNotice(false, kind)
+    try {
+      writeTableClipboard(e.clipboardData, selectedColumn
+        ? makeCopy(selectedColumn, kind, rows)
+        : makeCopy(visibleProps[activeColIdx], kind, [rows[activeRowIdx]]), getState().pages)
+      copyNotice(true, kind)
+    } catch { copyNotice(false, kind) }
   }
 
   const onGridPaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
-    if (e.target !== e.currentTarget || !activeCell || readOnly) return
+    if (e.target !== e.currentTarget || !selectedColumn && !activeCell) return
+    const copied = readTableClipboard(e.clipboardData)
     const text = e.clipboardData.getData('text/plain')
-    if (!text) return
+    if (copied === undefined && !text) return
     e.preventDefault()
-    const plan = planPaste(parseTsv(text), { row: activeRowIdx, col: activeColIdx }, rows.length, visibleProps.length)
+    if (readOnly || db.locked) return say(t('Esta tabela está bloqueada para edição.', 'This table is locked for editing.'))
+    if (copied === null) return say(t('Copie novamente do WayNoted para manter os tipos.', 'Copy from WayNoted again to preserve types.'))
+    if (copied && (copied.kind === 'column') !== !!selectedColumn) {
+      return say(copied.kind === 'column'
+        ? t('Selecione a coluna de destino pelo menu do cabeçalho.', 'Select the destination column from its header menu.')
+        : t('Selecione uma célula para colar este valor.', 'Select a cell to paste this value.'))
+    }
+
+    const pages = getState().pages
     const changes: { row: Page; prop: Property; value: PropValue }[] = []
+    const undoIds = new Set<string>()
     let skipped = 0
-    for (const cell of plan.cells) {
-      const row = rows[cell.row], prop = visibleProps[cell.col]
-      const value = row.locked ? undefined : pasteValue(cell.text, prop)
-      if (value === undefined) { skipped++; continue }
-      if (JSON.stringify(value) !== JSON.stringify(getValue(row, prop))) changes.push({ row, prop, value })
+    let truncated = false
+    const add = (row: Page, prop: Property, value: PropValue | undefined) => {
+      if (value === undefined || row.locked || !isLivePage(row.id, pages) || lockedAncestor(pages, row.id) || !!row.parentId && pages[row.parentId]?.locked) { skipped++; return }
+      const previous = prop.type === 'relation' ? row.props?.[prop.id] ?? [] : getValue(row, prop)
+      if (JSON.stringify(previous) === JSON.stringify(value)) return
+      const choices = typeof value === 'string' ? [value] : Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string') : []
+      if (prop.dependsOn && dependentOptions(prop, schema, row, choices).mismatched.length) { skipped++; return }
+      const mirror = prop.type === 'relation' ? planRelationMirror(pages, row.id, prop.id, value as string[]) : []
+      if (mirror.some(patch => lockedAncestor(pages, patch.rowId) || pages[patch.rowId]?.locked || !!pages[patch.rowId]?.parentId && pages[pages[patch.rowId].parentId!]?.locked)) { skipped++; return }
+      mirror.forEach(patch => undoIds.add(patch.rowId))
+      undoIds.add(row.id)
+      changes.push({ row, prop, value })
     }
+    if (selectedColumn) {
+      const ordered = copied ? orderColumn(copied.entries, rowOrder) : undefined
+      const parsed = copied ? undefined : parseTsv(text)
+      if (rows.length > MAX_PASTE_CELLS || (copied ? !ordered : parsed?.length !== rows.length || parsed.some(row => row.length !== 1))) {
+        return say(t('Use uma só coluna com a mesma quantidade de linhas e sem seleção parcialmente sobreposta, até {n} linhas.', 'Use one column with the same row count and no partial overlap, up to {n} rows.', { n: MAX_PASTE_CELLS }))
+      }
+      rows.forEach((row, index) => add(row, selectedColumn, copied
+        ? typedPasteValue(ordered![index].value, copied.property, selectedColumn, pages)
+        : pasteValue(parsed![index][0], selectedColumn)))
+    } else if (copied) {
+      const prop = visibleProps[activeColIdx]
+      add(rows[activeRowIdx], prop, typedPasteValue(copied.entries[0].value, copied.property, prop, pages))
+    } else {
+      const plan = planPaste(parseTsv(text), { row: activeRowIdx, col: activeColIdx }, rows.length, visibleProps.length)
+      truncated = plan.truncated
+      for (const cell of plan.cells) {
+        const prop = visibleProps[cell.col]
+        add(rows[cell.row], prop, pasteValue(cell.text, prop))
+      }
+    }
+    if (skipped && (copied || selectedColumn)) {
+      return say(t('Nada foi colado. Verifique o tipo, as opções, a fonte da relação e se as linhas estão bloqueadas.', 'Nothing was pasted. Check the type, options, relation source, and whether rows are locked.'))
+    }
+
+    let applied = 0
     if (changes.length) {
-      actions.trackRowsUndo(t('Colar nas células', 'Paste into cells'), [...new Set(changes.map((c) => c.row.id))], () => {
-        for (const c of changes) setValue(c.row, c.prop, c.value)
-      })
+      try {
+        actions.trackRowsUndo(t('Colar nas células', 'Paste into cells'), [...undoIds], () => {
+          for (const { row, prop, value } of changes) {
+            const current = getState().pages[row.id]
+            if (!current || current.locked || current.trashed || current.parentId !== row.parentId) throw new Error()
+            setValue(current, prop, value)
+            applied++
+          }
+        })
+      } catch {
+        return say(t('Colagem interrompida após {n} alterações. Use Desfazer para revertê-las.', 'Paste stopped after {n} changes. Use Undo to revert them.', { n: applied }))
+      }
     }
-    const parts = [t('{n} células coladas', '{n} cells pasted', { n: changes.length })]
-    if (skipped) parts.push(t('{n} ignoradas', '{n} skipped', { n: skipped }))
-    if (plan.truncated) parts.push(t('o excedente foi ignorado', 'the excess was ignored'))
+    const parts = [t('{n} células coladas', '{n} cells pasted', { n: applied })]
+    if (skipped) parts.push(t('{n} incompatíveis ou bloqueadas', '{n} incompatible or locked', { n: skipped }))
+    if (truncated) parts.push(t('o excedente foi ignorado', 'the excess was ignored'))
     say(parts.join(' · '))
   }
 
@@ -408,7 +491,7 @@ export function TableView(props: ViewProps) {
   rowHandlers.current = {
     startEdit, insertBelow, onOpenRow, rowDragOver, rowDropOn,
     cellClick: (row, prop) => { startEdit(row, prop); focusGrid() },
-    openMenu: (rowId, at) => setRowMenu({ rowId, at }),
+    openMenu: (rowId, at, propId) => setRowMenu({ rowId, at, propId }),
     toggleSelect: (row, range) => selection.toggle(row.id, range),
     dragStart: (rowId) => { dragRow.current = rowId },
   }
@@ -417,6 +500,7 @@ export function TableView(props: ViewProps) {
   const selectedRows = !props.selection && selection.size ? rows.filter((r) => selection.has(r.id)) : []
   const selecting = selection.size > 0
   const menuRow = rowMenu ? rows.find((r) => r.id === rowMenu.rowId) : undefined
+  const menuCellProp = visibleProps.find(p => p.id === rowMenu?.propId)
   const menuProp = propMenu ? schema.properties.find((p) => p.id === propMenu.propId) : undefined
 
   return (
@@ -438,7 +522,7 @@ export function TableView(props: ViewProps) {
           aria-rowcount={rows.length + 1}
           aria-colcount={visibleProps.length}
           aria-multiselectable={!readOnly || undefined}
-          aria-activedescendant={activeDomId}
+          aria-activedescendant={selectedColumn ? `${gridId}-column-${selectedColumn.id}` : activeDomId}
           style={{ minWidth: numW + totalWidth + (schemaLocked ? 0 : 40) + (db.locked ? 0 : 36) }}
           onKeyDown={onGridKeyDown}
           onCopy={onGridCopy}
@@ -469,9 +553,10 @@ export function TableView(props: ViewProps) {
               <div
                 key={p.id}
                 data-col={p.id}
+                id={`${gridId}-column-${p.id}`}
                 role="columnheader"
                 aria-sort={view.sorts[0]?.propertyId === p.id ? (view.sorts[0].direction === 'asc' ? 'ascending' : 'descending') : undefined}
-                className={`tb-th${stickyLeft(index) !== undefined ? ' tb-frozen-head' : ''}${propMenu?.propId === p.id ? ' tb-th--open' : ''}${
+                className={`tb-th${stickyLeft(index) !== undefined ? ' tb-frozen-head' : ''}${propMenu?.propId === p.id || selectedColumn?.id === p.id ? ' tb-th--open' : ''}${
                   colDrop?.propId === p.id ? (colDrop.after ? ' tb-drop-right' : ' tb-drop-left') : ''
                 }`}
                 style={{ width: widthOf(p), ...(stickyLeft(index) !== undefined ? { left: stickyLeft(index) } : {}) }}
@@ -587,6 +672,13 @@ export function TableView(props: ViewProps) {
           viewReadOnly={db.locked}
           properties={schema.properties}
           autoRename={propMenu.autoRename}
+          onCopyColumn={rows.length ? () => copySelected(menuProp, 'column', rows) : undefined}
+          onSelectColumn={rows.length && !readOnly && !db.locked && !isComputedProperty(menuProp) ? () => {
+            setSelectedColumnId(menuProp.id)
+            setActive(null)
+            focusGrid()
+            pasteHint()
+          } : undefined}
           onClose={() => setPropMenu(null)}
         />
       )}
@@ -608,6 +700,21 @@ export function TableView(props: ViewProps) {
       {rowMenu && menuRow && (
         <DbPopover anchor={rowMenu.at} onClose={() => setRowMenu(null)} label={t('Ações da linha', 'Row actions')}>
           <Menu>
+            {menuCellProp && <>
+              <MenuItem icon={<Copy size={16} />} label={t('Copiar célula', 'Copy cell')} onClick={() => {
+                copySelected(menuCellProp, 'cell', [menuRow])
+                setRowMenu(null)
+              }} />
+              {!readOnly && !db.locked && !menuRow.locked && !isComputedProperty(menuCellProp) &&
+                <MenuItem icon={<ClipboardPaste size={16} />} label={t('Selecionar célula para colar', 'Select cell for paste')} onClick={() => {
+                  setSelectedColumnId(null)
+                  setActive({ rowId: menuRow.id, propId: menuCellProp.id })
+                  setRowMenu(null)
+                  focusGrid()
+                  pasteHint()
+                }} />}
+              <MenuSep />
+            </>}
             <MenuItem
               icon={<Maximize2 size={16} />}
               label={t('Abrir', 'Open')}
@@ -654,7 +761,7 @@ interface RowHandlers {
   onOpenRow: (rowId: string) => void
   rowDragOver: (e: React.DragEvent<HTMLDivElement>, row: Page) => void
   rowDropOn: (e: React.DragEvent) => void
-  openMenu: (rowId: string, at: { x: number; y: number } | Element) => void
+  openMenu: (rowId: string, at: { x: number; y: number } | Element, propId?: string) => void
   toggleSelect: (row: Page, range: boolean) => void
   dragStart: (rowId: string) => void
 }
@@ -703,7 +810,9 @@ const TableRow = memo(function TableRow(props: TableRowProps) {
       onDrop={(e) => handlers.current.rowDropOn(e)}
       onContextMenu={(e) => {
         e.preventDefault()
-        handlers.current.openMenu(row.id, { x: e.clientX, y: e.clientY })
+        const cell = (e.target as HTMLElement).closest('[data-cell]')
+        const propId = cell?.getAttribute('data-cell')?.slice(row.id.length + 1)
+        handlers.current.openMenu(row.id, { x: e.clientX, y: e.clientY }, propId)
       }}
     >
       {!readOnly && (
