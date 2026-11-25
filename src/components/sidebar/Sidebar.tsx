@@ -164,7 +164,6 @@ export function Sidebar() {
       className={`sb${collapsed ? ' sb--collapsed' : ''}${dragWidth !== null ? ' sb--resizing' : ''}`}
       style={{ width: collapsed ? 0 : width }}
       aria-label={t("Barra lateral", "Sidebar")}
-      aria-hidden={collapsed || undefined}
       inert={collapsed || undefined}
       onKeyDown={(e) => { if (e.key === 'Escape' && !e.defaultPrevented && selectedIds().length && !(e.target as HTMLElement).closest('input,textarea,[role="dialog"],[role="menu"]')) { e.preventDefault(); clearSelection() } }}
     >
