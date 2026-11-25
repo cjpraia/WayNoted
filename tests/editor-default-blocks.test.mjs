@@ -170,3 +170,105 @@ test('rich HTML enters through the actual ProseMirror paste pipeline and preserv
   const persisted=JSON.parse(JSON.stringify(content));assert.deepEqual(JSON.parse(JSON.stringify(BlockNoteEditor.create({schema,initialContent:persisted}).document)),persisted)
  }finally{editor.unmount();host.remove()}
 })
+
+test('Enter after a list title creates a sibling and keeps the original children', async () => {
+  const { editorExtensions } = await import('../src/components/page/editorExtensions.ts')
+  for (const type of ['toggleListItem', 'bulletListItem', 'numberedListItem', 'checkListItem']) {
+    const editor = BlockNoteEditor.create({ schema, extensions: editorExtensions(), initialContent: [
+      { id: 'item', type, content: 'Original', children: [{ id: 'nested', type: 'paragraph', content: 'Keep me' }] },
+      { id: 'following', type: 'paragraph', content: 'Following' },
+    ] })
+    const host = document.createElement('div')
+    document.body.append(host)
+    editor.mount(host)
+    try {
+      editor.setTextCursorPosition('item', 'end')
+      const event = new dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+      editor.prosemirrorView.dom.dispatchEvent(event)
+      assert.ok(event.defaultPrevented, type)
+      const [first, created, following] = editor.document
+      assert.equal(first.id, 'item')
+      assert.equal(first.content[0].text, 'Original')
+      assert.equal(first.children[0]?.id, 'nested')
+      assert.equal(first.children[0]?.content[0].text, 'Keep me')
+      assert.equal(created.type, type)
+      assert.deepEqual(created.content, [])
+      assert.deepEqual(created.children, [])
+      assert.equal(following.id, 'following')
+      assert.equal(editor.getTextCursorPosition().block.id, created.id)
+      assert.equal(editor.undo(), true)
+      assert.deepEqual(editor.document.map(block => block.id), ['item', 'following'])
+      assert.equal(editor.document[0].children[0].id, 'nested')
+    } finally {
+      editor.unmount()
+      host.remove()
+    }
+  }
+})
+
+test('Enter inside a nested toggle splits only its rich title, preserving descendant order', async () => {
+  const { editorExtensions } = await import('../src/components/page/editorExtensions.ts')
+  const { TextSelection } = await import('@tiptap/pm/state')
+  const editor = BlockNoteEditor.create({ schema, extensions: editorExtensions(), initialContent: [
+    { id: 'outer', type: 'toggleListItem', content: 'Outer', children: [
+      { id: 'item', type: 'toggleListItem', content: [{ type: 'text', text: 'Bold suffix', styles: { bold: true } }],
+        children: [{ id: 'nested', type: 'paragraph', content: 'Keep me' }] },
+    ] },
+  ] })
+  const host = document.createElement('div')
+  document.body.append(host)
+  editor.mount(host)
+  try {
+    editor.setTextCursorPosition('item', 'start')
+    const view = editor.prosemirrorView
+    view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, view.state.selection.from + 5)))
+    view.dom.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    const [first, created] = editor.getBlock('outer').children
+    assert.deepEqual(first.content, [{ type: 'text', text: 'Bold ', styles: { bold: true } }])
+    assert.equal(first.children[0].id, 'nested')
+    assert.deepEqual(created.content, [{ type: 'text', text: 'suffix', styles: { bold: true } }])
+    assert.deepEqual(created.children, [])
+    assert.equal(editor.getTextCursorPosition().block.id, created.id)
+  } finally {
+    editor.unmount()
+    host.remove()
+  }
+})
+
+test('Enter preserves a toggle at the start of its title and preserves children of an empty title', async () => {
+  const { editorExtensions } = await import('../src/components/page/editorExtensions.ts')
+  for (const original of ['Original', '']) {
+    const editor = BlockNoteEditor.create({ schema, extensions: editorExtensions(), initialContent: [
+      { id: 'item', type: 'toggleListItem', content: original,
+        children: [{ id: 'nested', type: 'paragraph', content: 'Keep me' }] },
+      { id: 'empty', type: 'toggleListItem' },
+    ] })
+    const host = document.createElement('div')
+    document.body.append(host)
+    editor.mount(host)
+    const pressEnter = () => editor.prosemirrorView.dom.dispatchEvent(new dom.window.KeyboardEvent('keydown', {
+      key: 'Enter', bubbles: true, cancelable: true,
+    }))
+    try {
+      editor.setTextCursorPosition('item', 'start')
+      pressEnter()
+      const [before, after] = editor.document
+      const originalItem = original ? after : before
+      const newItem = original ? before : after
+      assert.equal(originalItem.id, 'item')
+      assert.equal(originalItem.children[0].id, 'nested')
+      assert.equal(originalItem.content[0]?.text ?? '', original)
+      assert.equal(newItem.type, 'toggleListItem')
+      assert.deepEqual(newItem.children, [])
+      assert.deepEqual(newItem.content, [])
+      assert.equal(editor.getTextCursorPosition().block.id, original ? 'item' : newItem.id)
+
+      editor.setTextCursorPosition('empty', 'start')
+      pressEnter()
+      assert.equal(editor.getBlock('empty').type, 'paragraph')
+    } finally {
+      editor.unmount()
+      host.remove()
+    }
+  }
+})
