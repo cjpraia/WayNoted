@@ -31,9 +31,12 @@ export function useReorder(onMove: (id: string, targetId: string, after: boolean
     onDrop: (e: DragEvent<HTMLElement>) => { if (!dragId || !drop) return; e.preventDefault(); const move = { from: dragId, ...drop }; end(); onMove(move.from, move.id, move.after) },
   })
   /** A alça: botão arrastável e acessível por teclado. */
-  const grip = (id: string, label: string) => {
+  const grip = (id: string, label: string, openMenu?: (anchor: HTMLButtonElement) => void) => {
     if (!movable(id)) return <span className="ot-grip ot-grip--off" aria-hidden />
-    return <button type="button" className="ot-grip" draggable aria-label={t('Reordenar {name}: arraste, ou use ⌥↑ e ⌥↓', 'Reorder {name}: drag, or use ⌥↑ and ⌥↓', { name: label })} title={t('Arraste para reordenar · ⌥↑ ⌥↓', 'Drag to reorder · ⌥↑ ⌥↓')}
+    return <button type="button" className="ot-grip" draggable
+      aria-haspopup={openMenu ? 'dialog' : undefined}
+      aria-label={openMenu ? t('Opções da propriedade {name}', 'Property options for {name}', { name: label }) : t('Reordenar {name}: arraste, ou use ⌥↑ e ⌥↓', 'Reorder {name}: drag, or use ⌥↑ and ⌥↓', { name: label })}
+      title={openMenu ? t('Clique para opções · Arraste para reordenar · ⌥↑ ⌥↓', 'Click for options · Drag to reorder · ⌥↑ ⌥↓') : t('Arraste para reordenar · ⌥↑ ⌥↓', 'Drag to reorder · ⌥↑ ⌥↓')}
       onDragStart={(e) => {
         setDragId(id)
         e.dataTransfer.effectAllowed = 'move'
@@ -42,7 +45,7 @@ export function useReorder(onMove: (id: string, targetId: string, after: boolean
         if (holder) e.dataTransfer.setDragImage(holder, 12, 12)
       }}
       onDragEnd={end}
-      onClick={(e) => e.stopPropagation()}
+      onClick={(e) => { e.stopPropagation(); openMenu?.(e.currentTarget) }}
       onKeyDown={(e: KeyboardEvent<HTMLButtonElement>) => {
         if (!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return
         e.preventDefault(); e.stopPropagation()

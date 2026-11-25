@@ -70,6 +70,7 @@
 .ot-field-head { color: var(--text-tertiary); font-size: 11.5px; font-weight: 600; border-bottom: 1px solid var(--border); }
 .ot-inherited { color: var(--text-tertiary); font-style: italic; }
 .ot-field-extra { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: var(--space-1); align-items: center; padding-bottom: var(--space-1); }
+.ot-field-relation-notice { padding: var(--space-1) var(--space-2); color: var(--text-secondary); font-size: 12px; line-height: 1.5; }
 .ot-field-extra .db-chip { cursor: default; }
 .ot-field-extra input[type='text'] { width: 160px; border-color: var(--border); }
 .ot-section { margin: var(--space-4) 0 var(--space-2); font-size: 13px; font-weight: 600; color: var(--text-secondary); }

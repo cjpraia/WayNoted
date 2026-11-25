@@ -1,14 +1,17 @@
 // Popover de edição de uma relação, no estilo do Export Bundle: busca "Vincular ou criar uma página…"
-// com o banco alvo à direita, seção "N selecionadas" (− desvincula) e "Selecionar mais"
+// com o banco ou tipo alvo à direita, seção "N selecionadas" (− desvincula) e "Selecionar mais"
 // (clique vincula); texto sem página correspondente oferece "Criar “texto”". ↑/↓/Enter, Esc.
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Database, MoreHorizontal, Minus, Plus } from 'lucide-react'
-import { actions, getState } from '../../../store'
+import { Database, MoreHorizontal, Minus, Plus, Tag } from 'lucide-react'
+import { actions, getState, useStore } from '../../../store'
 import type { Page, Property, PropValue } from '../../../types'
+import { createObject } from '../../../objecttypes/actions'
+import { findType, readTypeProps } from '../../../objecttypes/model'
+import { lockedAncestor } from '../../../security/pageLock'
 import { DbPopover, Menu, MenuItem, MenuSep, type DbAnchor, type DbPlacement } from '../ui/Popover'
 import type { EditorCloseReason } from './PropertyEditor'
-import { isStringArray } from '../derived'
-import { cellText, planRelationPicker, relationTargetRows, toggleRelationValue } from '../relationPicker'
+import { isLivePage, isStringArray } from '../derived'
+import { cellText, planRelationPicker, relationTargetObjects, relationTargetRows, toggleRelationValue } from '../relationPicker'
 import { RelationPickerConfig } from '../RelatedRulesEditor'
 import { PageIcon } from '../../page/PageIcon'
 import { t } from '../../../i18n'
@@ -24,8 +27,9 @@ type Item =
   | { kind: 'showMore'; remaining: number }
   | { kind: 'create'; title: string }
 
-export function RelationEditor({ dbId, property, value, anchor, onChange, onClose }: {
+export function RelationEditor({ dbId, rowId, property, value, anchor, onChange, onClose }: {
   dbId?: string
+  rowId?: string
   property: Property
   value: PropValue
   anchor: DbAnchor
@@ -39,21 +43,35 @@ export function RelationEditor({ dbId, property, value, anchor, onChange, onClos
   const [menu, setMenu] = useState<HTMLElement | null>(null)
   const [rules, setRules] = useState<HTMLElement | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
-  const selectedIds = isStringArray(value) ? value : []
-  const all = getState().pages
-  const target = property.relationDatabaseId
+  const { pages: all, settings } = useStore()
+  const targetTypeId = property.relationTypeId
+  const targetType = findType(settings.objectTypes ?? [], targetTypeId)
+  const source = targetTypeId && rowId ? all[rowId] : undefined
+  // Resolved relation values omit deleted pages. Keep raw IDs so adding a link
+  // or removing one visible entry does not drop other saved links.
+  const sourceSchema = source?.parentId ? all[source.parentId]?.database : undefined
+  const stored = source
+    ? (sourceSchema?.properties.some((p) => p.id === property.id) ? source.props : readTypeProps(settings.objectTypes ?? [], source))?.[property.id] ?? null
+    : value
+  const selectedIds = isStringArray(stored) ? stored : []
+  const target = targetTypeId ? undefined : property.relationDatabaseId
   const targetPage = target ? all[target] : undefined
   const schema = targetPage?.database
-  const picker = property.relationPicker
+  const picker = targetTypeId ? undefined : property.relationPicker
   const shown = useMemo(() => (picker?.shownPropertyIds ?? []).map((id) => schema?.properties.find((p) => p.id === id)).filter((p): p is Property => !!p), [picker?.shownPropertyIds, schema])
-  const rows = useMemo(() => relationTargetRows(all, target), [all, target])
-  const plan = useMemo(() => planRelationPicker({ pages: all, rows, selectedIds, query, picker, showAll, shownProperties: shown }), [all, rows, selectedIds.join('\u0000'), query, picker, showAll, shown])
+  const rows = useMemo(() => targetType
+    ? relationTargetObjects(all, settings.objectTypes ?? [], targetType.id).filter((page) => page.id !== rowId)
+    : relationTargetRows(all, target), [all, settings.objectTypes, targetType, target, rowId])
+  const targetAvailable = targetTypeId ? !!targetType : !!target
+  const plan = useMemo(() => planRelationPicker({
+    pages: all, rows, selectedIds, query, picker, showAll, shownProperties: shown, excludeLocked: !!targetTypeId,
+  }), [all, rows, selectedIds.join('\u0000'), query, picker, showAll, shown, targetTypeId])
   const visibleMore = plan.more.slice(0, limit)
   const items: Item[] = [
     ...plan.selected.map((page) => ({ kind: 'selected' as const, page })),
     ...visibleMore.map((page) => ({ kind: 'more' as const, page })),
     ...(plan.more.length > limit ? [{ kind: 'showMore' as const, remaining: plan.more.length - limit }] : []),
-    ...(plan.create && target ? [{ kind: 'create' as const, title: plan.create }] : []),
+    ...(plan.create && targetAvailable ? [{ kind: 'create' as const, title: plan.create }] : []),
   ]
   const current = Math.min(active, items.length - 1)
 
@@ -68,17 +86,28 @@ export function RelationEditor({ dbId, property, value, anchor, onChange, onClos
   }, [current])
 
   const locked = !!(dbId && all[dbId]?.locked)
+  const canEditTypeRelation = () => {
+    const { pages } = getState()
+    return !rowId || (!pages[rowId]?.locked && isLivePage(rowId, pages) && !lockedAncestor(pages, rowId))
+  }
+  const changeValue = (ids: string[]) => {
+    if (!targetTypeId || canEditTypeRelation()) onChange(ids)
+  }
   const createPage = (title: string) => {
-    if (!target) return
     try {
-      const id = actions.createRow(target, {}, { title })
-      onChange([...selectedIds, id])
+      let id: string
+      if (targetTypeId) {
+        if (!canEditTypeRelation()) return
+        id = createObject(targetTypeId, {}, { title })
+      } else if (target) id = actions.createRow(target, {}, { title })
+      else return
+      changeValue([...selectedIds, id])
       setQuery('')
     } catch (error) { actions.reportSaveError(error) }
   }
   const run = (item: Item | undefined) => {
     if (!item) return
-    if (item.kind === 'selected' || item.kind === 'more') onChange(toggleRelationValue(selectedIds, item.page.id))
+    if (item.kind === 'selected' || item.kind === 'more') changeValue(toggleRelationValue(selectedIds, item.page.id))
     else if (item.kind === 'showMore') setLimit((n) => n + PAGE_SIZE)
     else createPage(item.title)
   }
@@ -119,7 +148,7 @@ export function RelationEditor({ dbId, property, value, anchor, onChange, onClos
         <span className="db-relpick-title">{title(page)}</span>
         {props.length > 0 && <span className="db-relpick-props">{props}</span>}
       </span>
-      {item.kind === 'selected' && <button type="button" className="db-relpick-remove" aria-label={t('Desvincular {name}', 'Unlink {name}', { name: title(page) })} title={t('Desvincular', 'Unlink')} onClick={(e) => { e.stopPropagation(); onChange(selectedIds.filter((id) => id !== page.id)) }}><Minus size={14} /></button>}
+      {item.kind === 'selected' && <button type="button" className="db-relpick-remove" aria-label={t('Desvincular {name}', 'Unlink {name}', { name: title(page) })} title={t('Desvincular', 'Unlink')} onClick={(e) => { e.stopPropagation(); run(item) }}><Minus size={14} /></button>}
     </div>
   }
 
@@ -129,16 +158,20 @@ export function RelationEditor({ dbId, property, value, anchor, onChange, onClos
         <div className="db-relpick-search">
           <input autoFocus aria-label={t('Vincular ou criar uma página', 'Link or create a page')} placeholder={t('Vincular ou criar uma página…', 'Link or create a page…')} value={query} onChange={(e) => setQuery(e.target.value)}
             role="combobox" aria-expanded="true" aria-controls="db-relpick-list" aria-activedescendant={undefined} />
-          {targetPage && <span className="db-relpick-in"><span>{t('Em', 'In')}</span><span className="db-relpick-db">{targetPage.icon ? <PageIcon value={targetPage.icon} /> : <Database size={16} strokeWidth={1.6} />}<u>{dbName}</u></span></span>}
+          {targetType ? <span className="db-relpick-in"><span>{t('Tipo', 'Type')}</span><span className="db-relpick-db">{targetType.icon ? <PageIcon value={targetType.icon} /> : <Tag size={16} strokeWidth={1.6} />}<u>{targetType.name}</u></span></span>
+            : targetPage && <span className="db-relpick-in"><span>{t('Em', 'In')}</span><span className="db-relpick-db">{targetPage.icon ? <PageIcon value={targetPage.icon} /> : <Database size={16} strokeWidth={1.6} />}<u>{dbName}</u></span></span>}
         </div>
         <div className="db-relpick-list" id="db-relpick-list" role="listbox" aria-multiselectable="true" ref={listRef}>
-          {!target ? <div className="db-relpick-empty">{t('Escolha um banco de dados no menu da propriedade.', 'Choose a database in the property menu.')}</div> : <>
-            {plan.selectedCount > 0 && <div className="db-relpick-label">
-              <span>{plan.selectedCount === 1 ? t('1 selecionada', '1 selected') : t('{count} selecionadas', '{count} selected', { count: plan.selectedCount })}</span>
+          {!targetAvailable && <div className="db-relpick-empty">{targetTypeId
+            ? t('O tipo vinculado não está disponível. Escolha outro tipo ao editar o campo.', 'The related type is unavailable. Choose another type when editing the field.')
+            : t('Escolha um banco de dados no menu da propriedade.', 'Choose a database in the property menu.')}</div>}
+          {(targetAvailable || (targetTypeId && selectedIds.length > 0)) && <>
+            {(plan.selectedCount > 0 || (!targetAvailable && selectedIds.length > 0)) && <div className="db-relpick-label">
+              <span>{!plan.selectedCount ? t('Vínculos indisponíveis', 'Unavailable links') : plan.selectedCount === 1 ? t('1 selecionada', '1 selected') : t('{count} selecionadas', '{count} selected', { count: plan.selectedCount })}</span>
               <button type="button" className="db-relpick-more" aria-label={t('Opções da relação', 'Relation options')} aria-haspopup="menu" onClick={(e) => setMenu(menu ? null : e.currentTarget)}><MoreHorizontal size={16} /></button>
             </div>}
             {plan.selected.map((page, index) => pageRow({ kind: 'selected', page }, index))}
-            {(visibleMore.length > 0 || plan.selectedCount === 0) && <div className="db-relpick-label">
+            {targetAvailable && (visibleMore.length > 0 || plan.selectedCount === 0) && <div className="db-relpick-label">
               <span>{plan.selectedCount > 0 ? t('Selecionar mais', 'Select more') : t('Selecionar uma página', 'Select a page')}</span>
               {plan.selectedCount === 0 && <button type="button" className="db-relpick-more" aria-label={t('Opções da relação', 'Relation options')} aria-haspopup="menu" onClick={(e) => setMenu(menu ? null : e.currentTarget)}><MoreHorizontal size={16} /></button>}
             </div>}
@@ -148,14 +181,16 @@ export function RelationEditor({ dbId, property, value, anchor, onChange, onClos
               : item.kind === 'create'
                 ? <div key="create" data-index={index} role="option" aria-selected="false" className={`db-relpick-item db-relpick-action${index === current ? ' is-active' : ''}`} onMouseMove={() => index !== current && setActive(index)} onClick={() => run(item)}><span className="db-relpick-icon"><Plus size={16} /></span><span>{t('Criar', 'Create')} <span className="db-relpick-create">“{item.title}”</span></span></div>
                 : null)}
-            {!items.length && <div className="db-relpick-empty">{query.trim() ? t('Nenhuma página encontrada.', 'No pages found.') : t('Nenhuma página neste banco.', 'No pages in this database.')}</div>}
+            {targetAvailable && !items.length && <div className="db-relpick-empty">{query.trim() ? t('Nenhuma página encontrada.', 'No pages found.') : targetType
+              ? t('Nenhuma página deste tipo. Digite um nome para criar.', 'No pages of this type. Enter a name to create one.')
+              : t('Nenhuma página neste banco.', 'No pages in this database.')}</div>}
             {plan.hiddenByFilter > 0 && !showAll && <button type="button" className="db-relpick-hidden" onClick={() => setShowAll(true)}>{plan.hiddenByFilter === 1 ? t('1 oculta pelo filtro', '1 hidden by filter') : t('{count} ocultas pelo filtro', '{count} hidden by filter', { count: plan.hiddenByFilter })} · {t('Mostrar todas', 'Show all')}</button>}
           </>}
         </div>
       </div>
       {menu && <DbPopover anchor={menu} placement="bottom-end" onClose={() => setMenu(null)} label={t('Opções da relação', 'Relation options')}>
         <Menu width={240}>
-          <MenuItem icon={<Minus size={16} />} label={t('Limpar todas', 'Clear all')} disabled={!selectedIds.length} onClick={() => { onChange([]); setMenu(null) }} />
+          <MenuItem icon={<Minus size={16} />} label={t('Limpar todas', 'Clear all')} disabled={!selectedIds.length} onClick={() => { changeValue([]); setMenu(null) }} />
           {picker?.filters?.length ? <MenuItem label={t('Mostrar páginas fora do filtro', 'Show pages outside the filter')} checked={showAll} onClick={() => { setShowAll(!showAll); setMenu(null) }} /> : null}
           {dbId && target && <><MenuSep /><MenuItem label={t('Filtros e ordenação…', 'Filters and sorting…')} disabled={locked} onClick={(e) => { setRules(e.currentTarget.closest('.dbv-popover') as HTMLElement); setMenu(null) }} /></>}
         </Menu>

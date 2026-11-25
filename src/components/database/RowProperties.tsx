@@ -20,7 +20,7 @@ import './dbview.css'
 import { Select } from '../ui/Select'
 import { TypeFieldRows, FieldTypeMenu } from '../objecttypes/PageTypes'
 import { PageIcon } from '../page/PageIcon'
-import { DbPopover, Menu, MenuItem, MenuLabel } from './ui/Popover'
+import { DbPopover, Menu, MenuItem, MenuLabel, type DbAnchor } from './ui/Popover'
 import { objectTypes, addField } from '../../objecttypes/actions'
 import { pageTypes, pageTypeFields, typeDataHidden, type ObjectType } from '../../objecttypes/model'
 
@@ -58,7 +58,7 @@ export function RowProperties({ pageId, placement = 'main', typeLocked = false }
   const row = selectors.page(pageId)
   const db = selectors.parentDatabase(pageId)
   const [editing, setEditing] = useState<{ propId: string; el: Element } | null>(null)
-  const [menu, setMenu] = useState<{ propId: string; el: Element; autoRename?: boolean } | null>(null)
+  const [menu, setMenu] = useState<{ propId: string; anchor: DbAnchor; autoRename?: boolean } | null>(null)
   const [addEl, setAddEl] = useState<Element | null>(null)
   const [chooser, setChooser] = useState<Element | null>(null)
   const [addType, setAddType] = useState<{ type: ObjectType; el: Element } | null>(null)
@@ -96,6 +96,10 @@ export function RowProperties({ pageId, placement = 'main', typeLocked = false }
   const blocking = unresolvedDependencies(row, getState().pages)
   const editingProp = editing ? props.find((p) => p.id === editing.propId) : undefined
   const menuProp = menu ? props.find((p) => p.id === menu.propId) : undefined
+  const openPropertyMenu = (propId: string, anchor: DbAnchor) => {
+    setEditing(null)
+    setMenu({ propId, anchor })
+  }
 
   const onValueClick = (p: Property, el: Element, e: React.MouseEvent) => {
     if (readOnly || isComputedProperty(p)) return
@@ -113,13 +117,15 @@ export function RowProperties({ pageId, placement = 'main', typeLocked = false }
         return (
           <Fragment key={p.id}>
           {sectionName(p) && (index === 0 || sectionName(orderedProps[index - 1]) !== sectionName(p)) && <div className="dbv-rp-section">{sectionName(p)}</div>}
-          <div className="dbv-rp-row" role="row" data-prop={p.id} {...reorder.row(p.id)}>
-            {reorder.grip(p.id, p.name)}
+          <div className="dbv-rp-row" role="row" data-prop={p.id} {...reorder.row(p.id)}
+            onContextMenu={schemaLocked ? undefined : (e) => { e.preventDefault(); e.stopPropagation(); openPropertyMenu(p.id, { x: e.clientX, y: e.clientY }) }}>
+            {reorder.grip(p.id, p.name, (anchor) => openPropertyMenu(p.id, anchor))}
             <button
               type="button"
               className="dbv-rp-name"
               disabled={schemaLocked}
-              onClick={(e) => setMenu({ propId: p.id, el: e.currentTarget })}
+              aria-haspopup="dialog"
+              onClick={(e) => openPropertyMenu(p.id, e.currentTarget)}
             >
               {schema.rowLayout?.showPropertyIcons !== false && <PropTypeIcon type={p.type} />}
               <span>{p.name}</span>
@@ -180,14 +186,14 @@ export function RowProperties({ pageId, placement = 'main', typeLocked = false }
           key={menuProp.id}
           dbId={db.id}
           property={menuProp}
-          anchor={menu.el}
+          anchor={menu.anchor}
           readOnly={schemaLocked}
           autoRename={menu.autoRename}
           onClose={() => setMenu(null)}
         />
       )}
       {chooser && <AddFieldChooser anchor={chooser} types={typeList} onClose={() => setChooser(null)} onDb={() => { const el = chooser; setChooser(null); if (canAddDb) setAddEl(el) }} onType={(type) => { const el = chooser; setChooser(null); setAddType({ type, el }) }} />}
-      {addType && <FieldTypeMenu anchor={addType.el} onClose={() => setAddType(null)} onPick={(kind) => { addField(addType.type.id, kind); setAddType(null) }} />}
+      {addType && <FieldTypeMenu anchor={addType.el} onClose={() => setAddType(null)} onPick={(kind, relationTypeId) => { addField(addType.type.id, kind, undefined, relationTypeId); setAddType(null) }} />}
       {addEl && (
         <NewPropertyMenu
           anchor={addEl}
@@ -199,7 +205,7 @@ export function RowProperties({ pageId, placement = 'main', typeLocked = false }
             // A linha nova aparece no próximo render; ancora o menu de renomear nela.
             requestAnimationFrame(() => {
               const nameEl = el.parentElement?.querySelector(`[data-prop="${id}"] .dbv-rp-name`)
-              setMenu({ propId: id, el: nameEl ?? el, autoRename: true })
+              setMenu({ propId: id, anchor: nameEl ?? el, autoRename: true })
             })
           }}
         />

@@ -3,6 +3,8 @@
 // para rodar nos testes em Node.
 import type { Page, Property } from '../../types'
 import type { DatabasePropertyConfig } from '../../database-models'
+import { pagesWithType, type ObjectType } from '../../objecttypes/model.ts'
+import { lockedAncestor } from '../../security/pageLock.ts'
 import { isLivePage, matchesRelatedRules, resolveValue } from './derived.ts'
 import { aggItemText, normalizeForAggregation } from './aggregations.ts'
 
@@ -47,6 +49,11 @@ export function relationTargetRows(pages: Pages, targetDbId: string | undefined)
   return rows
 }
 
+/** Objetos vivos do tipo (inclusive subtipos), sem expor páginas protegidas. */
+export function relationTargetObjects(pages: Pages, types: readonly ObjectType[], targetTypeId: string): Page[] {
+  return pagesWithType(pages, types, targetTypeId).filter((page) => !lockedAncestor(pages, page.id))
+}
+
 export interface RelationPickerPlan {
   /** Páginas já vinculadas que casam com a busca, na ordem do valor. */
   selected: Page[]
@@ -73,13 +80,15 @@ export function planRelationPicker(input: {
   picker?: RelationProperty['relationPicker']
   showAll?: boolean
   shownProperties?: Property[]
+  excludeLocked?: boolean
 }): RelationPickerPlan {
   const { pages, rows, selectedIds, picker } = input
   const q = normalizeSearch(input.query)
   const shown = input.shownProperties ?? []
   const matches = (page: Page) => !q || normalizeSearch(page.title).includes(q) || shown.some((p) => normalizeSearch(cellText(page, p, pages)).includes(q))
   const selectedSet = new Set(selectedIds)
-  const linked = [...selectedSet].map((id) => pages[id]).filter((page): page is Page => !!page && isLivePage(page.id, pages))
+  const linked = [...selectedSet].map((id) => pages[id]).filter((page): page is Page =>
+    !!page && isLivePage(page.id, pages) && (!input.excludeLocked || !lockedAncestor(pages, page.id)))
   const rest = rows.filter((page) => !selectedSet.has(page.id))
   const filtered = picker?.filters?.length && !input.showAll ? rest.filter((page) => matchesRelatedRules(page, picker.filters, picker.filterOperator, pages)) : rest
   const sortProperty = picker?.sortPropertyId ? (pages[rows[0]?.parentId ?? '']?.database?.properties.find((p) => p.id === picker.sortPropertyId)) : undefined

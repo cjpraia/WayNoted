@@ -237,3 +237,38 @@ test('10 thousand objects: index and collection stay fast', () => {
   assert.ok(first < 1500, `build ${first.toFixed(0)} ms`)
   assert.ok(performance.now() - again < 200, 'memoized rebuild')
 })
+
+test('type relations link existing and newly created typed objects without changing database relations', () => {
+  const resource = ops.createType({ name: 'Resource relation test' })
+  const people = ops.createType({ name: 'People relation test' })
+  const tags = ops.createType({ name: 'Tags relation test' })
+  const personField = ops.addField(resource, 'relation', 'People', people)!
+  const tagField = ops.addField(resource, 'relation', 'Tags', tags)!
+  const database = actions.createDatabase(null)
+  const dbField = ops.addField(resource, 'relation', 'Database records')!
+  ops.updateField(resource, dbField, { relationDatabaseId: database })
+
+  const source = ops.createObject(resource, {}, { title: 'Onboarding video' })
+  const ana = ops.createObject(people, {}, { title: 'Ana' })
+  const joao = ops.createObject(people, {}, { title: 'João' })
+  const tag = ops.createObject(tags, {}, { title: 'Onboarding' })
+  const row = actions.createRow(database, {}, { title: 'Original database row' })
+  actions.setProp(source, personField, [ana, joao, ana])
+  actions.setProp(source, tagField, [tag])
+  actions.setProp(source, dbField, [row])
+  actions.setProp(source, personField, [tag])
+  assert.equal(ops.setFieldRelationType(resource, personField, tags), false)
+  assert.equal(ops.setFieldRelationType(resource, dbField, people), false)
+  assert.deepEqual(getState().pages[source].typeProps, {
+    [personField]: [ana, joao], [tagField]: [tag], [dbField]: [row],
+  })
+  const collection = buildTypeCollection(getState().pages, ops.objectTypes(), type(resource), { title: 'Name' })
+  const projected = collection.rows.find(item => item.id === source)!
+  assert.deepEqual(projected.props?.[personField], [ana, joao])
+  assert.equal(field(resource, 'Database records').relationDatabaseId, database)
+  actions.setProp(source, personField, [])
+  assert.equal(ops.setFieldRelationType(resource, personField, tags), true)
+  assert.equal(field(resource, 'People').relationTypeId, tags)
+  ops.undoTypes()
+  assert.equal(field(resource, 'People').relationTypeId, people)
+})

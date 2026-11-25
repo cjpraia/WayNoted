@@ -23,7 +23,8 @@ const tags = { id: 'tags', name: 'Tags', color: 'blue', icon: '', properties: [{
 let types = [tags]
 const calls = []
 const mocks = {
-  t: tr, actions: { setProp() {}, updatePage() {}, updateSchema() {}, undoDatabase() {}, createRow: () => 'x', openPeek() {} },
+  t: tr, useI18n: () => ({ t: tr }), showToast() {},
+  actions: { setProp() {}, updatePage() {}, updateSchema() {}, undoDatabase() {}, createRow: () => 'x', openPeek() {} },
   getState: () => ({ pages: { db, row } }),
   selectors: { page: (id) => (id === 'row' ? row : db), parentDatabase: () => db, rows: () => [row] },
   useStore: () => ({}),
@@ -31,7 +32,8 @@ const mocks = {
   PropDisplay: ({ value }) => React.createElement('span', { className: 'value' }, String(value)),
   PropTypeIcon: () => null, PropertyEditor: () => null, openUrl() {},
   NewPropertyMenu: ({ onPick }) => React.createElement('div', { className: 'new-prop-menu' }, React.createElement('button', { onClick: () => onPick('text') }, 'pick-db-text')),
-  PropertyMenu: () => null, addProperty: (id, kind) => { calls.push(`addProperty ${id} ${kind}`); return 'newp' }, moveProperty() {},
+  PropertyMenu: ({ property, anchor }) => React.createElement('div', { className: 'property-menu', 'data-anchor': anchor instanceof Element ? 'element' : `${anchor.x},${anchor.y}` }, property.name),
+  addProperty: (id, kind) => { calls.push(`addProperty ${id} ${kind}`); return 'newp' }, moveProperty() {},
   moveRelative: (list) => list, announceReorder() {}, useReorder: () => ({ row: () => ({}), grip: () => null, dragId: null }),
   isComputedProperty: () => false, CellComments: () => null, canAssignSubitemParent: () => false, subitemsFor: () => [], unresolvedDependencies: () => [],
   Select: (props) => React.createElement('select', props),
@@ -57,6 +59,7 @@ async function load(file) {
   const out = await transformWithOxc(source, file, { jsx: { runtime: 'automatic' }, lang: 'tsx' })
   return import(`data:text/javascript;base64,${Buffer.from(out.code.replace(/from ["'](react(?:\/jsx-runtime)?|lucide-react)["']/g, (_m, name) => `from ${JSON.stringify(import.meta.resolve(name))}`)).toString('base64')}`)
 }
+Object.assign(mocks, await load('../src/components/objecttypes/useReorder.tsx'))
 const { RowProperties } = await load('../src/components/database/RowProperties.tsx')
 const text = (selector) => [...document.querySelectorAll(selector)].map((el) => el.textContent.trim())
 const click = async (el) => { await act(async () => { el.click(); await new Promise((resolve) => setTimeout(resolve, 5)) }) }
@@ -70,6 +73,21 @@ test('um só grupo "Propriedades" com campos do banco e do tipo, e um só botão
   assert.equal(document.querySelector('.type-rows').getAttribute('data-divide'), 'true', 'divisória sutil quando há campos do banco')
   assert.deepEqual(text('.dbv-rp-add span'), ['Add field'], 'um botão só')
   assert.equal(document.querySelectorAll('.dbv-rp-add').length, 1)
+  await act(async () => root.unmount())
+})
+
+test('database property grip and right-click open the shared property menu', async () => {
+  const root = createRoot(document.getElementById('app'))
+  await act(async () => root.render(React.createElement(RowProperties, { pageId: 'row' })))
+  await click(document.querySelector('[aria-label="Property options for Status"]'))
+  assert.deepEqual(text('.property-menu'), ['Status'])
+  assert.equal(document.querySelector('.property-menu').dataset.anchor, 'element')
+  const value = document.querySelector('[data-prop="shared"] .dbv-rp-value')
+  const context = new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2, clientX: 42, clientY: 91 })
+  await act(async () => value.dispatchEvent(context))
+  assert.equal(context.defaultPrevented, true)
+  assert.deepEqual(text('.property-menu'), ['Shared'])
+  assert.equal(document.querySelector('.property-menu').dataset.anchor, '42,91')
   await act(async () => root.unmount())
 })
 

@@ -149,10 +149,10 @@ export function fieldValue(row: Page, field: string, pages: Pages, types: TypeLi
   if (!prop) {
     const typed = row.types?.length ? typeFieldOf(types, row, field) : null
     if (!typed) return { value: null, prop: MISSING }
-    const derived = typed.property.type === 'createdTime' || typed.property.type === 'updatedTime' || typed.property.type === 'createdBy' || typed.property.type === 'updatedBy'
-    return { value: derived ? resolveValue(row, typed.property, pages) : typed.value, prop: typed.property }
+    const derived = typed.property.type === 'createdTime' || typed.property.type === 'updatedTime' || typed.property.type === 'createdBy' || typed.property.type === 'updatedBy' || typed.property.type === 'rollup'
+    return { value: derived ? resolveValue(row, typed.property, pages, types) : typed.value, prop: typed.property }
   }
-  return { value: resolveValue(row, prop, pages), prop }
+  return { value: resolveValue(row, prop, pages, types), prop }
 }
 
 // ---------- candidatos ----------
@@ -516,7 +516,8 @@ export function queryDependencies(query: Query, env: QueryEnv, extra: unknown[] 
     const properties = pages[actual]?.database?.properties ?? []
     if (fields.some((field) => { const prop = propertyByField(properties, field); return !!prop && CROSS_ROW.has(prop.type) })) return [...tokens, pages]
   }
-  if (queryFields(query).some((field) => field === '@parent' || field === '@database')) tokens.push(pages)
+  if (fields.some(field => typesOf(env).some(type => propertyByField(type.properties, field)?.type === 'rollup')) ||
+      queryFields(query).some((field) => field === '@parent' || field === '@database')) tokens.push(pages)
   return tokens
 }
 

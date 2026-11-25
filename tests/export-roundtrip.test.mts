@@ -234,6 +234,32 @@ test('single page scope exports only that page and keeps links to other pages as
   assert.match(read(files, 'Notas da reunião.md'), new RegExp(`\\]\\(workspace:\\/\\/page\\/00000000-0000-4000-8000-000000000001\\)`, ""))
 })
 
+test('a single-page package keeps the type relation definition and its linked page ids', async () => {
+  const source = richSource()
+  const type = (id: string, properties: NonNullable<ExportSource['objectTypes']>[number]['properties'] = []) =>
+    ({ id, name: id, icon: null, color: 'default' as const, description: '', properties, template: {}, createdAt: 1, updatedAt: 1 })
+  source.objectTypes = [
+    type('resource', [
+      { id: 'contact', name: 'Pessoa', type: 'relation', relationTypeId: 'person', relationDatabaseId: D, relationMirrorPropertyId: 'old' },
+      { id: 'tasks', name: 'Tarefas', type: 'relation', relationDatabaseId: D },
+    ]),
+    type('person'),
+    type('unrelated'),
+  ]
+  source.pages[A] = { ...source.pages[A], types: ['resource'], typeProps: { contact: [B, T1] } }
+  source.pages[B] = { ...source.pages[B], types: ['person'] }
+  source.pages[T1] = { ...source.pages[T1], types: ['person'] }
+  const { files } = await buildExportPackage(source, { format: 'markdown', scope: 'page', pageId: A, includeFiles: false })
+  const { meta } = validateBackup(packageToBackup(bytes(files)))
+  assert.deepEqual(Object.keys(meta.pages), [A])
+  assert.deepEqual(meta.settings.objectTypes?.map(entry => entry.id), ['resource', 'person'])
+  assert.deepEqual(meta.settings.objectTypes?.[0].properties, [
+    { id: 'contact', name: 'Pessoa', type: 'relation', relationTypeId: 'person' },
+    { id: 'tasks', name: 'Tarefas', type: 'relation', relationDatabaseId: D },
+  ])
+  assert.deepEqual(meta.pages[A].typeProps, { contact: [B, T1] })
+})
+
 test('object types: front-matter tipos/campos, types.json and lossless re-import; locked values never exported', async () => {
   const BOOK = 'type-book', MEDIA = 'type-media'
   const objectTypes = [

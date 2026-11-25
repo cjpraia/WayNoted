@@ -187,8 +187,14 @@ export function updateType(id: string, patch: Partial<Omit<ObjectType, 'id'>>, l
 export function duplicateType(id: string): string | null {
   const source = findType(objectTypes(), id)
   if (!source || !writable()) return null
-  const map = new Map<string, string>()
-  const properties = source.properties.map((prop) => { const copy = { ...structuredClone(prop), id: uid() }; map.set(prop.id, copy.id); return copy })
+  const map = new Map(source.properties.map(prop => [prop.id, uid()]))
+  const properties = source.properties.map(prop => {
+    const field = { ...structuredClone(prop), id: map.get(prop.id)! }
+    if (field.rollup) {
+      field.rollup.relationPropertyId = map.get(field.rollup.relationPropertyId) ?? field.rollup.relationPropertyId
+    }
+    return field
+  })
   const values = Object.fromEntries(Object.entries(source.template.values ?? {}).map(([key, value]) => [map.get(key) ?? key, value]))
   const now = Date.now()
   const copy: ObjectType = { ...structuredClone(source), id: uid(), name: tr('{name} (cópia)', '{name} (copy)', { name: source.name }), properties, template: { ...structuredClone(source.template), values }, collection: undefined, preset: undefined, createdAt: now, updatedAt: now }
@@ -239,17 +245,23 @@ export async function deleteType(id: string, mode: DeleteTypeMode): Promise<numb
 
 // ---------- campos ----------
 
-export function addField(typeId: string, propType: PropType, name?: string): string | null {
-  const type = findType(objectTypes(), typeId)
+export function addField(typeId: string, propType: PropType, name?: string, relationTypeId?: string): string | null {
+  const types = objectTypes()
+  const type = findType(types, typeId)
+  const relatedType = findType(types, relationTypeId)
+  if (relationTypeId !== undefined && (propType !== 'relation' || !relatedType)) return null
   if (!type || UNSUPPORTED_FIELD_TYPES.has(propType) || !writable()) return null
-  const property: Property = { id: uid(), name: name ?? defaultFieldName(type, propType), type: propType }
+  const property: Property = { id: uid(), name: name ?? defaultFieldName(type, propType, relatedType?.name), type: propType }
   if (propType === 'select' || propType === 'multiSelect') property.options = []
   if (propType === 'status') property.options = [{ id: uid(), name: tr('Não iniciado', 'Not started'), color: 'gray', group: 'todo' }, { id: uid(), name: tr('Em andamento', 'In progress'), color: 'blue', group: 'progress' }, { id: uid(), name: tr('Concluído', 'Done'), color: 'green', group: 'complete' }]
-  patchType(typeId, (current) => ({ ...current, properties: [...current.properties, property] }))
+  if (relationTypeId !== undefined) property.relationTypeId = relationTypeId
+  const append = () => patchType(typeId, (current) => ({ ...current, properties: [...current.properties, property] }))
+  if (relationTypeId !== undefined) record(tr('Campo de relação adicionado', 'Relation field added'), [], append, false)
+  else append()
   return property.id
 }
-function defaultFieldName(type: ObjectType, propType: PropType): string {
-  const base = ({ text: tr('Texto', 'Text'), number: tr('Número', 'Number'), select: tr('Seleção', 'Select'), multiSelect: tr('Multisseleção', 'Multi-select'), status: 'Status', date: tr('Data', 'Date'), checkbox: tr('Caixa de seleção', 'Checkbox'), url: 'URL', email: tr('E-mail', 'Email'), phone: tr('Telefone', 'Phone'), person: tr('Pessoa', 'Person'), files: tr('Arquivos', 'Files'), place: tr('Local', 'Place'), relation: tr('Relação', 'Relation'), createdTime: tr('Criado em', 'Created time'), updatedTime: tr('Editado em', 'Last edited time'), createdBy: tr('Criado por', 'Created by'), updatedBy: tr('Editado por', 'Last edited by') } as Partial<Record<PropType, string>>)[propType] ?? tr('Campo', 'Field')
+function defaultFieldName(type: ObjectType, propType: PropType, preferred?: string): string {
+  const base = preferred ?? ({ text: tr('Texto', 'Text'), number: tr('Número', 'Number'), select: tr('Seleção', 'Select'), multiSelect: tr('Multisseleção', 'Multi-select'), status: 'Status', date: tr('Data', 'Date'), checkbox: tr('Caixa de seleção', 'Checkbox'), url: 'URL', email: tr('E-mail', 'Email'), phone: tr('Telefone', 'Phone'), person: tr('Pessoa', 'Person'), files: tr('Arquivos', 'Files'), place: tr('Local', 'Place'), relation: tr('Relação', 'Relation'), rollup: 'Rollup', createdTime: tr('Criado em', 'Created time'), updatedTime: tr('Editado em', 'Last edited time'), createdBy: tr('Criado por', 'Created by'), updatedBy: tr('Editado por', 'Last edited by') } as Partial<Record<PropType, string>>)[propType] ?? tr('Campo', 'Field')
   let name = base, n = 2
   while (type.properties.some((prop) => prop.name === name)) name = `${base} ${n++}`
   return name
@@ -258,6 +270,30 @@ function defaultFieldName(type: ObjectType, propType: PropType): string {
 export function updateField(typeId: string, fieldId: string, patch: Partial<Property>) {
   if (!writable()) return
   patchType(typeId, (type) => ({ ...type, properties: type.properties.map((prop) => (prop.id === fieldId ? { ...prop, ...patch, id: prop.id, type: prop.type } : prop)) }))
+}
+
+/** Change the source of an empty field without discarding stored links or reinterpreting values. */
+export function setFieldRelationType(typeId: string, fieldId: string, relationTypeId: string | undefined): boolean {
+  const types = objectTypes()
+  const owner = findType(types, typeId)
+  const field = owner?.properties.find(prop => prop.id === fieldId)
+  if (!field || !writable() || (relationTypeId !== undefined && !findType(types, relationTypeId))) return false
+  if (field.type === 'relation' && field.relationTypeId === relationTypeId) return true
+  if (types.some(type => !isEmptyValue(type.template.values?.[fieldId]))) return false
+  const used = Object.values(getState().pages).some(page =>
+    !isEmptyValue(page.typeProps?.[fieldId]) || !isEmptyValue(page.props?.[fieldId]) ||
+    page.database?.properties.some(prop => prop.id === fieldId))
+  if (used) return false
+
+  record(tr('Destino da relação alterado', 'Relation target changed'), [], () => {
+    patchType(typeId, current => ({
+      ...current,
+      properties: current.properties.map(prop => prop.id === fieldId
+        ? { id: prop.id, name: prop.name, type: 'relation', relationTypeId }
+        : prop),
+    }))
+  }, false)
+  return true
 }
 
 export function moveField(typeId: string, fieldId: string, delta: -1 | 1) {

@@ -11,7 +11,7 @@ import { stringifyFrontMatter, yamlMap } from './frontMatter.ts'
 import { buildLayout, childrenOf, livePages, type Layout, type LayoutNode } from './layout.ts'
 import { readableText, readableValue } from './values.ts'
 import { glyphSvg } from '../components/ui/icons/svg.ts'
-import { pageTypeFields, pageTypes, typeDataHidden } from '../objecttypes/model.ts'
+import { findType, pageTypeFields, pageTypes, typeDataHidden } from '../objecttypes/model.ts'
 import {
   AssetStore, encodeLinkPath, externalizeAssets, object, PACKAGE_FORMAT, PACKAGE_MANIFEST, PACKAGE_VERSION, relativePath, tr,
   type ExportOptions, type ExportSource, type ManifestPage, type PackageFiles, type PackageManifest, type RawBlock,
@@ -110,14 +110,16 @@ export async function buildExportPackage(source: ExportSource, options: ExportOp
     const json = <T,>(value: T) => externalizeAssets(value, assets, fromFile, page.title || 'arquivo')
     const parentDb = node.kind === 'row' && page.parentId ? source.pages[page.parentId] : undefined
     const schema = parentDb?.database ? schemaFor(source, parentDb) : undefined
-    const readable = schema ? yamlMap(Object.fromEntries(schema.properties.filter((prop) => prop.type !== 'title' && prop.type !== 'button').map((prop) => [prop.name, readableValue(page, prop, source.pages)]))) : undefined
+    const readable = schema ? yamlMap(Object.fromEntries(schema.properties.filter((prop) => prop.type !== 'title' && prop.type !== 'button').map((prop) => [prop.name, readableValue(page, prop, source.pages, source.objectTypes ?? [])]))) : undefined
     const extra = Object.fromEntries(Object.entries(page).filter(([key, value]) => !KNOWN_FIELDS.has(key) && value !== undefined))
     // Tipos de objeto: nomes e valores legíveis (`tipos`, `campos`) + ids/valores exatos para o round-trip.
     const objectTypes = source.objectTypes ?? []
     const typed = page.types?.length ? pageTypes(objectTypes, page) : []
-    const typeValues = typed.length && !typeDataHidden(page) ? page.typeProps : undefined
-    const projected = typeValues ? { ...page, props: typeValues } : page
-    const campos = typeValues ? yamlMap(Object.fromEntries(pageTypeFields(objectTypes, page).map(({ property }) => [property.name, readableValue(projected, property, source.pages)]).filter(([, value]) => value !== null))) : undefined
+    const showTypeValues = typed.length && !typeDataHidden(page)
+    const typeValues = showTypeValues ? page.typeProps : undefined
+    const campos = showTypeValues ? yamlMap(Object.fromEntries(pageTypeFields(objectTypes, page)
+      .map(({ property }) => [property.name, readableValue(page, property, source.pages, objectTypes)])
+      .filter(([, value]) => value !== null))) : undefined
     return stringifyFrontMatter([
       ['id', page.id],
       ['title', page.title],
@@ -152,7 +154,7 @@ export async function buildExportPackage(source: ExportSource, options: ExportOp
     ])
   }
 
-  const rowCells = (row: Page, prop: Property) => readableText(readableValue(row, prop, source.pages), locale)
+  const rowCells = (row: Page, prop: Property) => readableText(readableValue(row, prop, source.pages, source.objectTypes ?? []), locale)
 
   const databaseFiles = (node: LayoutNode) => {
     const db = node.page
@@ -259,8 +261,20 @@ export async function buildExportPackage(source: ExportSource, options: ExportOp
     return { files, manifest: quick, layout }
   }
   const usedTypes = new Set(layout.order.flatMap((node) => node.page.types ?? []))
-  if (ext === 'md' && source.objectTypes?.length && (usedTypes.size || options.scope === 'workspace')) {
-    files['types.json'] = JSON.stringify({ format: COMPAT.record047, version: 1, types: externalizeAssets(options.scope === 'workspace' ? source.objectTypes : source.objectTypes.filter((type) => usedTypes.has(type.id) || source.objectTypes!.some((child) => usedTypes.has(child.id) && child.parentTypes?.includes(type.id))), assets, 'types.json') }, null, 2)
+  const objectTypes = source.objectTypes ?? []
+  if (ext === 'md' && objectTypes.length && (usedTypes.size || options.scope === 'workspace')) {
+    if (options.scope !== 'workspace') {
+      // A definição do campo continua utilizável quando o destino não tem páginas no pacote.
+      for (const id of usedTypes) {
+        const type = findType(objectTypes, id)
+        for (const parentId of type?.parentTypes ?? []) usedTypes.add(parentId)
+        for (const property of type?.properties ?? []) {
+          if (property.type === 'relation' && property.relationTypeId) usedTypes.add(property.relationTypeId)
+        }
+      }
+    }
+    const exportedTypes = options.scope === 'workspace' ? objectTypes : objectTypes.filter(type => usedTypes.has(type.id))
+    files['types.json'] = JSON.stringify({ format: COMPAT.record047, version: 1, types: externalizeAssets(exportedTypes, assets, 'types.json') }, null, 2)
   }
   const manifestPages: ManifestPage[] = layout.order.map((node) => ({ id: node.page.id, parentId: node.page.parentId, path: node.file, kind: node.kind, order: node.page.order, title: node.page.title }))
   const usedSynced = Object.values(source.syncedBlocks ?? {}).filter((record) => layout.order.some((node) => node.page.syncedBlockIds?.includes(record.id) || JSON.stringify(source.documents[node.page.id] ?? []).includes(record.id)))

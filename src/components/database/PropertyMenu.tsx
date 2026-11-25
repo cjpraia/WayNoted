@@ -12,11 +12,9 @@ import { PROP_TYPES_COMMON, PROP_TYPES_MORE } from './propertyTypeGroups'
 import { DbPopover, Menu, MenuItem, MenuLabel, MenuSep, type DbAnchor, type DbPlacement } from './ui/Popover'
 import { convertProperty, createOption, deleteProperty, duplicateProperty, renameProperty } from './schemaOps'
 import { dbEvents } from './ui/events'
-import { isLivePage } from './derived'
 import { FormulaEditor } from './editors/FormulaEditor'
-import { RelatedRulesEditor } from './RelatedRulesEditor'
+import { RollupPropertyConfig } from './RollupPropertyConfig'
 import { RelationPropertyConfig } from './DataSourcePicker'
-import { AGGREGATION_GROUPS, AGGREGATION_LABELS } from './aggregations'
 import { useI18n } from '../../i18n'
 import type { ButtonAction } from '../../database-models'
 import { appendFilterRule } from './filterTree'
@@ -26,6 +24,8 @@ import { groupLabel, OptionMenu, STATUS_GROUPS } from './OptionMenu'
 import './dbview.css'
 import { Select } from '../ui/Select'
 import { isGroupableType } from './grouping'
+import { effectiveProperties, findType, typeIdFromSchemaId } from '../../objecttypes/model'
+import { openTypesManager } from '../../objecttypes/ui'
 
 export function newFilterFor(prop: Property): Filter {
   return { id: crypto.randomUUID(), propertyId: prop.id, op: filterOpsFor(prop.type)[0], value: prop.type === 'checkbox' ? true : null }
@@ -57,14 +57,17 @@ export function PropertyMenu(props: {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const viewReadOnly = props.viewReadOnly ?? readOnly
   const isTitle = property.type === 'title'
+  const types = getState().settings.objectTypes ?? []
+  const typeRelation = property.type === 'relation' ? property.relationTypeId : undefined
+  const relationOwner = typeIdFromSchemaId(dbId)
+    ? types.find(type => type.properties.some(field => field.id === property.id))
+    : undefined
   // Visão vinculada: as propriedades vivem na fonte (docs/USAGE.md).
   const db = getState().pages[resolveLinkedRoot(getState().pages, dbId)]
   const columns = props.properties ?? db?.database?.properties ?? []
   const visibleColumns = columns.filter(p => !view?.hidden.includes(p.id))
-  const relations = db?.database?.properties.filter((p) => p.type === 'relation' && p.relationDatabaseId && getState().pages[p.relationDatabaseId]?.database && isLivePage(p.relationDatabaseId, getState().pages)) ?? []
-  const rollupRelation = relations.find((p) => p.id === property.rollup?.relationPropertyId)
-  const targets = rollupRelation?.relationDatabaseId ? getState().pages[rollupRelation.relationDatabaseId]?.database?.properties ?? [] : []
-  const rollupTarget = targets.find((p) => p.id === property.rollup?.targetPropertyId)
+  const collectionTypeId = typeIdFromSchemaId(dbId)
+  const rollupFields = collectionTypeId ? effectiveProperties(types, collectionTypeId) : db?.database?.properties ?? columns
   const patchProperty = (patch: Partial<Property>) => actions.updateSchema(dbId, (schema) => ({ ...schema, properties: schema.properties.map((p) => p.id === property.id ? { ...p, ...patch } : p) }))
   const buttonProps = db?.database?.properties.filter((item) => ['text', 'number', 'checkbox', 'select', 'status', 'url', 'email', 'phone', 'person'].includes(item.type)) ?? []
   const defaultActionValue = (item?: Property): string | number | boolean | null => item?.type === 'number' ? 0 : item?.type === 'checkbox' ? false : item?.type === 'select' || item?.type === 'status' ? item.options?.[0]?.id ?? null : ''
@@ -78,7 +81,7 @@ export function PropertyMenu(props: {
   useEffect(() => { if (document.activeElement !== inputRef.current) setName(property.name) }, [property.name])
   useEffect(() => {
     // Relação nova: o foco vai para a busca "Vincular a uma fonte de dados…", como no Export Bundle.
-    if (props.autoRename && !(property.type === 'relation' && !property.relationDatabaseId)) inputRef.current?.select()
+    if (props.autoRename && !(property.type === 'relation' && !property.relationDatabaseId && !property.relationTypeId)) inputRef.current?.select()
     return commitName
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -192,7 +195,12 @@ export function PropertyMenu(props: {
           <label htmlFor={`formula-${property.id}`}>{t('Fórmula', 'Formula')}</label>
           <FormulaEditor dbId={dbId} property={property} onChange={(formula) => patchProperty({ formula })} />
         </div>}
-        {!readOnly && property.type === 'relation' && <RelationPropertyConfig dbId={dbId} property={property} onPatch={patchProperty} onClose={close} />}
+        {!readOnly && property.type === 'relation' && (typeRelation
+          ? <MenuItem label={t('Relação com tipo', 'Relation to type')}
+              hint={findType(types, typeRelation)?.name ?? t('Tipo indisponível', 'Type unavailable')}
+              disabled={!relationOwner}
+              onClick={() => { if (relationOwner) { close(); openTypesManager(relationOwner.id, 'fields') } }} />
+          : <RelationPropertyConfig dbId={dbId} property={property} onPatch={patchProperty} onClose={close} />)}
         {!readOnly && property.type === 'uniqueId' && <div className="db-property-config"><label>{t('Prefixo do ID', 'ID prefix')}</label><input className="dbv-input" value={property.uniqueIdPrefix ?? ''} onChange={(e) => patchProperty({ uniqueIdPrefix: e.target.value })} /></div>}
         {!readOnly && property.type === 'button' && <div className="db-property-config">
           <label>{t('Ações do botão', 'Button actions')}</label>
@@ -217,29 +225,10 @@ export function PropertyMenu(props: {
           })}
           <button type="button" className="dbv-link" onClick={() => patchProperty({ buttonActions: [...(property.buttonActions ?? []), { kind: 'duplicateRow' }] })}>{t('Adicionar ação', 'Add action')}</button>
         </div>}
-        {!readOnly && property.type === 'rollup' && <div className="db-property-config">
-          <small>{t('Agrega os valores das páginas vinculadas por uma relação.', 'Aggregates values from pages linked through a relation.')}</small>
-          {!relations.length && <small role="status">{t('Adicione uma propriedade Relação e escolha o banco relacionado para configurar este Rollup.', 'Add a Relation property and choose its related database to configure this Rollup.')}</small>}
-          <label htmlFor={`rollup-relation-${property.id}`}>{t('Relação', 'Relation')}</label>
-          <Select id={`rollup-relation-${property.id}`} block disabled={!relations.length} value={rollupRelation?.id ?? ''} onChange={(e) => patchProperty({ rollup: { relationPropertyId: e.target.value, targetPropertyId: '', aggregation: 'count' } })}>
-            <option value="">{t('Escolha uma relação', 'Choose a relation')}</option>
-            {relations.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </Select>
-          <label htmlFor={`rollup-target-${property.id}`}>{t('Propriedade relacionada', 'Related property')}</label>
-          <Select id={`rollup-target-${property.id}`} block disabled={!rollupRelation} value={rollupTarget?.id ?? ''} onChange={(e) => patchProperty({ rollup: { ...property.rollup, relationPropertyId: rollupRelation!.id, targetPropertyId: e.target.value, aggregation: property.rollup?.aggregation ?? 'count' } })}>
-            <option value="">{t('Escolha uma propriedade', 'Choose a property')}</option>
-            {targets.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </Select>
-          <label htmlFor={`rollup-calculate-${property.id}`}>{t('Calcular', 'Calculate')}</label>
-          <Select id={`rollup-calculate-${property.id}`} block disabled={!rollupTarget} value={property.rollup?.aggregation ?? 'count'} onChange={(e) => patchProperty({ rollup: { ...property.rollup, relationPropertyId: rollupRelation!.id, targetPropertyId: rollupTarget!.id, aggregation: e.target.value as NonNullable<Property['rollup']>['aggregation'] } })}>
-            {AGGREGATION_GROUPS.map((group) => <optgroup key={group.label[0]} label={t(...group.label)}>{group.kinds.map((aggregation) => <option key={aggregation} value={aggregation}>{t(...AGGREGATION_LABELS[aggregation])}</option>)}</optgroup>)}
-          </Select>
-          {rollupRelation && <>
-            <label>{t('Filtrar páginas relacionadas', 'Filter related pages')}</label>
-            <small>{t('Só as páginas que atendem às regras entram no cálculo.', 'Only pages matching the rules are aggregated.')}</small>
-            <RelatedRulesEditor databaseId={rollupRelation.relationDatabaseId} rules={property.rollup?.filter ?? []} operator={property.rollup?.filterOperator ?? 'and'} onChange={(filter, filterOperator) => patchProperty({ rollup: { ...property.rollup!, filter: filter.length ? filter : undefined, filterOperator } })} />
-          </>}
-        </div>}
+        {!readOnly && property.type === 'rollup' && <RollupPropertyConfig property={property}
+          fields={rollupFields} pages={getState().pages} types={types}
+          defaultAggregation={collectionTypeId ? 'showOriginal' : 'count'}
+          onChange={rollup => patchProperty({ rollup })} />}
 
         {/* Ações da visualização */}
         {view && !viewReadOnly && (

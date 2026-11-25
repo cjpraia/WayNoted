@@ -1,6 +1,7 @@
 // Tipos de objeto ("supertags"): modelo puro (sem React, sem store). docs/USAGE.md
 // Qualquer página pode ganhar tipos; o tipo traz campos (o mesmo `Property` dos bancos), modelo,
 // ícone/cor e uma coleção (projeção das páginas com o tipo). Nada aqui lança com dados antigos.
+import { AGGREGATION_LABELS } from '../components/database/aggregations.ts'
 import type { DatabaseSchema, OptionColor, Page, Property, PropType, PropValue, View } from '../types'
 
 export interface ObjectTypeTemplate {
@@ -39,15 +40,15 @@ export const TYPE_COLOR_HEX: Record<OptionColor, string> = {
   green: '#6c9b7d', blue: '#5b97bd', purple: '#a782c3', pink: '#cd749f', red: '#e16f64',
 }
 /** Tipos de campo que dependem de um banco e não existem em tipos de objeto. */
-export const UNSUPPORTED_FIELD_TYPES: ReadonlySet<PropType> = new Set<PropType>(['title', 'formula', 'rollup', 'button', 'uniqueId'])
-export const FIELD_TYPES: PropType[] = ['text', 'number', 'select', 'multiSelect', 'status', 'date', 'checkbox', 'url', 'email', 'phone', 'person', 'files', 'place', 'relation', 'createdTime', 'updatedTime', 'createdBy', 'updatedBy']
+export const UNSUPPORTED_FIELD_TYPES: ReadonlySet<PropType> = new Set<PropType>(['title', 'formula', 'button', 'uniqueId'])
+export const FIELD_TYPES: PropType[] = ['text', 'number', 'select', 'multiSelect', 'status', 'date', 'checkbox', 'url', 'email', 'phone', 'person', 'files', 'place', 'relation', 'rollup', 'createdTime', 'updatedTime', 'createdBy', 'updatedBy']
 export const TYPE_SCHEMA_PREFIX = 'np-type:'
 const MAX_DEPTH = 8
 
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
 const nonEmpty = (v: unknown): v is string => typeof v === 'string' && v.length > 0
-const PROP_TYPES = new Set<string>(['text', 'number', 'select', 'multiSelect', 'status', 'date', 'checkbox', 'url', 'email', 'phone', 'createdTime', 'updatedTime', 'relation', 'person', 'files', 'createdBy', 'updatedBy', 'place'])
+const PROP_TYPES = new Set<string>(['text', 'number', 'select', 'multiSelect', 'status', 'date', 'checkbox', 'url', 'email', 'phone', 'createdTime', 'updatedTime', 'relation', 'rollup', 'person', 'files', 'createdBy', 'updatedBy', 'place'])
 const VIEW_TYPES = new Set<string>(['table', 'board', 'gallery', 'list', 'calendar', 'timeline'])
 
 export const fold = (text: string) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLocaleLowerCase('pt-BR').trim()
@@ -70,8 +71,29 @@ function normalizeProperty(raw: unknown): Property | null {
     else out.options = raw.options.filter((o) => object(o) && nonEmpty(o.id) && typeof o.name === 'string').map((o) => ({ ...(o as object), color: TYPE_COLORS.includes((o as { color: OptionColor }).color) ? (o as { color: OptionColor }).color : 'default' })) as Property['options']
   }
   if (out.relationDatabaseId !== undefined && typeof out.relationDatabaseId !== 'string') delete out.relationDatabaseId
+  if (out.type === 'relation' && nonEmpty(out.relationTypeId) && out.relationTypeId.trim()) {
+    delete out.relationDatabaseId
+    delete out.relationMirrorPropertyId
+    delete out.relationPicker
+  } else {
+    delete out.relationTypeId
+  }
   delete out.formula
-  delete out.rollup
+  if (out.type === 'rollup' && object(raw.rollup) &&
+      typeof raw.rollup.relationPropertyId === 'string' && typeof raw.rollup.targetPropertyId === 'string' &&
+      typeof raw.rollup.aggregation === 'string' && Object.hasOwn(AGGREGATION_LABELS, raw.rollup.aggregation)) {
+    const config = raw.rollup as unknown as NonNullable<Property['rollup']>
+    const filter = Array.isArray(config.filter) ? config.filter.filter(rule => object(rule) && typeof rule.propertyId === 'string' && typeof rule.op === 'string') : undefined
+    out.rollup = {
+      relationPropertyId: config.relationPropertyId,
+      targetPropertyId: config.targetPropertyId,
+      aggregation: config.aggregation,
+      ...(filter?.length ? { filter } : {}),
+      ...(config.filterOperator === 'and' || config.filterOperator === 'or' ? { filterOperator: config.filterOperator } : {}),
+    }
+  } else {
+    delete out.rollup
+  }
   delete out.buttonActions
   return out
 }

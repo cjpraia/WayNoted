@@ -26,7 +26,7 @@ const t = (pt, en, variables) => translate(locale, pt, en, variables)
 // Only the persistence boundary and locale subscription are replaced. The menu,
 // popover, icons, labels, schema operations and calculation engine are production code.
 globalThis.__rollupUI = {
-  getState: () => ({ pages }), t, useI18n: () => ({ locale, t }),
+  getState: () => ({ pages, settings: {} }), t, useI18n: () => ({ locale, t }),
   actions: {
     updateSchema: (id, update) => { if (!pages[id].locked) { pages[id] = { ...pages[id], database: update(pages[id].database) }; refresh() } },
     updatePage: (id, patch) => { pages[id] = { ...pages[id], ...patch }; refresh() },

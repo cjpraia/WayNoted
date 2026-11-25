@@ -23,7 +23,7 @@ import { applyMetaPatch, diffMeta } from '../electron/meta-patch.mjs'
 import { ProductivityClient, browserBackend, nativeBackend } from './activity/client.ts'
 import { docStats, type DocStats } from './activity/words.ts'
 import { completesTask } from './activity/tasks.ts'
-import { applySchemaFn, findType, mergeImportedTypes, mirrorIncorporatedValues, schemaFromType, typeFieldOwner, typeIdFromSchemaId } from './objecttypes/model.ts'
+import { applySchemaFn, findType, hasType, mergeImportedTypes, mirrorIncorporatedValues, readTypeProps, schemaFromType, typeFieldOwner, typeIdFromSchemaId } from './objecttypes/model.ts'
 import { setRegisteredTypes } from './objecttypes/registry.ts'
 import { resetCacheConnection } from './search/cache.ts'
 import { createUndoStack, snapsDiffer, type UndoSnap } from './components/database/dbUndo.ts'
@@ -1269,7 +1269,19 @@ export const actions = {
     }
     const row = state.pages[rowId]
     // Campo de tipo de objeto (src/objecttypes): grava em `typeProps`, separado das propriedades do banco.
-    if (row?.types?.length && !(row.parentId && state.pages[row.parentId]?.database?.properties.some(p => p.id === propId)) && typeFieldOwner(state.settings.objectTypes, row, propId)) {
+    const databaseField = row?.parentId ? state.pages[row.parentId]?.database?.properties.find(p => p.id === propId) : undefined
+    const types = state.settings.objectTypes ?? []
+    const typeField = databaseField ? undefined : typeFieldOwner(types, row, propId)
+    if (row && typeField) {
+      const target = typeField.relationTypeId
+      if (target && value !== null) {
+        if (!Array.isArray(value) || !value.every((id): id is string => typeof id === 'string')) return
+        const previous = readTypeProps(types, row)[propId]
+        const retained = new Set(Array.isArray(previous) ? previous.filter((id): id is string => typeof id === 'string') : [])
+        const valid = (id: string) => retained.has(id) || (!!findType(types, target) && isLive(id) && !lockedAncestor(state.pages, id) && hasType(types, state.pages[id], target))
+        if (!value.every(valid)) return
+        value = [...new Set(value)]
+      }
       if (row.locked || JSON.stringify(row.typeProps?.[propId] ?? null) === JSON.stringify(value)) return
       actions.updatePage(rowId, { typeProps: { ...row.typeProps, [propId]: value } })
       return

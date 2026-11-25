@@ -3,13 +3,14 @@
 import { DialogActions } from '../ui/DialogActions'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDown, ArrowUp, Copy, FileText, LayoutGrid, Plus, Redo2, Trash2, Undo2, X } from 'lucide-react'
-import { actions, getState, useStore } from '../../store'
+import { actions, useStore } from '../../store'
 import { useI18n } from '../../i18n'
-import type { Property, PropValue } from '../../types'
+import type { Page, Property, PropValue } from '../../types'
 import { EmojiPicker } from '../page/EmojiPicker'
 import { PageIcon, iconLabel } from '../page/PageIcon'
 import { PropTypeIcon } from '../database/icons'
 import { PropDisplay } from '../database/PropDisplay'
+import { RollupPropertyConfig } from '../database/RollupPropertyConfig'
 import { PropertyEditor } from '../database/editors/PropertyEditor'
 import { OptionChip } from '../database/OptionChip'
 import { propertyTypeLabel } from '../database/labels'
@@ -20,7 +21,7 @@ import { hiddenStarterTypes } from '../../objecttypes/visibility'
 import { EmptyState as NpEmptyState } from '../ui/illustrations/Illustration'
 import {
   addField, canRedoTypes, canUndoTypes, convertField, createType, deleteField, deleteType, duplicateType, editTemplateAsPage, moveField, reorderField,
-  objectTypes, redoTypes, setFieldDefault, setTemplateBlocks, setTemplateFromPage, undoTypes, updateField, updateType, type DeleteTypeMode,
+  objectTypes, redoTypes, setFieldDefault, setFieldRelationType, setTemplateBlocks, setTemplateFromPage, undoTypes, updateField, updateType, type DeleteTypeMode,
 } from '../../objecttypes/actions'
 import { openTypeCollection, openTypesGallery, setTypesPrefs, type ManagerTab } from '../../objecttypes/ui'
 import { FieldTypeMenu } from './PageTypes'
@@ -147,16 +148,18 @@ function FieldsEditor({ type }: { type: ObjectType }) {
     <HarvestNotice typeId={type.id} />
     <p className="ot-collection-note ot-fields-hint">{t('Os campos aparecem em toda página com este tipo.', 'Fields show up on every page with this type.')}</p>
     <div className="ot-field-row ot-field-head" role="row"><span /><span /><span>{t('Nome', 'Name')}</span><span>{t('Tipo do campo', 'Field type')}</span><span>{t('Valor padrão', 'Default value')}</span><span /></div>
-    {inherited.map((prop) => <div key={prop.id} className="ot-field-row" role="row"><span /><PropTypeIcon type={prop.type} /><span className="ot-inherited">{prop.name}</span><span className="ot-inherited">{propertyTypeLabel(prop.type)}</span><span className="ot-inherited">{t('herdado de {name}', 'inherited from {name}', { name: owner(prop)?.name ?? '' })}</span><span /></div>)}
+    {inherited.map((prop) => <div key={prop.id} className="ot-field-row" role="row"><span /><PropTypeIcon type={prop.type} /><span className="ot-inherited">{prop.name}</span><span className="ot-inherited">{prop.relationTypeId ? t('Relação com tipo', 'Relation to type') : propertyTypeLabel(prop.type)}</span><span className="ot-inherited">{t('herdado de {name}', 'inherited from {name}', { name: owner(prop)?.name ?? '' })}</span><span /></div>)}
     {type.properties.map((prop, index) => <div key={prop.id} role="row" {...reorder.row(prop.id)}>
       <div className="ot-field-row">
         {reorder.grip(prop.id, prop.name)}
         <PropTypeIcon type={prop.type} />
         <input type="text" aria-label={t('Nome do campo', 'Field name')} defaultValue={prop.name} onBlur={(e) => { const value = e.target.value.trim(); if (value && value !== prop.name) updateField(type.id, prop.id, { name: value }) }} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }} />
-        <Button aria-label={t('Tipo do campo {name}', 'Field type {name}', { name: prop.name })} onClick={(e) => setTypeMenu({ prop, el: e.currentTarget })}>{propertyTypeLabel(prop.type)}</Button>
-        <div className="ot-default" role="button" tabIndex={0} aria-label={t('Valor padrão de {name}', 'Default value of {name}', { name: prop.name })} onClick={(e) => { if (!['createdTime', 'updatedTime', 'createdBy', 'updatedBy'].includes(prop.type)) { if (prop.type === 'checkbox') setFieldDefault(type.id, prop.id, defaults[prop.id] === true ? null : true); else setEditingDefault({ prop, el: e.currentTarget }) } }}>
+        <Button aria-label={t('Tipo do campo {name}', 'Field type {name}', { name: prop.name })} onClick={(e) => setTypeMenu({ prop, el: e.currentTarget })}>{prop.relationTypeId ? t('Relação com tipo', 'Relation to type') : propertyTypeLabel(prop.type)}</Button>
+        {prop.type === 'rollup'
+          ? <span className="dbv-rp-empty">{t('Calculado', 'Calculated')}</span>
+          : <div className="ot-default" role="button" tabIndex={0} aria-label={t('Valor padrão de {name}', 'Default value of {name}', { name: prop.name })} onClick={(e) => { if (!['createdTime', 'updatedTime', 'createdBy', 'updatedBy'].includes(prop.type)) { if (prop.type === 'checkbox') setFieldDefault(type.id, prop.id, defaults[prop.id] === true ? null : true); else setEditingDefault({ prop, el: e.currentTarget }) } }}>
           {isEmptyValue(defaults[prop.id]) && prop.type !== 'checkbox' ? <span className="dbv-rp-empty">{t('Nenhum', 'None')}</span> : <PropDisplay property={prop} value={(defaults[prop.id] ?? null) as PropValue} />}
-        </div>
+        </div>}
         <span className="ot-actions">
           <IconButton disabled={index === 0} label={t('Mover para cima', 'Move up')} onClick={() => moveField(type.id, prop.id, -1)}><ArrowUp size={14} /></IconButton>
           <IconButton disabled={index === type.properties.length - 1} label={t('Mover para baixo', 'Move down')} onClick={() => moveField(type.id, prop.id, 1)}><ArrowDown size={14} /></IconButton>
@@ -168,16 +171,26 @@ function FieldsEditor({ type }: { type: ObjectType }) {
     <div className="ot-row" style={{ marginTop: 10 }}>
       <Button onClick={(e) => setAdding(e.currentTarget)}><Plus size={14} /> {t('Adicionar campo', 'Add field')}</Button>
     </div>
-    {typeMenu && <FieldTypeMenu anchor={typeMenu.el} current={typeMenu.prop.type} onClose={() => setTypeMenu(null)} onPick={(next) => { const prop = typeMenu.prop; setTypeMenu(null); if (next !== prop.type) convertField(type.id, prop.id, next) }} />}
-    {adding && <FieldTypeMenu anchor={adding} onClose={() => setAdding(null)} onPick={(next) => { setAdding(null); addField(type.id, next) }} />}
+    {typeMenu && <FieldTypeMenu anchor={typeMenu.el} current={typeMenu.prop.type} currentRelationTypeId={typeMenu.prop.relationTypeId} onClose={() => setTypeMenu(null)}
+      onPick={(next, relationTypeId) => {
+        const prop = typeMenu.prop
+        if (next === 'relation' && (relationTypeId || prop.relationTypeId) && !setFieldRelationType(type.id, prop.id, relationTypeId)) return false
+        if (next !== prop.type && !relationTypeId) convertField(type.id, prop.id, next)
+        setTypeMenu(null)
+      }} />}
+    {adding && <FieldTypeMenu anchor={adding} onClose={() => setAdding(null)} onPick={(next, relationTypeId) => {
+      addField(type.id, next, undefined, relationTypeId)
+      setAdding(null)
+    }} />}
     {editingDefault && editingDefault.el.isConnected && <PropertyEditor dbId={typeSchemaId(type.id)} property={type.properties.find((p) => p.id === editingDefault.prop.id) ?? editingDefault.prop} value={(objectTypes().find((c) => c.id === type.id)?.template.values?.[editingDefault.prop.id] ?? null) as PropValue} anchor={editingDefault.el} onChange={(value) => setFieldDefault(type.id, editingDefault.prop.id, value)} onClose={() => setEditingDefault(null)} />}
   </div>
 }
 
-/** Configuração própria do tipo de campo: opções, formato do número, banco da relação. */
-function FieldExtras({ type, prop }: { type: ObjectType; prop: Property; pages: Record<string, unknown> }) {
+/** Configuração própria do tipo de campo: opções, formato do número e destino da relação. */
+function FieldExtras({ type, prop, pages }: { type: ObjectType; prop: Property; pages: Record<string, Page> }) {
   const { t } = useI18n()
   const [option, setOption] = useState('')
+  const [targetBlocked, setTargetBlocked] = useState(false)
   if (prop.type === 'select' || prop.type === 'multiSelect' || prop.type === 'status') return <div className="ot-field-extra">
     {(prop.options ?? []).map((o) => <span key={o.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}><OptionChip name={o.name} color={o.color} dot={prop.type === 'status'} custom={o.customColor} /><IconButton style={{ width: 18, height: 18 }} label={t('Remover opção {name}', 'Remove option {name}', { name: o.name })} onClick={() => updateField(type.id, prop.id, { options: prop.options!.filter((x) => x.id !== o.id) })}><X size={11} /></IconButton></span>)}
     <input type="text" placeholder={t('Nova opção…', 'New option…')} aria-label={t('Nova opção para {name}', 'New option for {name}', { name: prop.name })} value={option} onChange={(e) => setOption(e.target.value)} onKeyDown={(e) => {
@@ -190,8 +203,24 @@ function FieldExtras({ type, prop }: { type: ObjectType; prop: Property; pages: 
   if (prop.type === 'number') return <div className="ot-field-extra"><Select aria-label={t('Formato do número', 'Number format')} value={prop.numberFormat ?? 'number'} onChange={(e) => updateField(type.id, prop.id, { numberFormat: e.target.value as Property['numberFormat'] })}>
     <option value="number">{t('Número', 'Number')}</option><option value="currency">{t('Moeda', 'Currency')}</option><option value="percent">{t('Porcentagem', 'Percent')}</option><option value="progress">{t('Progresso', 'Progress')}</option>
   </Select></div>
+  if (prop.type === 'rollup') {
+    const types = objectTypes()
+    return <div className="ot-field-extra"><RollupPropertyConfig property={prop}
+      fields={effectiveProperties(types, type.id)} pages={pages} types={types}
+      defaultAggregation="showOriginal" onChange={rollup => updateField(type.id, prop.id, { rollup })} /></div>
+  }
+  if (prop.type === 'relation' && prop.relationTypeId) {
+    const targets = objectTypes()
+    return <div className="ot-field-extra">
+      <Select aria-label={t('Tipo relacionado', 'Related type')} value={prop.relationTypeId} onValueChange={(id) => setTargetBlocked(!setFieldRelationType(type.id, prop.id, id))}>
+        {!findType(targets, prop.relationTypeId) && <option value={prop.relationTypeId} disabled>{t('Tipo indisponível', 'Type unavailable')}</option>}
+        {targets.map((target) => <option key={target.id} value={target.id}>{target.name || t('Sem nome', 'Untitled')}</option>)}
+      </Select>
+      {targetBlocked && <span role="alert" className="ot-field-relation-notice">{t('Este campo já está em uso. Adicione um novo campo para escolher outro destino.', 'This field is already in use. Add a new field to choose a different target.')}</span>}
+    </div>
+  }
   if (prop.type === 'relation') {
-    const dbs = Object.values(getState().pages).filter((page) => page.database && !page.trashed && !page.database.linkedSourceId)
+    const dbs = Object.values(pages).filter((page) => page.database && !page.trashed && !page.database.linkedSourceId)
     return <div className="ot-field-extra"><Select aria-label={t('Banco relacionado', 'Related database')} value={prop.relationDatabaseId ?? ''} onChange={(e) => updateField(type.id, prop.id, { relationDatabaseId: e.target.value || undefined })}>
       <option value="">{t('Escolha um banco…', 'Choose a database…')}</option>
       {dbs.map((db) => <option key={db.id} value={db.id}>{db.title || t('Sem título', 'Untitled')}</option>)}

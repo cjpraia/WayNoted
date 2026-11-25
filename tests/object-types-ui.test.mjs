@@ -8,11 +8,11 @@ import { transformWithOxc as baseTransformWithOxc } from 'vite'
 import { inlineProductSource } from './fixtures/product-source.mjs'
 const transformWithOxc = (source, ...args) => baseTransformWithOxc(inlineProductSource(source), ...args)
 import React, { act } from 'react'
-import { createRoot } from 'react-dom/client'
 
 const dom = new JSDOM('<!doctype html><body><div id="app"></div></body>', { url: 'http://localhost' })
 for (const name of ['window', 'document', 'navigator', 'HTMLElement', 'Element']) Object.defineProperty(globalThis, name, { configurable: true, value: dom.window[name] })
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
+const { createRoot } = await import('react-dom/client')
 const model = await import('../src/objecttypes/model.ts')
 
 const t = (_pt, en, vars) => en.replace(/\{(\w+)\}/g, (_, key) => String(vars?.[key] ?? ''))
@@ -29,6 +29,7 @@ const mocks = {
   IconButton: ({ label, className, children, type = 'button', ...rest }) => React.createElement('button', { type, className: 'np-icon-btn' + (className ? ' ' + className : ''), 'aria-label': label, ...rest }, children),
   Select: ({ children, value, onChange, ...rest }) => React.createElement('select', { value, onChange, ...rest }, children),
   copyText: async () => {},
+  showToast: () => {},
   useI18n: () => ({ t, locale: 'en-US' }), useStore: () => ({ pages: { p1: page } }),
   actions: { setProp: record('setProp'), reportSaveError: () => {} },
   selectors: { parentDatabase: () => undefined },
@@ -57,6 +58,7 @@ async function load(file) {
   const out = await transformWithOxc(source, file, { jsx: { runtime: 'automatic' }, lang: 'tsx' })
   return import(`data:text/javascript;base64,${Buffer.from(out.code.replace(/from ["'](react(?:\/jsx-runtime)?|lucide-react)["']/g, (_m, name) => `from ${JSON.stringify(import.meta.resolve(name))}`)).toString('base64')}`)
 }
+Object.assign(mocks, await load('../src/components/objecttypes/useReorder.tsx'))
 const { TypeHeader, TypeFields, TypeTagSuggestion, TypeChipPopover } = await load('../src/components/objecttypes/PageTypes.tsx')
 const text = (selector) => [...document.querySelectorAll(selector)].map((el) => el.textContent.trim())
 
@@ -94,6 +96,32 @@ test('fields panel lists the type fields with values, edits checkbox in place an
   await act(async () => root.unmount())
 })
 
+test('type field options open from the grip and right-click and confirm before deleting', async () => {
+  const root = createRoot(document.getElementById('app'))
+  calls.length = 0
+  await act(async () => root.render(React.createElement(TypeFields, { page, locked: false })))
+  const grip = document.querySelector('[aria-label="Property options for Autor"]')
+  await act(async () => grip.click())
+  assert.equal(grip.draggable, true)
+  assert.ok(document.querySelector('[aria-label="Field name"]'))
+  const value = document.querySelector('[data-prop="rating"] .dbv-rp-value')
+  const context = new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2 })
+  await act(async () => value.dispatchEvent(context))
+  assert.equal(context.defaultPrevented, true)
+  assert.equal(document.querySelector('[aria-label="Field name"]').value, 'Nota')
+  const menuItem = (label) => [...document.querySelectorAll('.mi')].find((el) => el.textContent === label)
+  await act(async () => menuItem('Delete property').click())
+  assert.deepEqual(calls, [])
+  assert.match(text('.pop p').join(' '), /every page with the Livro type/)
+  await act(async () => menuItem('Confirm deletion').click())
+  assert.deepEqual(calls, ['deleteField book rating'])
+  await act(async () => root.render(React.createElement(TypeFields, { page, locked: true })))
+  assert.equal(document.querySelectorAll('.ot-grip[draggable]').length, 0)
+  await act(async () => value.dispatchEvent(new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2 })))
+  assert.equal(document.querySelectorAll('.pop').length, 0)
+  await act(async () => root.unmount())
+})
+
 test('#tag suggestion offers the matching type and applies it; dismiss hides it', async () => {
   const root = createRoot(document.getElementById('app'))
   await act(async () => root.render(React.createElement(TypeTagSuggestion, { page, locked: false })))
@@ -120,5 +148,28 @@ test('chip popover shows the type fields, opens the collection, and removes keep
   assert.match(text('p')[0], /Remove Livro\? 1 filled field/)
   await act(async () => [...document.querySelectorAll('.mi')].find((el) => el.textContent === 'Remove and discard the values').click())
   assert.ok(calls.includes('removeType ["p1"] book {"discard":true}'))
+  await act(async () => root.unmount())
+})
+
+test('adding a type relation waits for the target and leaves the database option available', async () => {
+  const root = createRoot(document.getElementById('app'))
+  calls.length = 0
+  await act(async () => root.render(React.createElement(TypeFields, { page, locked: false })))
+  const pick = async (label) => {
+    const item = [...document.querySelectorAll('.mi')].find((node) => node.textContent === label)
+    assert.ok(item, 'expected menu choice: ' + label)
+    await act(async () => item.click())
+  }
+
+  await act(async () => document.querySelector('.dbv-rp-add').click())
+  assert.ok(text('.mi').includes('Relation to database'))
+  await pick('Relation to type')
+  assert.ok(!calls.some((call) => call.startsWith('addField ')), 'choosing the relation mode alone creates nothing')
+  await pick('Pessoa')
+  assert.ok(calls.includes('addField book relation undefined person'))
+
+  await act(async () => document.querySelector('.dbv-rp-add').click())
+  await pick('Relation to database')
+  assert.ok(calls.includes('addField book relation undefined undefined'))
   await act(async () => root.unmount())
 })

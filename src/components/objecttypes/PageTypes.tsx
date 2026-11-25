@@ -1,7 +1,7 @@
 // Tipos na página: chips + "+ Tipo" (cabeçalho), campos do tipo (mesmo layout de RowProperties,
 // editores existentes) e a sugestão "#Livro → Aplicar tipo Livro?". docs/USAGE.md
 import { Fragment, useMemo, useState } from 'react'
-import { ArrowUpRight, Plus, Settings2, Table2, Trash2, X } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, Plus, Settings2, Table2, Trash2, X } from 'lucide-react'
 import { actions, selectors, useStore } from '../../store'
 import { useI18n } from '../../i18n'
 import type { Page, Property, PropValue, PropType } from '../../types'
@@ -11,10 +11,10 @@ import { PageIcon } from '../page/PageIcon'
 import { PropertyEditor } from '../database/editors/PropertyEditor'
 import { openUrl } from '../database/editors/TextEditor'
 import { resolveValue, isComputedProperty } from '../database/derived'
-import { DbPopover, Menu, MenuItem, MenuLabel, MenuSep } from '../database/ui/Popover'
+import { DbPopover, Menu, MenuItem, MenuLabel, MenuSep, type DbAnchor } from '../database/ui/Popover'
 import { propertyTypeLabel } from '../database/labels'
-import { effectiveProperties, FIELD_TYPES, isEmptyValue, orphanTypeValues, pageTypeFields, pageTypes, readTypeProps, typeDataHidden, typeSchemaId, typeTagsIn, type ObjectType } from '../../objecttypes/model'
-import { addField, convertField, deleteField, moveField, objectTypes, purgeOrphans, removeType, reorderField, restorableTypes, updateField } from '../../objecttypes/actions'
+import { effectiveProperties, FIELD_TYPES, fold, isEmptyValue, orphanTypeValues, pageTypeFields, pageTypes, readTypeProps, typeDataHidden, typeSchemaId, typeTagsIn, type ObjectType } from '../../objecttypes/model'
+import { addField, convertField, deleteField, moveField, objectTypes, purgeOrphans, removeType, reorderField, restorableTypes, setFieldRelationType, updateField } from '../../objecttypes/actions'
 import { useReorder } from './useReorder'
 import { openTypeCollection, openTypesManager } from '../../objecttypes/ui'
 import { TypePicker, applyTypeFlow } from './TypePicker'
@@ -87,7 +87,7 @@ export function TypeFieldRows({ page, locked, divideFirst = false, groupLabels =
   const { t } = useI18n()
   const { pages } = useStore()
   const [editing, setEditing] = useState<{ propId: string; typeId: string; el: Element } | null>(null)
-  const [fieldMenu, setFieldMenu] = useState<{ prop: Property; type: ObjectType; el: Element } | null>(null)
+  const [fieldMenu, setFieldMenu] = useState<{ propId: string; anchor: DbAnchor } | null>(null)
   const types = objectTypes()
   // Reordenar os campos próprios de cada tipo (alça no hover ou ⌥↑/⌥↓); os herdados ficam no tipo de origem.
   const ownerOf = (id: string) => types.find((candidate) => candidate.properties.some((p) => p.id === id))
@@ -99,6 +99,11 @@ export function TypeFieldRows({ page, locked, divideFirst = false, groupLabels =
   const fields = typeDataHidden(page) ? [] : visibleTypeFields(page)
   if (page.database || !fields.length) return null
   const editingProp = editing ? fields.find((field) => field.property.id === editing.propId)?.property : undefined
+  const menuField = fieldMenu ? fields.find(({ property }) => property.id === fieldMenu.propId) : undefined
+  const openFieldMenu = (propId: string, anchor: DbAnchor) => {
+    setEditing(null)
+    setFieldMenu({ propId, anchor })
+  }
   const onValueClick = (prop: Property, typeId: string, el: Element, e: React.MouseEvent) => {
     if (locked || isComputedProperty(prop) || ['createdTime', 'updatedTime', 'createdBy', 'updatedBy'].includes(prop.type)) return
     const value = typeFieldValue(page, prop, pages)
@@ -116,9 +121,10 @@ export function TypeFieldRows({ page, locked, divideFirst = false, groupLabels =
         const empty = isEmptyValue(value) && prop.type !== 'checkbox'
         const readOnly = locked || ['createdTime', 'updatedTime', 'createdBy', 'updatedBy'].includes(prop.type)
         const origin = index === 0 && (groupIndex > 0 || divideFirst) && !groupLabels
-        return <div key={prop.id} className={`dbv-rp-row${origin ? ' dbv-rp-row--origin' : ''}`} role="row" data-prop={prop.id} data-type-field={type.id} {...reorder.row(prop.id)}>
-          {reorder.grip(prop.id, prop.name)}
-          <button type="button" className="dbv-rp-name" disabled={locked} title={t('Campo do tipo {name}', '{name} type field', { name: type.name })} onClick={(e) => setFieldMenu({ prop, type, el: e.currentTarget })}><PropTypeIcon type={prop.type} /><span>{prop.name}</span></button>
+        return <div key={prop.id} className={`dbv-rp-row${origin ? ' dbv-rp-row--origin' : ''}`} role="row" data-prop={prop.id} data-type-field={type.id} {...reorder.row(prop.id)}
+          onContextMenu={locked ? undefined : (e) => { e.preventDefault(); e.stopPropagation(); openFieldMenu(prop.id, { x: e.clientX, y: e.clientY }) }}>
+          {reorder.grip(prop.id, prop.name, (anchor) => openFieldMenu(prop.id, anchor))}
+          <button type="button" className="dbv-rp-name" disabled={locked} aria-haspopup="dialog" title={t('Campo do tipo {name}', '{name} type field', { name: type.name })} onClick={(e) => openFieldMenu(prop.id, e.currentTarget)}><PropTypeIcon type={prop.type} /><span>{prop.name}</span></button>
           <div className={`dbv-rp-value${readOnly ? ' dbv-rp-value--ro' : ''}`} role="cell" onClick={(e) => onValueClick(prop, type.id, e.currentTarget, e)}>
             {empty ? <span className="dbv-rp-empty">{t('Vazio', 'Empty')}</span> : <PropDisplay property={prop} value={value} rowId={page.id} />}
             {prop.type === 'url' && !empty && <button type="button" className="dbv-icon-btn" style={{ marginLeft: 6, width: 20, height: 20 }} title={t('Abrir link', 'Open link')} onClick={(e) => { e.stopPropagation(); openUrl(String(value)) }}><ArrowUpRight size={14} /></button>}
@@ -127,7 +133,7 @@ export function TypeFieldRows({ page, locked, divideFirst = false, groupLabels =
       })}
     </Fragment>)}
     {editing && editingProp && editing.el.isConnected && <PropertyEditor key={editingProp.id} dbId={typeSchemaId(editing.typeId)} property={editingProp} value={typeFieldValue(page, editingProp, pages)} anchor={editing.el} rowId={page.id} onChange={(v) => actions.setProp(page.id, editingProp.id, v)} onClose={() => setEditing(null)} />}
-    {fieldMenu && <FieldMenu prop={fieldMenu.prop} type={fieldMenu.type} anchor={fieldMenu.el} onClose={() => setFieldMenu(null)} />}
+    {!locked && fieldMenu && menuField && <FieldMenu key={menuField.property.id} prop={menuField.property} type={menuField.type} anchor={fieldMenu.anchor} onClose={() => setFieldMenu(null)} />}
   </>
 }
 
@@ -156,29 +162,61 @@ export function TypeFields({ page, locked }: { page: Page; locked: boolean }) {
       {!locked && restorable.map((type) => <button key={type.id} type="button" onClick={() => void applyTypeFlow([page.id], type.id)}>{t('Restaurar {name}', 'Restore {name}', { name: type.name })}</button>)}
       {!locked && <button type="button" onClick={() => { if (window.confirm(t('Descartar os valores guardados? Isso não pode ser desfeito depois de fechar o aviso.', 'Discard the kept values? This cannot be undone after the notice closes.'))) purgeOrphans(page.id) }}>{t('Descartar', 'Discard')}</button>}
     </div>}
-    {adding && <FieldTypeMenu anchor={adding.el} onClose={() => setAdding(null)} onPick={(type) => { addField(adding.type.id, type); setAdding(null) }} />}
+    {adding && <FieldTypeMenu anchor={adding.el} onClose={() => setAdding(null)} onPick={(kind, relationTypeId) => { addField(adding.type.id, kind, undefined, relationTypeId); setAdding(null) }} />}
   </div>
 }
 
 /** Lista de tipos de campo permitidos em tipos de objeto. */
-export function FieldTypeMenu({ anchor, current, onPick, onClose }: { anchor: Element; current?: PropType; onPick: (type: PropType) => void; onClose: () => void }) {
+export function FieldTypeMenu({ anchor, current, currentRelationTypeId, onPick, onClose }: {
+  anchor: Element
+  current?: PropType
+  currentRelationTypeId?: string
+  onPick: (type: PropType, relationTypeId?: string) => void | boolean
+  onClose: () => void
+}) {
   const { t } = useI18n()
   const [query, setQuery] = useState('')
-  const list = FIELD_TYPES.filter((type) => propertyTypeLabel(type).toLowerCase().includes(query.trim().toLowerCase()))
-  return <DbPopover anchor={anchor} onClose={onClose} label={t('Tipo do campo', 'Field type')}>
-    <Menu width={240}>
-      <div className="dbv-input-wrap"><input autoFocus className="dbv-input" placeholder={t('Buscar tipo de campo…', 'Search field type…')} aria-label={t('Buscar tipo de campo', 'Search field type')} value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && list[0]) { e.preventDefault(); onPick(list[0]) } }} /></div>
-      <MenuLabel>{t('Tipo do campo', 'Field type')}</MenuLabel>
-      {list.map((type) => <MenuItem key={type} icon={<PropTypeIcon type={type} />} label={propertyTypeLabel(type)} checked={current === type} onClick={() => onPick(type)} />)}
+  const [pickingType, setPickingType] = useState(false)
+  const [blocked, setBlocked] = useState(false)
+  const search = fold(query)
+  const relationLabel = t('Relação com tipo', 'Relation to type')
+  const pick = (type: PropType, relationTypeId?: string) => setBlocked(onPick(type, relationTypeId) === false)
+  const changeStep = (target: boolean) => { setQuery(''); setBlocked(false); setPickingType(target) }
+  const choices = FIELD_TYPES.flatMap<{ id: string; label: string; type: PropType; checked: boolean; run: () => void }>((type) => {
+    if (type !== 'relation') return [{ id: type, label: propertyTypeLabel(type), type, checked: current === type, run: () => pick(type) }]
+    return [
+      { id: 'relation-database', label: t('Relação com banco de dados', 'Relation to database'), type, checked: current === type && !currentRelationTypeId, run: () => pick(type) },
+      { id: 'relation-type', label: relationLabel, type, checked: !!currentRelationTypeId, run: () => changeStep(true) },
+    ]
+  }).filter(({ label }) => fold(label).includes(search))
+  const targets = pickingType ? objectTypes().filter((type) => fold(type.name).includes(search)) : []
+  const searchLabel = pickingType ? t('Buscar tipo relacionado', 'Search related types') : t('Buscar tipo de campo', 'Search field type')
+  return <DbPopover anchor={anchor} onClose={onClose} label={pickingType ? relationLabel : t('Tipo do campo', 'Field type')}>
+    <Menu width={256}>
+      {pickingType && <MenuItem icon={<ArrowLeft size={16} />} label={t('Voltar aos campos', 'Back to field types')} onClick={() => changeStep(false)} />}
+      <div className="dbv-input-wrap"><input key={searchLabel} autoFocus className="dbv-input" placeholder={searchLabel + '…'} aria-label={searchLabel}
+        value={query} onChange={(e) => { setQuery(e.target.value); setBlocked(false) }} onKeyDown={(e) => {
+          if (e.key !== 'Enter') return
+          e.preventDefault()
+          if (pickingType && targets[0]) pick('relation', targets[0].id)
+          else if (!pickingType) choices[0]?.run()
+        }} /></div>
+      {(pickingType ? targets.length : choices.length) === 0 && <MenuLabel>{t('Nenhum resultado', 'No results')}</MenuLabel>}
+      {blocked && <div role="alert" className="ot-field-relation-notice">{t('Este campo já está em uso. Adicione um novo campo para escolher outro destino.', 'This field is already in use. Add a new field to choose a different target.')}</div>}
+      {pickingType
+        ? targets.map((type) => <MenuItem key={type.id} icon={<PageIcon value={type.icon} fallback="page" />} label={type.name || t('Sem nome', 'Untitled')}
+          checked={currentRelationTypeId === type.id} onClick={() => pick('relation', type.id)} />)
+        : choices.map(({ id, type, label, checked, run }) => <MenuItem key={id} icon={<PropTypeIcon type={type} />} label={label} checked={checked} onClick={run} />)}
     </Menu>
   </DbPopover>
 }
 
 /** Menu do nome do campo na página: renomear, mudar tipo (conversão segura), excluir, editar tipo. */
-function FieldMenu({ prop, type, anchor, onClose }: { prop: Property; type: ObjectType; anchor: Element; onClose: () => void }) {
+function FieldMenu({ prop, type, anchor, onClose }: { prop: Property; type: ObjectType; anchor: DbAnchor; onClose: () => void }) {
   const { t } = useI18n()
   const [name, setName] = useState(prop.name)
   const [typeMenu, setTypeMenu] = useState<Element | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const owner = useMemo(() => objectTypes().find((candidate) => candidate.properties.some((p) => p.id === prop.id)) ?? type, [prop.id, type])
   const commit = () => { const next = name.trim(); if (next && next !== prop.name) updateField(owner.id, prop.id, { name: next }) }
   return <DbPopover anchor={anchor} onClose={() => { commit(); onClose() }} className="ot-fieldmenu" label={prop.name}>
@@ -188,9 +226,21 @@ function FieldMenu({ prop, type, anchor, onClose }: { prop: Property; type: Obje
       <MenuItem icon={<PropTypeIcon type={prop.type} />} label={t('Tipo: {type}', 'Type: {type}', { type: propertyTypeLabel(prop.type) })} onClick={(e) => setTypeMenu(e.currentTarget)} />
       <MenuItem icon={<Settings2 size={16} />} label={t('Editar tipo “{name}”…', 'Edit “{name}” type…', { name: owner.name })} onClick={() => { commit(); onClose(); openTypesManager(owner.id, 'fields') }} />
       <MenuSep />
-      <MenuItem danger icon={<Trash2 size={16} />} label={t('Excluir campo do tipo', 'Delete field from type')} onClick={() => { deleteField(owner.id, prop.id); onClose() }} />
+      {confirmDelete && <MenuLabel>{t('O campo será removido de todas as páginas com o tipo {name}.', 'The field will be removed from every page with the {name} type.', { name: owner.name })}</MenuLabel>}
+      <MenuItem danger icon={<Trash2 size={16} />} label={confirmDelete ? t('Confirmar exclusão', 'Confirm deletion') : t('Excluir propriedade', 'Delete property')}
+        onClick={() => {
+          if (!confirmDelete) { setConfirmDelete(true); return }
+          deleteField(owner.id, prop.id)
+          onClose()
+        }} />
     </Menu>
-    {typeMenu && <FieldTypeMenu anchor={typeMenu} current={prop.type} onClose={() => setTypeMenu(null)} onPick={(next) => { setTypeMenu(null); if (next !== prop.type) convertField(owner.id, prop.id, next); onClose() }} />}
+    {typeMenu && <FieldTypeMenu anchor={typeMenu} current={prop.type} currentRelationTypeId={prop.relationTypeId} onClose={() => setTypeMenu(null)} onPick={(next, relationTypeId) => {
+      if (next === 'relation' && (relationTypeId || prop.relationTypeId) && !setFieldRelationType(owner.id, prop.id, relationTypeId)) return false
+      if (next !== prop.type && !relationTypeId) convertField(owner.id, prop.id, next)
+      commit()
+      setTypeMenu(null)
+      onClose()
+    }} />}
   </DbPopover>
 }
 

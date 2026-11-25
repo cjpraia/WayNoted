@@ -24,6 +24,8 @@ Linked views display the same source with a different presentation. Editing thei
 
 Object types add fields and templates to pages without moving them into a database. A type collection gathers pages assigned to that type.
 
+In **Edit type → Fields → Add field**, choose **Relation to type** and select the target type. For example, a Resource can have separate fields for People, Tags, and Projects. Each field can link multiple existing pages. Enter a new name in the picker to create a page with the target type and link it immediately. Database relations remain available as a separate field choice.
+
 A **Query** block gathers pages and tasks by criteria. See [Live queries](QUERIES.md) for syntax and limitations.
 
 ## Daily workflow

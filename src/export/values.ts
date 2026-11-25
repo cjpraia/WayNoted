@@ -1,5 +1,6 @@
 // Valores de propriedades em forma legível (CSV, front-matter, tabelas). Inclui fórmulas e rollups calculados.
 import type { DateValue, Page, Property, PropValue } from '../types'
+import type { TypeList } from '../objecttypes/model.ts'
 import type { Locale } from '../localization'
 import { resolveValue, isFileArray, isStringArray } from '../components/database/derived.ts'
 import { isRichTextValue, richTextPlain } from '../components/database/richText.ts'
@@ -21,10 +22,10 @@ function stamp(ms: number): string {
 }
 
 /** Valor legível: nomes de opções, títulos de relações, datas ISO, resultado de fórmulas/rollups. */
-export function readableValue(row: Page, prop: Property, pages: Record<string, Page>): Readable {
+export function readableValue(row: Page, prop: Property, pages: Record<string, Page>, types?: TypeList): Readable {
   if (prop.type === 'button') return null
   let value: PropValue
-  try { value = resolveValue(row, prop, pages) } catch { return null }
+  try { value = resolveValue(row, prop, pages, types) } catch { return null }
   if (value === null || value === undefined || value === '') return null
   if (prop.type === 'createdTime' || prop.type === 'updatedTime') return typeof value === 'number' ? stamp(value) : null
   if (isRichTextValue(value)) return richTextPlain(value)

@@ -24,7 +24,7 @@ const t = (pt, en, variables) => translate(locale, pt, en, variables)
 // Only the persistence boundary and locale subscription are replaced. The menu,
 // popover, icons, labels, schema operations and calculation engine are production code.
 globalThis.__relationUI = {
-  getState: () => ({ pages }), t, useI18n: () => ({ locale, t }), getLocale: () => locale,
+  getState: () => ({ pages, settings: {} }), useStore: () => ({ pages, settings: {} }), t, useI18n: () => ({ locale, t }), getLocale: () => locale,
   actions: {
     updateSchema: (id, update) => { if (!pages[id].locked) { pages[id] = { ...pages[id], database: update(pages[id].database) }; refresh() } },
     updatePage: (id, patch) => { pages[id] = { ...pages[id], ...patch }; refresh() },
@@ -51,7 +51,8 @@ async function moduleURL(path) {
     for (const match of [...code.matchAll(/from\s+['"]([^'"]+)['"]/g)]) {
       const specifier = match[1]
       let url
-      if (/(?:^|\/)store(?:\.ts)?$/.test(specifier)) url = 'data:text/javascript,' + encodeURIComponent('export const {actions,getState}=globalThis.__relationUI')
+      if (/(?:^|\/)store(?:\.ts)?$/.test(specifier)) url = 'data:text/javascript,' + encodeURIComponent('export const {actions,getState,useStore}=globalThis.__relationUI')
+      else if (specifier.endsWith('/objecttypes/actions')) url = 'data:text/javascript,' + encodeURIComponent('export function createObject() { throw new Error("Unexpected type object creation in database relation tests") }')
       else if (/(?:^|\/)i18n(?:\.ts)?$/.test(specifier)) url = 'data:text/javascript,' + encodeURIComponent('export const {t,useI18n,getLocale}=globalThis.__relationUI')
       else if (!specifier.startsWith('.')) url = import.meta.resolve(specifier)
       else {

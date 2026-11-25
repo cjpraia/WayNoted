@@ -103,6 +103,8 @@ export interface Property extends DatabasePropertyConfig {
   /** Só exibição em colunas sintéticas (consultas): 'icon' desenha o valor como ícone de página. */
   display?: 'icon'
   relationDatabaseId?: string
+  /** Relação com páginas de um tipo de objeto (em vez de um banco). */
+  relationTypeId?: string
   rollup?: {
     relationPropertyId: string
     targetPropertyId: string

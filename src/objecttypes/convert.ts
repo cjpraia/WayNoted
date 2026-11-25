@@ -39,7 +39,7 @@ function defaultStatusOptions(): SelectOption[] {
 }
 
 export interface ConversionPlan { property: Property; convert: (value: PropValue) => PropValue | undefined }
-const REMOVE_TYPES = new Set<PropType>(['createdTime', 'updatedTime', 'createdBy', 'updatedBy', 'relation'])
+const REMOVE_TYPES = new Set<PropType>(['createdTime', 'updatedTime', 'createdBy', 'updatedBy', 'relation', 'rollup'])
 
 /**
  * Plano de conversão de `prop` para `type` dado o conjunto de valores atuais (para criar opções a

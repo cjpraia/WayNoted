@@ -1,7 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { backfillMirror, findMirrorCandidate, listDataSources, mirrorPropertyName, pagePath, planRelationPicker, relationTargetRows, toggleRelationValue } from '../src/components/database/relationPicker.ts'
+import { backfillMirror, findMirrorCandidate, listDataSources, mirrorPropertyName, pagePath, planRelationPicker, relationTargetObjects, relationTargetRows, toggleRelationValue } from '../src/components/database/relationPicker.ts'
 import { planRelationMirror } from '../src/components/database/engines.ts'
+import { normalizeObjectTypes } from '../src/objecttypes/model.ts'
 
 const page = (id: string, extra: Record<string, unknown> = {}) => ({ id, parentId: null, title: id, icon: null, cover: null, order: 0, trashed: false, createdAt: 1, updatedAt: 1, ...extra }) as any
 const schema = (properties: unknown[], extra: Record<string, unknown> = {}) => ({ properties, views: [], activeViewId: '', ...extra })
@@ -28,6 +29,31 @@ test('planRelationPicker separa selecionadas e “selecionar mais”, ignorando 
   assert.deepEqual(plan.more.map((p) => p.id), ['c'])
   assert.equal(plan.selectedCount, 1)
   assert.equal(plan.create, null)
+})
+
+test('relação com tipo encontra objetos em qualquer pasta e omite lixeira e árvores protegidas', () => {
+  const types = normalizeObjectTypes([
+    { id: 'pessoa', name: 'Pessoa' },
+    { id: 'equipe', name: 'Equipe', parentTypes: ['pessoa'] },
+    { id: 'projeto', name: 'Projeto' },
+  ])
+  const pages = {
+    folder: page('folder'),
+    secret: page('secret', { passwordLock: { rootId: 'secret', hideTitle: true } }),
+    trash: page('trash', { trashed: true }),
+    one: page('one', { title: 'Ágata', types: ['pessoa'] }),
+    two: page('two', { title: 'Bia', parentId: 'folder', types: ['equipe'] }),
+    other: page('other', { title: 'Joana', types: ['projeto'] }),
+    insideSecret: page('insideSecret', { parentId: 'secret', types: ['pessoa'] }),
+    insideTrash: page('insideTrash', { parentId: 'trash', types: ['pessoa'] }),
+  }
+  const rows = relationTargetObjects(pages, types, 'pessoa')
+  assert.deepEqual(rows.map((item) => item.id), ['one', 'two'])
+  const plan = planRelationPicker({ pages, rows, selectedIds: ['insideSecret', 'one'], query: 'agata', excludeLocked: true })
+  assert.deepEqual(plan.selected.map((item) => item.id), ['one'])
+  assert.equal(plan.selectedCount, 1)
+  assert.equal(plan.create, null, 'títulos existentes podem ser reutilizados sem criar duplicatas')
+  assert.equal(planRelationPicker({ pages, rows, selectedIds: [], query: 'Joana' }).create, 'Joana')
 })
 
 test('a busca ignora acento e caixa e filtra as duas listas; texto novo oferece Criar', () => {

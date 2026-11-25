@@ -21,22 +21,23 @@ export function opsForRule(property: Property | undefined): Op[] {
   }
 }
 
-export function RelatedRulesEditor({ databaseId, rules, operator, onChange, disabled }: {
+export function RelatedRulesEditor({ databaseId, relatedProperties, rules, operator, onChange, disabled }: {
   databaseId: string | undefined
+  relatedProperties?: Property[]
   rules: RelatedFilterRule[]
   operator: 'and' | 'or'
   onChange: (rules: RelatedFilterRule[], operator: 'and' | 'or') => void
   disabled?: boolean
 }) {
   const { t } = useI18n()
-  const properties = databaseId ? getState().pages[databaseId]?.database?.properties.filter((p) => p.type !== 'button') ?? [] : []
+  const properties = (relatedProperties ?? (databaseId ? getState().pages[databaseId]?.database?.properties : undefined) ?? []).filter(p => p.type !== 'button')
   const opLabel = (op: Op) => ({
     is: t('é', 'is'), isNot: t('não é', 'is not'), contains: t('contém', 'contains'), notContains: t('não contém', 'does not contain'),
     gt: '>', lt: '<', gte: '≥', lte: '≤', before: t('antes de', 'before'), after: t('depois de', 'after'),
     isEmpty: t('está vazio', 'is empty'), isNotEmpty: t('não está vazio', 'is not empty'), checked: t('marcado', 'checked'), unchecked: t('desmarcado', 'unchecked'),
   })[op]
   const patch = (index: number, next: Partial<RelatedFilterRule>) => onChange(rules.map((rule, at) => at === index ? { ...rule, ...next } : rule), operator)
-  if (!databaseId) return null
+  if (!databaseId && !relatedProperties) return null
   return <div className="db-rules">
     {rules.map((rule, index) => {
       const property = properties.find((p) => p.id === rule.propertyId)
