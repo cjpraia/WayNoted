@@ -91,6 +91,7 @@ function createQuickCapture(deps) {
   }
 
   async function show(data = null) {
+    if (deps.updating?.()) return
     target = deps.activeWorkspace()
     prefill = data
     const window = ensureWindow()
@@ -206,6 +207,7 @@ function createQuickCapture(deps) {
       const meta = await workspaceMeta()
       return typeof id === 'string' ? core.destinationInfo(meta, id) : null
     })
+    handle('npq:flushResult', (token, error) => deps.onFlushResult?.(win.webContents.id, token, error))
     handle('npq:saveDraft', async value => {
       if (!value || typeof value !== 'object' || JSON.stringify(value).length > 2 * 1024 * 1024) throw new Error('Rascunho inválido')
       return drafts.save(target, value)
@@ -251,12 +253,12 @@ function createQuickCapture(deps) {
   }
 
   /** Grava rascunhos guardados só na memória (antes de bloquear/ativar/desativar a senha). */
-  async function flushDrafts(ws) {
+  async function flushDrafts(ws, strict) {
     if (ws) { await drafts.purgeLegacy(ws).catch(console.error); await drafts.flush(ws).catch(console.error) }
-    else await drafts.flushAll()
+    else await drafts.flushAll(strict)
   }
 
-  return { flushDrafts, drafts, start, stop, destroyWindow, show, hide, toggle, captureSelection, handleUrl, registerIpc, getSettings, updateSettings, save, prefs: () => prefs, window: () => win }
+  return { flushDrafts, isSaving: () => saving, drafts, start, stop, destroyWindow, show, hide, toggle, captureSelection, handleUrl, registerIpc, getSettings, updateSettings, save, prefs: () => prefs, window: () => win }
 }
 
 module.exports = { createQuickCapture }

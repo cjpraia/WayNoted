@@ -285,6 +285,8 @@ test('quick capture drafts follow the workspace cipher, migrate on enable/disabl
     const before = await fs.readFile(draftPath)
     const locked = await drafts.save('default', { title: `${DRAFT}-3`, body: 'escrito bloqueado' })
     assert.equal(locked.locked, true)
+    await assert.rejects(drafts.flushAll(true), /Unlock the workspace/)
+    assert.equal(drafts.hasPending('default'), true)
     assert.ok((await fs.readFile(draftPath)).equals(before), 'locked vault: file untouched')
     const whileLocked = await drafts.load('default')
     assert.equal(whileLocked.locked, true); assert.equal(whileLocked.draft.title, `${DRAFT}-3`)

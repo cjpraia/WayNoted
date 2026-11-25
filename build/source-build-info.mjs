@@ -51,6 +51,7 @@ export function captureSourceBuild(root) {
     if (newest > Date.now()) dateKnown = false
     return {
       fingerprint: hash.update(commit).digest('hex'),
+      baseCommit: git('rev-parse', '--short=8', 'HEAD').trim(),
       updatedAt: dateKnown ? new Date(newest).toISOString() : null,
       commitSubject: subjectParts.join('\n') || null,
       localChanges: changed.size > 0,
@@ -63,6 +64,7 @@ export function captureSourceBuild(root) {
 export function verifiedBuildInfo(stamp, current) {
   if (!stamp || !current || stamp.fingerprint !== current.fingerprint) return null
   if (stamp.updatedAt !== current.updatedAt || stamp.localChanges !== current.localChanges ||
-      stamp.commitSubject !== current.commitSubject) return null
-  return { updatedAt: current.updatedAt, commitSubject: current.commitSubject, localChanges: current.localChanges }
+      stamp.commitSubject !== current.commitSubject || stamp.baseCommit !== current.baseCommit) return null
+  const builtAt = typeof stamp.builtAt === 'string' && Number.isFinite(Date.parse(stamp.builtAt)) ? stamp.builtAt : null
+  return { updatedAt: current.updatedAt, builtAt, baseCommit: current.baseCommit, commitSubject: current.commitSubject, localChanges: current.localChanges }
 }

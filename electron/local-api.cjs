@@ -130,7 +130,7 @@ const CLIP_ROUTES = new Set(['/v1/clip', '/v1/clip/pair', '/v1/clip/whoami'])
 const clampLimit = (value, fallback = 200) => Math.max(1, Math.min(1000, Math.floor(Number(value)) || fallback))
 
 /** Opt-in API, bound exclusively to loopback, without browser-origin access. */
-async function startLocalApi({ storage: rawStorage, token, onChange, port = 0, access: providedAccess }) {
+async function startLocalApi({ storage: rawStorage, token, onChange, port = 0, access: providedAccess, paused = () => false }) {
   // Páginas "Privadas para IA" (e suas subpáginas) nunca aparecem para agentes (A1).
   const storage = guardAiPrivate(rawStorage)
   const access = providedAccess ?? legacyAccess(token)
@@ -232,7 +232,7 @@ async function startLocalApi({ storage: rawStorage, token, onChange, port = 0, a
     }
   }
 
-  const server = http.createServer(async (req, res) => {
+  const handleRequest = async (req, res) => {
     const call = { method: req.method, action: '', target: '', mode: null }
     let client = null
     try {
@@ -508,11 +508,17 @@ async function startLocalApi({ storage: rawStorage, token, onChange, port = 0, a
         access.record({ clientId: client.id, client: client.name, method: call.method, action: call.action, target: call.target, result, status, detail: result === 'error' ? call.error?.message : undefined })
       }
     }
+  }
+  let activeRequests = 0
+  const server = http.createServer((req, res) => {
+    if (paused()) return send(res, 503, { error: 'WayNoted is restarting. Try again.' })
+    activeRequests++
+    void handleRequest(req, res).catch(() => res.destroy()).finally(() => { activeRequests-- })
   })
   server.requestTimeout = 15000
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Invalid local API port')
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, '127.0.0.1', resolve) })
   server.unref()
-  return { url: `http://127.0.0.1:${server.address().port}`, close: () => new Promise(resolve => { server.closeAllConnections?.(); server.close(resolve) }) }
+  return { url: `http://127.0.0.1:${server.address().port}`, isBusy: () => activeRequests > 0, close: () => new Promise(resolve => { server.closeAllConnections?.(); server.close(resolve) }) }
 }
 module.exports = { startLocalApi, normalizePropertyValue, textToBlocks }

@@ -20,6 +20,14 @@ contextBridge.exposeInMainWorld('quickApi', {
     ipcRenderer.on('npq:dictationEvent', listener)
     return () => ipcRenderer.removeListener('npq:dictationEvent', listener)
   },
+  onBeforeClose: (handler) => {
+    const listener = async (_event, token) => {
+      try { await handler(); await ipcRenderer.invoke('npq:flushResult', token, null) }
+      catch (error) { await ipcRenderer.invoke('npq:flushResult', token, error?.message || 'Could not save the quick note.') }
+    }
+    ipcRenderer.on('npq:flushForUpdate', listener)
+    return () => ipcRenderer.removeListener('npq:flushForUpdate', listener)
+  },
   onShow: (handler) => {
     const listener = (_event, payload) => handler(payload)
     ipcRenderer.on('npq:show', listener)

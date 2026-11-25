@@ -81,4 +81,12 @@ For AI or agents, see [AI](AI.md) and [Local integrations](LOCAL-INTEGRATIONS.md
 
 ## About
 
-**Settings → About** shows the running version. A verified macOS package also shows when its app code was last updated, in Brasília time. When the source matches Git, the description is the latest relevant commit subject. If the build includes local changes, About labels their description as unavailable and separately shows the latest commit subject from the base. The app marks the date or description as unavailable when either cannot be verified. The macOS application menu shows the same details.
+**Settings → About** shows the running version. A verified macOS package also shows the date and time it was built in Brasília time and the short Git hash of the base checkout. When the source matches Git, the description is the latest relevant commit subject. If the build includes local changes, About labels their description as unavailable and separately shows the latest commit subject from the base. The app marks the date or description as unavailable when either cannot be verified. The macOS application menu shows the same details.
+
+### Rebuild and restart from a local checkout
+
+On Apple Silicon, when opened by the project launcher, use **View → Rebuild and restart WayNoted…** to build the files already in that checkout. The build runs in a separate folder while the current app stays open. WayNoted saves the open windows and quick note before starting the new bundle with the same profile. A failed build or save leaves the current app open. Check the local build log shown in the error for details.
+
+The `WayNoted.command` shortcut opens the local checkout or brings its existing window forward. The separate `waynoted-build` executable fetches GitHub's `main` and builds it in a separate checkout. It starts the verified bundle after any existing instance using the same profile closes. Save and quit that instance when prompted so the new version can open. Your branch and local files stay in place.
+
+This option requires Node.js 24+, installed project dependencies and the Xcode Command Line Tools. If the checkout is in Documents, macOS can also require granting WayNoted access to that folder in System Settings. The in-app menu does not fetch updates from Git. The previous app bundle is kept. If the new bundle cannot confirm startup, inspect the log before opening an older bundle, since older versions may not understand data migrated by newer versions.

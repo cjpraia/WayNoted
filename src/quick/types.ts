@@ -15,6 +15,7 @@ export interface QuickApi {
   search(query: string): Promise<QuickDestination[]>
   destination(id: string): Promise<QuickDestinationInfo | null>
   /** `locked`: o espaço está bloqueado e o rascunho ficou só na memória do app (não foi a disco). */
+  onBeforeClose?(handler: () => Promise<void>): () => void
   saveDraft(draft: QuickDraft): Promise<{ locked: boolean } | void>
   save(input: { workspaceId: string; typeId: string | null; title: string; blocks: unknown[]; destinationId: string | null; tags: string[]; date: string | null; /** Data completa (hora/repetição) vinda de "@amanhã às 9h". */ dateValue?: import('../types').DateValue; sourceUrl: string | null }): Promise<{ pageId: string; parentId: string; workspaceId: string }>
   close(): Promise<void>

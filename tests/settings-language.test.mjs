@@ -12,7 +12,7 @@ const dom=new JSDOM('<!doctype html><body><div id="app"></div></body>',{url:'htt
 for(const name of ['window','document','navigator','HTMLElement'])Object.defineProperty(globalThis,name,{configurable:true,value:dom.window[name]})
 globalThis.IS_REACT_ACT_ENVIRONMENT=true
 const t=(_pt,en,vars)=>en.replace(/\{(\w+)\}/g,(_,key)=>String(vars?.[key]??''))
-const api={securityInfo:async()=>({enabled:true}),localApiInfo:async()=>({enabled:false}),listActivity:async()=>[],listAutoBackups:async()=>[],webhookStatus:async()=>[],listDocumentConflicts:async()=>[],getAboutInfo:async()=>({version:'9.8.7',updated:{date:'22/11/2026',time:'13:45'},localChanges:true,commitSubject:'Update app code'})}
+const api={securityInfo:async()=>({enabled:true}),localApiInfo:async()=>({enabled:false}),listActivity:async()=>[],listAutoBackups:async()=>[],webhookStatus:async()=>[],listDocumentConflicts:async()=>[],getAboutInfo:async()=>({version:'9.8.7',updated:null,built:{date:'22/11/2026',time:'13:45'},baseCommit:'1a2b3c4d',localChanges:true,commitSubject:'Update app code'})}
 window.api=api
 const mocks={t,useI18n:()=>({locale:'en-US',t}),api,actions:{flushMeta:async()=>{},setSettingsOpen:()=>{}},selectors:{isLive:()=>true,trash:()=>[]},useStore:()=>({settings:{locale:'en-US',theme:'system',userName:'',workspaceName:'Workspace',historyLimit:0},pages:{}})}
 globalThis.__settingsLanguage=mocks
@@ -51,8 +51,9 @@ test('every Settings section renders its labels in English, including native dat
   }
   if(section==='About'){
    assert.match(document.querySelector('.st-about').textContent,/Version 9\.8\.7/)
-   assert.match(document.querySelector('.st-about').textContent,/Updated on 22\/11\/2026 at 13:45 \(BRT\)/)
+   assert.match(document.querySelector('.st-about').textContent,/Built on 22\/11\/2026 at 13:45 \(BRT\)/)
    assert.match(document.querySelector('.st-about').textContent,/Includes local changes \(description unavailable\)/)
+   assert.match(document.querySelector('.st-about').textContent,/Base commit: 1a2b3c4d/)
    assert.match(document.querySelector('.st-about').textContent,/Latest base commit: Update app code/)
   }
   if(section==='Shortcuts')assert.match(document.querySelector('table').textContent,/New page.*New tab.*Reopen last closed tab.*Close tab/)
@@ -62,7 +63,7 @@ test('every Settings section renders its labels in English, including native dat
 
 test('About explains when the package has no update metadata',async()=>{
  const load=api.getAboutInfo
- api.getAboutInfo=async()=>({version:'9.8.7',updated:null,localChanges:false,commitSubject:null})
+ api.getAboutInfo=async()=>({version:'9.8.7',updated:null,built:null,baseCommit:null,localChanges:false,commitSubject:null})
  const root=createRoot(document.getElementById('app'))
  try {
   await act(async()=>root.render(React.createElement(SettingsModal)))
@@ -70,7 +71,7 @@ test('About explains when the package has no update metadata',async()=>{
   await act(async()=>button.click())
   const text=document.querySelector('.st-about').textContent
   assert.match(text,/Version 9\.8\.7/)
-  assert.match(text,/Update date unavailable/)
+  assert.match(text,/Build date unavailable/)
   assert.match(text,/Update description unavailable/)
  } finally {
   await act(async()=>root.unmount())

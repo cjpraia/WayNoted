@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
+<key>NSDocumentsFolderUsageDescription</key><string>WayNoted needs the local project files in Documents when you choose Rebuild and restart.</string>
 <key>NSMicrophoneUsageDescription</key><string>WayNoted uses the microphone only when you choose to record audio or dictate. Recordings stay on this Mac.</string>
 <key>NSSpeechRecognitionUsageDescription</key><string>WayNoted transcribes your dictation on this Mac using on-device speech recognition. Audio is never sent to servers.</string>
 <key>NSAppleEventsUsageDescription</key><string>WayNoted reads your notes in the Notes app only when you choose Import from Apple Notes. Nothing is changed in Notes and nothing leaves this Mac.</string>

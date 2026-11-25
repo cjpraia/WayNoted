@@ -100,6 +100,15 @@ export function QuickNote() {
     return () => clearTimeout(timer)
   }, [draft])
 
+  useEffect(() => quick().onBeforeClose?.(async () => {
+    if (voiceOn || busy) throw new Error(t('Conclua a captura rápida antes de reiniciar.', 'Finish quick capture before restarting.'))
+    if (!loaded.current) {
+      if (draft.title || draft.body) throw new Error(t('A nota rápida ainda está carregando.', 'Quick note is still loading.'))
+      return
+    }
+    await quick().saveDraft(draft)
+  }), [busy, draft, t, voiceOn])
+
   useEffect(() => {
     setInfo(null)
     if (destination?.database) void quick().destination(destination.id).then(setInfo).catch(() => setInfo(null))

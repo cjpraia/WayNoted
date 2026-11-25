@@ -56,6 +56,7 @@ import { AgentApprovalHost } from './agent/AgentApprovalHost'
 import { toggleAskPanel, useAskPanel } from './ai/panel'
 import { openDailyNote, openRelativeDay } from './daily/dailyNotes'
 import { LogoMark } from './components/ui/Logo'
+import { showToast } from './components/ui/toastQueue'
 import { ToastHost } from './components/ui/Toast'
 import { TemplatePromptHost } from './components/modals/TemplatePromptDialog'
 import { VoiceTasksHost } from './voice/VoiceTasksDialog'
@@ -88,6 +89,14 @@ class PageBoundary extends Component<{ children: ReactNode }, { error: boolean }
 function runCommand(command: string) {
   // ⌘⇧V do menu Editar (Electron): a próxima colagem entra como texto simples (paste/useSmartPaste).
   if (command === 'paste-plain') { window.dispatchEvent(new Event('np:paste-plain')); return }
+  const updateMessages: Record<string, [string, string]> = {
+    'local-update-building': ['Compilando as alterações locais…', 'Building local changes…'],
+    'local-update-saving': ['Salvando antes de reiniciar…', 'Saving before restarting…'],
+    'local-update-failed': ['A atualização falhou. O WayNoted continua aberto.', 'Update failed. WayNoted remains open.'],
+    'local-update-complete': ['WayNoted atualizado.', 'WayNoted updated.'],
+  }
+  const updateMessage = updateMessages[command]
+  if (updateMessage) { showToast({ message: t(...updateMessage), tone: command === 'local-update-failed' ? 'error' : 'info', duration: command === 'local-update-complete' ? 10000 : undefined }); return }
   const state = getState()
   // Comandos da barra de menus podem chegar antes de a janela terminar de carregar.
   if (!state.ready) { if (!state.initError && (command === 'search' || command === 'settings')) void actions.init().then(() => getState().ready && runCommand(command)); return }
@@ -147,8 +156,8 @@ function AppShell() {
     void actions.init()
     startTaskIndex()
     const stopTrayTasks = startTrayTasks()
-    const removeClose = api.onBeforeClose?.(async () => { await actions.flushAll(); assertCanClose() })
     const removeCommand = api.onCommand?.(runCommand)
+    const removeClose = api.onBeforeClose?.(async () => { await actions.flushAll(); assertCanClose() })
     const removeNavigate = api.onNavigate?.(route => {
       void actions.init().then(() => {
         assertCanClose()

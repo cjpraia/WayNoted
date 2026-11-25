@@ -1,6 +1,7 @@
 const PRODUCT = require('../shared/product.json')
 const PACKAGE = require('../package.json')
 const TEST_BUILD = PACKAGE.workspaceTestBuild === true
+const localUpdate = require('./local-update.cjs')
 const { aboutInfo } = require('./about-info.cjs')
 const COMPAT = require('../shared/compatibility.cjs')
 require('./brand.cjs').legacyEnv()
@@ -57,6 +58,7 @@ const dictationService = createDefaultDictationService()
 const localApis = new Map()
 const agentAccesses = new Map()
 let deviceCipherBusy = false
+let activeDesktopCalls = 0
 
 const profile = require('./brand.cjs').resolveProfile(app.getPath('appData'), process.env.WORKSPACE_USER_DATA || (TEST_BUILD ? path.join(app.getPath('appData'), PRODUCT.profileDirectory + 'Test') : undefined))
 // Preserve the encryption identity while keeping paths independent of the display name.
@@ -112,7 +114,13 @@ function isInternalURL(value) {
 function trustedHandler(channel, handler) {
   ipcMain.handle(channel, (event, ...args) => {
     if (event.senderFrame !== event.sender.mainFrame || !isInternalURL(event.senderFrame.url)) throw new Error('Origem de dados inválida')
-    return handler(event, ...args)
+    activeDesktopCalls++
+    try {
+      const result = handler(event, ...args)
+      if (result?.then) return Promise.resolve(result).finally(() => { activeDesktopCalls-- })
+      activeDesktopCalls--
+      return result
+    } catch (error) { activeDesktopCalls--; throw error }
   })
 }
 
@@ -389,10 +397,11 @@ function registerIpc() {
     return true
   })
   trustedHandler('np:openWindow', async (e, route) => {
+    if (isSavingUpdate()) return
     createWindow(context(e).workspaceId, sanitizeWindowRoute(route))
   })
   trustedHandler('np:listWorkspaces', async e => (await workspaceList()).map(item => ({ ...item, current: item.id === context(e).workspaceId })))
-  trustedHandler('np:isSchedulerLeader', async e => [...contexts.values()].find(c => c.workspaceId === context(e).workspaceId)?.win.webContents.id === e.sender.id)
+  trustedHandler('np:isSchedulerLeader', async e => !isSavingUpdate() && [...contexts.values()].find(c => c.workspaceId === context(e).workspaceId)?.win.webContents.id === e.sender.id)
   let catalogTransaction = Promise.resolve()
   trustedHandler('np:createWorkspace', async (e, name) => {
     if (typeof name !== 'string' || !name.trim() || name.length > 120) throw new Error('Nome de workspace inválido')
@@ -457,8 +466,104 @@ function saveWindowState(win) {
 }
 
 let quitRequested = false
+let updatePhase = null
+const isSavingUpdate = () => updatePhase === 'saving' || updatePhase === 'restarting'
+const updateConfig = localUpdate.configuration(app, process.env)
+
+async function updateAndRestart() {
+  if (updatePhase || quitRequested) return
+  const t = (pt, en) => nativeT(pt, en)
+  const title = t('Atualizar e reiniciar WayNoted', 'Update and restart WayNoted')
+  const errorDialog = (message, detail) => {
+    const win = focused()
+    const options = { type: 'warning', title, message, detail }
+    return win ? dialog.showMessageBox(win, options) : dialog.showMessageBox(options)
+  }
+  if (!updateConfig) {
+    await errorDialog(t('Atualização local indisponível.', 'Local update unavailable.'),
+      t('Abra pelo lançador do projeto no Mac com Apple Silicon e confira se Node.js e as dependências estão instalados.',
+        'Open from the project launcher on Apple Silicon and check that Node.js and dependencies are installed.'))
+    return
+  }
+
+  const windows = new Map()
+  let transfer
+  function progress(phase) {
+    updatePhase = phase
+    buildMenu()
+    if (phase) sendCommand('local-update-' + phase)
+    for (const { win } of contexts.values()) if (!win.isDestroyed()) win.setProgressBar(phase ? 2 : -1)
+  }
+  try {
+    progress('building')
+    await localUpdate.checkTools(updateConfig)
+    const launchEnv = localUpdate.launchEnvironment(updateConfig, process.env)
+    const result = await localUpdate.prepare(updateConfig, TEST_BUILD, launchEnv)
+
+    progress('saving')
+    for (const win of BrowserWindow.getAllWindows()) {
+      windows.set(win, win.isEnabled())
+      win.setEnabled(false)
+    }
+    if (deviceCipherBusy || schedulerBusy || activeDesktopCalls || quickCapture.isSaving() || [...localApis.values()].some(api => api.isBusy())) {
+      throw new Error(t('Há outra gravação em andamento. Tente novamente.', 'Another save is in progress. Try again.'))
+    }
+    await Promise.all([...contexts.values()].map(({ win }) => flushRenderer(win, true)))
+    const quick = quickCapture.window()
+    if (quick && !quick.isDestroyed()) await flushRenderer(quick, true)
+    await quickCapture.flushDrafts(undefined, true)
+    await Promise.all([...agentAccesses.values()].map(access => access.flush()))
+    await drainWorkspaces()
+    await drainDocuments()
+    await drain()
+    if (activeDesktopCalls || quickCapture.isSaving()) throw new Error(t('Há outra gravação em andamento. Tente novamente.', 'Another save is in progress. Try again.'))
+    if ([...contexts.values()].some(({ win }) => !windows.has(win))) throw new Error(t('Uma nova janela foi aberta. Tente novamente.', 'A new window opened. Try again.'))
+    for (const { win } of contexts.values()) if (!win.isDestroyed()) saveWindowState(win)
+
+    transfer = localUpdate.prepareHandoff(result, app.getPath('userData'), {
+      ...updateConfig, launchEnv, locale: t('pt-BR', 'en-US'),
+    })
+    await transfer.started
+    // Arm only after all saves succeeded and the supervisor has actually started.
+    fs.writeFileSync(path.join(result.directory, 'quit'), transfer.token, { flag: 'wx', mode: 0o600 })
+    transfer.child.unref()
+    updatePhase = 'restarting'
+    const restartWatchdog = setTimeout(() => {
+      transfer.child.kill()
+      quitRequested = false
+      for (const [win, enabled] of windows) if (!win.isDestroyed()) win.setEnabled(enabled)
+      progress(null)
+      void errorDialog(t('Não foi possível encerrar para reiniciar.', 'Could not close the app to restart.'), result.log)
+    }, 20000)
+    restartWatchdog.unref()
+    app.quit()
+  } catch (error) {
+    transfer?.child.kill()
+    for (const [win, enabled] of windows) if (!win.isDestroyed()) win.setEnabled(enabled)
+    progress(null)
+    sendCommand('local-update-failed')
+    const permissionDenied = error.code === 'UPDATE_CHECKOUT_PERMISSION'
+    const message = permissionDenied
+      ? t('O macOS negou acesso à pasta do projeto. O app continua aberto.', 'macOS denied access to the project folder. The app remains open.')
+      : error.code === 'UPDATE_TOOLS_MISSING'
+        ? t('Ferramentas de compilação indisponíveis. O app continua aberto.', 'Build tools unavailable. The app remains open.')
+        : t('A atualização falhou. O app continua aberto.', 'The update failed. The app remains open.')
+    const detail = permissionDenied
+      ? t('Confira o acesso do WayNoted a Documentos em Ajustes do Sistema → Privacidade e Segurança → Arquivos e Pastas.', 'Check WayNoted’s Documents access in System Settings → Privacy & Security → Files and Folders.') + '\n\n' + error.message
+      : error.message
+    await errorDialog(message, detail)
+  }
+}
 const renderersReady = new Set()
 const closeRequests = new Map()
+function clearRendererRequests(senderId) {
+  renderersReady.delete(senderId)
+  for (const [token, request] of closeRequests) if (request.senderId === senderId) {
+    clearTimeout(request.timer)
+    closeRequests.delete(token)
+    request.reject(new Error('A janela foi fechada antes de confirmar a gravação.'))
+  }
+}
 ipcMain.on('np:navigationReady', event => {
   if (event.senderFrame !== event.sender.mainFrame || !isInternalURL(event.senderFrame.url)) return
   const ctx = contexts.get(event.sender.id)
@@ -478,19 +583,32 @@ ipcMain.on('np:externalFileReady', event => {
 })
 
 ipcMain.on('np:rendererReady', (event) => {
-  if (event.senderFrame === event.sender.mainFrame && isInternalURL(event.senderFrame.url)) renderersReady.add(event.sender.id)
+  if (event.senderFrame === event.sender.mainFrame && isInternalURL(event.senderFrame.url)) {
+    renderersReady.add(event.sender.id)
+    const win = contexts.get(event.sender.id)?.win
+    if (win) {
+      const acknowledge = () => {
+        if (localUpdate.acknowledgeStartup(app.getPath('userData'), process.execPath)) win.webContents.send('np:command', 'local-update-complete')
+      }
+      if (win.isVisible()) acknowledge()
+      else win.once('ready-to-show', acknowledge)
+    }
+  }
 })
-ipcMain.on('np:closeResult', (event, token, error) => {
+function settleCloseRequest(senderId, token, error) {
   const request = closeRequests.get(token)
-  if (!request || request.senderId !== event.sender.id || event.senderFrame !== event.sender.mainFrame || !isInternalURL(event.senderFrame.url)) return
+  if (!request || request.senderId !== senderId) return
   closeRequests.delete(token)
   clearTimeout(request.timer)
   if (error) request.reject(new Error(String(error)))
   else request.resolve()
+}
+ipcMain.on('np:closeResult', (event, token, error) => {
+  if (event.senderFrame === event.sender.mainFrame && isInternalURL(event.senderFrame.url)) settleCloseRequest(event.sender.id, token, error)
 })
 
-function flushRenderer(win) {
-  if (!renderersReady.has(win.webContents.id)) return drainDocuments().then(drain)
+function flushRenderer(win, requireAcknowledgement = false) {
+  if (!renderersReady.has(win.webContents.id) && !requireAcknowledgement) return drainDocuments().then(drain)
   return new Promise((resolve, reject) => {
     const token = require('node:crypto').randomUUID()
     const timer = setTimeout(() => {
@@ -498,11 +616,11 @@ function flushRenderer(win) {
       reject(new Error('A página ainda não confirmou a gravação. Tente fechar novamente.'))
     }, 15000)
     closeRequests.set(token, { senderId: win.webContents.id, resolve, reject, timer })
-    win.webContents.send('np:beforeClose', token)
+    win.webContents.send(win === quickCapture.window() ? 'npq:flushForUpdate' : 'np:beforeClose', token)
   }).then(drainWorkspaces).then(drainDocuments).then(drain)
 }
 
-function sendCommand(command) { focused()?.webContents.send('np:command', command) }
+function sendCommand(command) { if (isSavingUpdate() && !command.startsWith('local-update-')) return; focused()?.webContents.send('np:command', command) }
 function pasteAsPlainText() {
   const contents = focused()?.webContents
   if (!contents || contents.isDestroyed()) return
@@ -575,8 +693,9 @@ function createWindow(workspaceId = 'default', route = null) {
   win.on('move', debounced)
   let closing = false
   win.on('close', (event) => {
+    if (updatePhase === 'restarting') return
     event.preventDefault()
-    if (closing) return
+    if (isSavingUpdate() || closing) return
     closing = true
     saveWindowState(win)
     flushRenderer(win).then(() => {
@@ -592,7 +711,7 @@ function createWindow(workspaceId = 'default', route = null) {
   win.on('closed', () => {
     clearTimeout(timer)
     trayTasks.drop(senderId); tray.refreshTitle()
-    renderersReady.delete(senderId)
+    clearRendererRequests(senderId)
     contexts.delete(senderId)
     embedModes.delete(senderId)
     aiIpc?.closeWindow(senderId)
@@ -631,9 +750,11 @@ const accel = (id, fallback) => recordingShortcut ? undefined : shortcutAccelera
 
 function buildMenu() {
   const updated = APP_ABOUT.updated
-  const dateLine = updated
-    ? nativeT(`Atualizado em ${updated.date} às ${updated.time} (BRT)`, `Updated on ${updated.date} at ${updated.time} (BRT)`)
-    : nativeT('Data da atualização indisponível', 'Update date unavailable')
+  const updatedLine = updated && nativeT(`Atualizado em ${updated.date} às ${updated.time} (BRT)`, `Updated on ${updated.date} at ${updated.time} (BRT)`)
+  const built = APP_ABOUT.built
+  const dateLine = built
+    ? nativeT(`Compilado em ${built.date} às ${built.time} (BRT)`, `Built on ${built.date} at ${built.time} (BRT)`)
+    : nativeT('Data da compilação indisponível', 'Build date unavailable')
   const description = APP_ABOUT.localChanges
     ? nativeT('Inclui alterações locais (descrição indisponível)', 'Includes local changes (description unavailable)')
     : APP_ABOUT.commitSubject ?? nativeT('Descrição da atualização indisponível', 'Update description unavailable')
@@ -643,7 +764,7 @@ function buildMenu() {
   app.setAboutPanelOptions({
     applicationName: PRODUCT.name,
     applicationVersion: APP_ABOUT.version,
-    credits: [dateLine, description, baseCommit].filter(Boolean).join('\n'),
+    credits: [updatedLine, dateLine, APP_ABOUT.baseCommit && nativeT(`Commit base: ${APP_ABOUT.baseCommit}`, `Base commit: ${APP_ABOUT.baseCommit}`), description, baseCommit].filter(Boolean).join('\n'),
   })
   const template = [
     {
@@ -664,7 +785,7 @@ function buildMenu() {
       label: nativeT('Arquivo', 'File'),
       submenu: [
         { label: nativeT('Nova página', 'New page'), accelerator: accel('new-page', 'CmdOrCtrl+N'), click: () => sendCommand('new-page') },
-        { label: nativeT('Nova janela', 'New window'), accelerator: accel('new-window', 'CmdOrCtrl+Shift+N'), click: () => { const ctx = [...contexts.values()].find(c => c.win === BrowserWindow.getFocusedWindow() && c.navigationReady); if (ctx) ctx.win.webContents.send('np:command', 'new-window'); else createWindow(focusedWorkspace()) } },
+        { label: nativeT('Nova janela', 'New window'), accelerator: accel('new-window', 'CmdOrCtrl+Shift+N'), click: () => { if (isSavingUpdate()) return; const ctx = [...contexts.values()].find(c => c.win === BrowserWindow.getFocusedWindow() && c.navigationReady); if (ctx) ctx.win.webContents.send('np:command', 'new-window'); else createWindow(focusedWorkspace()) } },
         { label: nativeT('Nova nota rápida', 'New quick note'), accelerator: quickCapture.prefs()?.shortcut || undefined, registerAccelerator: false, click: () => void quickCapture.show() },
         { label: nativeT('Nova aba', 'New tab'), accelerator: accel('new-tab', 'CmdOrCtrl+T'), click: () => sendCommand('new-tab') },
         { type: 'separator' },
@@ -723,6 +844,10 @@ function buildMenu() {
         { label: nativeT('Painel de calendário', 'Calendar panel'), accelerator: accel('calendar-panel', 'CmdOrCtrl+Shift+C'), click: () => sendCommand('calendar-panel') },
         { type: 'separator' },
         { label: nativeT('Recarregar', 'Reload'), accelerator: accel('reload', 'CmdOrCtrl+R'), click: () => sendCommand('reload') },
+        { label: updatePhase
+          ? nativeT('Atualização em andamento…', 'Update in progress…')
+          : nativeT('Recompilar e reiniciar WayNoted…', 'Rebuild and restart WayNoted…'),
+          enabled: !updatePhase, click: () => void updateAndRestart().catch(console.error) },
         { role: 'toggleDevTools', label: nativeT('Ferramentas do Desenvolvedor', 'Developer tools') },
       ],
     },
@@ -748,6 +873,7 @@ function buildMenu() {
 
 const pendingLinks = []
 async function openDeepLink(value) {
+  if (isSavingUpdate()) return
   const route = parseDeepLink(value)
   if (!route) return
   if (!app.isReady()) { pendingLinks.push(value); return }
@@ -772,6 +898,7 @@ async function openDeepLink(value) {
 /** B5: "Abrir com…" / Arquivo → Abrir arquivo Markdown… — lê o arquivo (validado) e entrega à janela ativa. */
 const pendingFiles = []
 async function openExternalFile(file) {
+  if (isSavingUpdate()) return
   if (!isOpenablePath(file)) return
   if (!app.isReady()) { pendingFiles.push(file); return }
   let view
@@ -787,6 +914,7 @@ async function openExternalFile(file) {
 app.on('open-file', (event, file) => { event.preventDefault(); void openExternalFile(file).catch(console.error) })
 app.on('open-url', (event, value) => { event.preventDefault(); if (quickCapture.handleUrl(value)) return; void openDeepLink(value).catch(console.error) })
 app.on('second-instance', (_event, argv) => {
+  if (isSavingUpdate()) return
   if (argv.some(arg => quickCapture.handleUrl(arg))) return
   const documents = argv.slice(1).filter(isOpenablePath)
   if (documents.length) { for (const file of documents.slice(0, 10)) void openExternalFile(file).catch(console.error); return }
@@ -795,7 +923,7 @@ app.on('second-instance', (_event, argv) => {
   else { const win = focused() ?? createWindow(); if (win.isMinimized()) win.restore(); win.show(); win.focus() }
 })
 
-app.on('before-quit', () => { quitRequested = true; quickCapture.destroyWindow(); for (const access of agentAccesses.values()) { access.close(); void access.flush() } })
+app.on('before-quit', event => { if (updatePhase && updatePhase !== 'restarting') { event.preventDefault(); return }; quitRequested = true; quickCapture.destroyWindow(); for (const access of agentAccesses.values()) { access.close(); void access.flush() } })
 // Com senha do espaço o cache do Chromium (IndexedDB) nunca fica em disco: varre no início e na saída.
 function scrubBrowserStorageIfVaulted() {
   try {
@@ -814,6 +942,7 @@ app.on('quit', scrubBrowserStorageIfVaulted)
 let lastWorkspace = 'default'
 function activeWorkspace() { const win = BrowserWindow.getFocusedWindow(); return (win && contexts.get(win.webContents.id)?.workspaceId) ?? lastWorkspace }
 function showMain(command) {
+  if (isSavingUpdate()) return
   const workspaceId = activeWorkspace()
   let ctx = [...contexts.values()].find(c => c.workspaceId === workspaceId && !c.win.isDestroyed())
   if (!ctx) ctx = contexts.get(createWindow(workspaceId).webContents.id)
@@ -826,7 +955,7 @@ function showMain(command) {
 const quickCapture = createQuickCapture({
   userData: () => app.getPath('userData'), dataDir, isLocked: id => vault.isLocked(dataDir(id)), storage, broadcast, activeWorkspace, isDev: IS_DEV, devURL: DEV_URL, distDir: path.dirname(ENTRY_FILE),
   dictation: dictationService, openPrivacyPane,
-  quitting: () => quitRequested, openRoute: (_id, route) => void openDeepLink(`workspace://page/${route.id}`).catch(console.error),
+  onFlushResult: settleCloseRequest, updating: isSavingUpdate, quitting: () => quitRequested, openRoute: (_id, route) => void openDeepLink(`workspace://page/${route.id}`).catch(console.error),
   onPrefsChanged: prefs => { tray.setVisible(prefs.showTray); tray.refreshTitle(); buildMenu() },
 })
 /** Retrato somente-leitura das tarefas de hoje/atrasadas enviado pelo renderer (C3a); nada é lido de disco aqui. */
@@ -888,7 +1017,7 @@ function configureLocalApi(id, enabled) {
     if (!secret) { secret = { token: require('node:crypto').randomBytes(32).toString('hex') }; await atomicWrite(file, JSON.stringify(secret)) }
     const access = agentAccessFor(id)
     await access.load(); await access.adoptLegacyToken(secret.token)
-    const service = await startLocalApi({ storage: pageLocks.guardForApi(storage(id)), token: secret.token, access, port: secret.port || 0, onChange: change => broadcast(id, change) })
+    const service = await startLocalApi({ storage: pageLocks.guardForApi(storage(id)), token: secret.token, access, port: secret.port || 0, onChange: change => broadcast(id, change), paused: isSavingUpdate })
     const activePort = Number(new URL(service.url).port)
     if (secret.port !== activePort) { secret.port = activePort; await atomicWrite(file, JSON.stringify(secret)) }
     localApis.set(id, { ...service, token: secret.token })
@@ -896,7 +1025,7 @@ function configureLocalApi(id, enabled) {
   apiConfig = next; return next
 }
 async function tickDesktop() {
-  if (schedulerBusy) return
+  if (schedulerBusy || isSavingUpdate()) return
   schedulerBusy = true
   try {
     const { collectDueReminders } = await import('./reminders.mjs')
@@ -1013,7 +1142,7 @@ if (gotLock) app.whenReady().then(async () => {
   void tickDesktop().catch(console.error)
   app.once('will-quit', () => clearInterval(timer))
   app.on('activate', () => {
-    if (contexts.size === 0) createWindow(lastWorkspace)
+    if (!isSavingUpdate() && contexts.size === 0) createWindow(lastWorkspace)
   })
 }).catch(error => { if (error?.code !== 'USER_QUIT') dialog.showErrorBox(`${PRODUCT.name}`, error.message); app.quit() })
 

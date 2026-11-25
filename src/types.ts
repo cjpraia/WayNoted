@@ -588,6 +588,8 @@ declare global {
 export type AboutInfo = {
   version: string
   updated: { date: string; time: string } | null
+  built: { date: string; time: string } | null
+  baseCommit: string | null
   localChanges: boolean
   commitSubject: string | null
 }

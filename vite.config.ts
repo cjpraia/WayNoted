@@ -13,7 +13,7 @@ export default defineConfig(({ command }) => {
       apply: 'build',
       generateBundle() {
         const current = source ? captureSourceBuild(sourceRoot) : null
-        const stamp = verifiedBuildInfo(source, current) ? current : null
+        const stamp = verifiedBuildInfo(source, current) ? { ...current, builtAt: new Date().toISOString() } : null
         this.emitFile({ type: 'asset', fileName: sourceStampFile, source: JSON.stringify(stamp) })
       },
     }],

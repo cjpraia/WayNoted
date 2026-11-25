@@ -22,8 +22,12 @@ test('uses committed app code, ignores documentation and rejects a stale build a
   writeFileSync(path.join(root, 'src', 'README.md'), 'Docs only')
   const clean = captureSourceBuild(root)
   assert.deepEqual(verifiedBuildInfo(clean, captureSourceBuild(root)), {
-    updatedAt: '2025-11-02T04:30:00.000Z', commitSubject: 'Update app code', localChanges: false,
+    updatedAt: '2025-11-02T04:30:00.000Z', builtAt: null, baseCommit: clean.baseCommit, commitSubject: 'Update app code', localChanges: false,
   })
+
+  assert.match(clean.baseCommit, /^[a-f0-9]{8}$/)
+  assert.equal(verifiedBuildInfo({ ...clean, builtAt: '2026-11-25T05:00:00.000Z' }, clean).builtAt, '2026-11-25T05:00:00.000Z')
+  assert.equal(verifiedBuildInfo({ ...clean, baseCommit: '00000000' }, clean), null)
 
   writeFileSync(code, 'export const value = 2')
   const localTime = new Date('2025-11-03T01:09:00Z')
@@ -31,20 +35,20 @@ test('uses committed app code, ignores documentation and rejects a stale build a
   const dirty = captureSourceBuild(root)
   assert.equal(verifiedBuildInfo(clean, dirty), null)
   assert.deepEqual(verifiedBuildInfo(dirty, captureSourceBuild(root)), {
-    updatedAt: '2025-11-03T01:09:00.000Z', commitSubject: 'Update app code', localChanges: true,
+    updatedAt: '2025-11-03T01:09:00.000Z', builtAt: null, baseCommit: clean.baseCommit, commitSubject: 'Update app code', localChanges: true,
   })
 
   renameSync(code, path.join(root, 'removed-file-fixture'))
   assert.deepEqual(verifiedBuildInfo(captureSourceBuild(root), captureSourceBuild(root)), {
-    updatedAt: null, commitSubject: 'Update app code', localChanges: true,
+    updatedAt: null, builtAt: null, baseCommit: clean.baseCommit, commitSubject: 'Update app code', localChanges: true,
   })
 })
 
 test('formats the packaged date in BRT across midnight and allows missing metadata', () => {
-  assert.deepEqual(about.aboutInfo('1.0.6', { updatedAt: '2025-11-03T01:09:00.000Z', localChanges: true }), {
-    version: '1.0.6', updated: { date: '02/11/2025', time: '22:09' }, commitSubject: null, localChanges: true,
+  assert.deepEqual(about.aboutInfo('1.0.6', { updatedAt: '2025-11-03T01:09:00.000Z', builtAt: '2025-11-03T03:12:00.000Z', baseCommit: '0123abcd', localChanges: true }), {
+    version: '1.0.6', updated: { date: '02/11/2025', time: '22:09' }, built: { date: '03/11/2025', time: '00:12' }, baseCommit: '0123abcd', commitSubject: null, localChanges: true,
   })
   assert.deepEqual(about.aboutInfo('1.0.6', null), {
-    version: '1.0.6', updated: null, commitSubject: null, localChanges: false,
+    version: '1.0.6', updated: null, built: null, baseCommit: null, commitSubject: null, localChanges: false,
   })
 })

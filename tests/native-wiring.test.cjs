@@ -32,14 +32,14 @@ test('every preload invoke has a main-process handler and every handler rejects 
 test('About exposes the running version without guessing a development build date',()=>{
  const h=harness()
  assert.deepEqual(h.handlers.get('np:getAboutInfo')({sender:h.sender,senderFrame:h.frame}), {
-  version:'9.8.7', updated:null, localChanges:false, commitSubject:null,
+  version:'9.8.7', updated:null, built:null, baseCommit:null, localChanges:false, commitSubject:null,
  })
 })
 
 test('native About shows both unavailable messages in the profile language',()=>{
  for(const [locale,credits] of [
-  ['pt-BR','Data da atualização indisponível\nDescrição da atualização indisponível'],
-  ['en-US','Update date unavailable\nUpdate description unavailable'],
+  ['pt-BR','Data da compilação indisponível\nDescrição da atualização indisponível'],
+  ['en-US','Build date unavailable\nUpdate description unavailable'],
  ]){
   const h=harness(locale)
   h.api.buildMenu()
@@ -49,10 +49,12 @@ test('native About shows both unavailable messages in the profile language',()=>
 })
 
 test('native About identifies the base commit separately from local changes',()=>{
- const h=harness('pt-BR',{updatedAt:'2025-11-03T01:09:00Z',localChanges:true,commitSubject:'Update app code'})
+ const h=harness('pt-BR',{updatedAt:'2025-11-01T01:09:00Z',builtAt:'2025-11-03T01:09:00Z',baseCommit:'1a2b3c4d',localChanges:true,commitSubject:'Update app code'})
  h.api.buildMenu()
  assert.equal(h.aboutPanels.at(-1).credits,[
-  'Atualizado em 02/11/2025 às 22:09 (BRT)',
+  'Atualizado em 31/10/2025 às 22:09 (BRT)',
+  'Compilado em 02/11/2025 às 22:09 (BRT)',
+  'Commit base: 1a2b3c4d',
   'Inclui alterações locais (descrição indisponível)',
   'Último commit da base: Update app code',
  ].join('\n'))

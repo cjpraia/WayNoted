@@ -48,7 +48,13 @@ function createQuickDrafts(deps) {
     if (memory.get(ws) === value) pending.delete(ws)
     return true
   }
-  async function flushAll() { for (const ws of [...pending]) await flush(ws).catch(console.error) }
+  async function flushAll(strict = false) {
+    for (const ws of [...pending]) {
+      if (strict) {
+        if (!await flush(ws)) throw new Error('Unlock the workspace to save the quick note draft before restarting.')
+      } else await flush(ws).catch(console.error)
+    }
+  }
 
   /** { draft, locked }: bloqueado devolve o que houver na memória (nunca lê o disco). */
   async function load(ws) {
