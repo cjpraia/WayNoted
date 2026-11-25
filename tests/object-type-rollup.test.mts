@@ -1,7 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import type { Page, Property } from '../src/types'
-import { resolveValue } from '../src/components/database/derived.ts'
+import { typedPasteValue } from '../src/components/database/tableClipboard.ts'
+import { resolveValue, storedValue } from '../src/components/database/derived.ts'
 import { buildTypeCollection } from '../src/objecttypes/collection.ts'
 import { normalizeObjectTypes, TITLE_FIELD_ID } from '../src/objecttypes/model.ts'
 import { fieldValue } from '../src/query/engine.ts'
@@ -88,4 +89,20 @@ test('Markdown export renders the related phone while the round trip restores th
   assert.deepEqual(restored.rollup, rollup.rollup)
   assert.deepEqual(meta.pages[R].typeProps, pages[R].typeProps)
   assert.deepEqual(resolveValue(meta.pages[R], restored, meta.pages, meta.settings.objectTypes), ['+55 11 90000-0000', '+55 21 90000-0000'])
+})
+
+test('typed clipboard retains inherited relation IDs and rejects incompatible destinations', () => {
+  const types = normalizeObjectTypes([
+    { id: 'person-type', name: 'Pessoa' },
+    { id: 'client-type', name: 'Cliente', parentTypes: ['person-type'] },
+    { id: 'resource-type', name: 'Recurso' },
+  ])
+  const relation: Property = { id: 'people', name: 'Pessoas', type: 'relation', relationTypeId: 'person-type' }
+  const target: Property = { ...relation, id: 'other-people' }
+  const holder = page(R, 'Guia', { types: ['resource-type'], typeProps: { people: [P, C] } })
+  const pages = { [R]: holder, [P]: page(P, 'Pessoa', { types: ['person-type'] }), [C]: page(C, 'Cliente', { types: ['client-type'] }) }
+  const value = storedValue(holder, relation, pages)
+  assert.deepEqual(typedPasteValue(value, relation, target, pages, types), [P, C])
+  assert.equal(typedPasteValue(value, relation, { ...target, relationTypeId: 'resource-type' }, pages, types), undefined)
+  assert.equal(typedPasteValue([P, R], relation, target, pages, types), undefined)
 })

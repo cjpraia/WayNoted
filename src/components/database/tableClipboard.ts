@@ -1,6 +1,7 @@
 // Copiar/colar de células da tabela: texto da célula (mesmo formato do CSV exportado) e conversão do texto
 // colado para o valor da propriedade. Tipos sem conversão segura (relação, arquivos, lugar, calculados) são ignorados.
 import type { Page, Property, PropValue } from '../../types'
+import { findType, hasType, type TypeList } from '../../objecttypes/model.ts'
 import { lockedAncestor } from '../../security/pageLock.ts'
 import { csvCellText, fromCsvCell } from './csv.ts'
 import { isComputedProperty, isLivePage, isStringArray } from './derived.ts'
@@ -61,12 +62,19 @@ export interface TableClipboard {
   entries: ClipboardEntry[]
 }
 
-export function typedPasteValue(value: PropValue, source: Property, target: Property, pages: Record<string, Page>): PropValue | undefined {
+export function typedPasteValue(value: PropValue, source: Property, target: Property, pages: Record<string, Page>, types: TypeList = []): PropValue | undefined {
   if (source.type !== target.type || isComputedProperty(source) || isComputedProperty(target)) return undefined
   if (target.type === 'relation') {
-    if (!target.relationDatabaseId || source.relationDatabaseId !== target.relationDatabaseId || !pages[target.relationDatabaseId]?.database) return undefined
     const ids = value === null ? [] : value
-    return isStringArray(ids) && ids.every(id => pages[id]?.parentId === target.relationDatabaseId && isLivePage(id, pages) && !lockedAncestor(pages, id)) ? ids : undefined
+    if (!isStringArray(ids) || !ids.every(id => isLivePage(id, pages) && !lockedAncestor(pages, id))) return undefined
+    const typeId = target.relationTypeId
+    if (typeId) {
+      return source.relationTypeId === typeId && findType(types, typeId)
+        && ids.every(id => hasType(types, pages[id], typeId)) ? ids : undefined
+    }
+    const databaseId = target.relationDatabaseId
+    return !source.relationTypeId && databaseId && source.relationDatabaseId === databaseId
+      && pages[databaseId]?.database && ids.every(id => pages[id].parentId === databaseId) ? ids : undefined
   }
   if (value === null) return emptyValueFor(target)
   const mapOption = (id: string) => {

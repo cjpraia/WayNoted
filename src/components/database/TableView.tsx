@@ -12,7 +12,7 @@ import { openUrl } from './editors/TextEditor'
 import { NewPropertyMenu, PropertyMenu } from './PropertyMenu'
 import { DbPopover, Menu, MenuItem, MenuSep } from './ui/Popover'
 import { addProperty, moveProperty } from './schemaOps'
-import { isComputedProperty, isLivePage } from './derived'
+import { isComputedProperty, isLivePage, storedValue } from './derived'
 import { BulkBar } from './BulkBar'
 import { useRowSelection } from './rowSelection'
 import { TableFooterCalc } from './TableFooterCalc'
@@ -291,11 +291,14 @@ export function TableView(props: ViewProps) {
   }
 
   const selectedColumn = visibleProps.find(p => p.id === selectedColumnId)
-  const makeCopy = (prop: Property, kind: TableClipboard['kind'], sourceRows: Page[]): TableClipboard => ({
-    kind, property: prop,
-    // Use stored relation IDs so a missing page is rejected on paste instead of disappearing.
-    entries: sourceRows.map(row => ({ rowId: row.id, value: prop.type === 'relation' ? row.props?.[prop.id] ?? null : getValue(row, prop) })),
-  })
+  const makeCopy = (prop: Property, kind: TableClipboard['kind'], sourceRows: Page[]): TableClipboard => {
+    const { pages } = getState()
+    return {
+      kind, property: prop,
+      // Use stored relation IDs so a missing page is rejected on paste instead of disappearing.
+      entries: sourceRows.map(row => ({ rowId: row.id, value: prop.type === 'relation' ? storedValue(row, prop, pages) : getValue(row, prop) })),
+    }
+  }
   const canCopyRows = (sourceRows: Page[]) => {
     const pages = getState().pages
     return sourceRows.length > 0 && sourceRows.every(row => !lockedAncestor(pages, row.id))
@@ -338,14 +341,14 @@ export function TableView(props: ViewProps) {
         : t('Selecione uma célula para colar este valor.', 'Select a cell to paste this value.'))
     }
 
-    const pages = getState().pages
+    const { pages, settings } = getState()
     const changes: { row: Page; prop: Property; value: PropValue }[] = []
     const undoIds = new Set<string>()
     let skipped = 0
     let truncated = false
     const add = (row: Page, prop: Property, value: PropValue | undefined) => {
       if (value === undefined || row.locked || !isLivePage(row.id, pages) || lockedAncestor(pages, row.id) || !!row.parentId && pages[row.parentId]?.locked) { skipped++; return }
-      const previous = prop.type === 'relation' ? row.props?.[prop.id] ?? [] : getValue(row, prop)
+      const previous = prop.type === 'relation' ? storedValue(row, prop, pages) ?? [] : getValue(row, prop)
       if (JSON.stringify(previous) === JSON.stringify(value)) return
       const choices = typeof value === 'string' ? [value] : Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string') : []
       if (prop.dependsOn && dependentOptions(prop, schema, row, choices).mismatched.length) { skipped++; return }
@@ -362,11 +365,11 @@ export function TableView(props: ViewProps) {
         return say(t('Use uma só coluna com a mesma quantidade de linhas e sem seleção parcialmente sobreposta, até {n} linhas.', 'Use one column with the same row count and no partial overlap, up to {n} rows.', { n: MAX_PASTE_CELLS }))
       }
       rows.forEach((row, index) => add(row, selectedColumn, copied
-        ? typedPasteValue(ordered![index].value, copied.property, selectedColumn, pages)
+        ? typedPasteValue(ordered![index].value, copied.property, selectedColumn, pages, settings?.objectTypes)
         : pasteValue(parsed![index][0], selectedColumn)))
     } else if (copied) {
       const prop = visibleProps[activeColIdx]
-      add(rows[activeRowIdx], prop, typedPasteValue(copied.entries[0].value, copied.property, prop, pages))
+      add(rows[activeRowIdx], prop, typedPasteValue(copied.entries[0].value, copied.property, prop, pages, settings?.objectTypes))
     } else {
       const plan = planPaste(parseTsv(text), { row: activeRowIdx, col: activeColIdx }, rows.length, visibleProps.length)
       truncated = plan.truncated

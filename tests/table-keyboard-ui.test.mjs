@@ -35,7 +35,7 @@ const mocks={t,getLocale:()=>'en-US',actions:store,getState:()=>({pages:{db:{id:
  PropDisplay:({value})=>React.createElement('span',null,value==null?'':String(value)),PropTypeIcon:()=>null,
  PropertyEditor:function MockEditor(p){React.useEffect(()=>{const h=e=>{if(e.key==='Escape')p.onClose('escape')};document.addEventListener('keydown',h);return()=>document.removeEventListener('keydown',h)},[]);return React.createElement('div',{'data-editor':p.property.id,'data-seed':p.seed??''})},
  openUrl:()=>{},NewPropertyMenu:({onSelectColumn})=>onSelectColumn ? React.createElement('button',{'data-select-column':true,onClick:onSelectColumn}) : null,PropertyMenu:({onSelectColumn})=>onSelectColumn ? React.createElement('button',{'data-select-column':true,onClick:onSelectColumn}) : null,DbPopover:()=>null,Menu:()=>null,MenuItem:()=>null,MenuSep:()=>null,
- addProperty:()=>'p',moveProperty:()=>{},lockedAncestor,isLivePage:derived.isLivePage,isComputedProperty:derived.isComputedProperty,BulkBar:()=>null,TableFooterCalc:()=>null,PageIcon:()=>null,
+ addProperty:()=>'p',moveProperty:()=>{},lockedAncestor,storedValue:derived.storedValue,isLivePage:derived.isLivePage,isComputedProperty:derived.isComputedProperty,BulkBar:()=>null,TableFooterCalc:()=>null,PageIcon:()=>null,
  matchingRowColor:()=>undefined,CellComments:()=>null,...sel,...virt,...nav,...clip}
 globalThis.__tableKb=mocks
 async function load(file){

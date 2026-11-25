@@ -41,7 +41,7 @@ function rowFields(row: Page, pages: Pages, types: TypeList): Property[] {
 }
 
 /** A collection projects type values into props. An actual database column still owns an incorporated field. */
-function storedValue(row: Page, property: Property, pages: Pages): PropValue {
+export function storedValue(row: Page, property: Property, pages: Pages): PropValue {
   const canonical = pages[row.id]
   const fromType = row.typeProps && Object.hasOwn(row.typeProps, property.id)
   if ((fromType || (canonical && canonical !== row)) && schemaOf(row, pages)?.properties.some(prop => prop.id === property.id)) {
