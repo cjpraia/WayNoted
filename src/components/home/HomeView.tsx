@@ -1,5 +1,6 @@
 // Meu dia (rota `home`): cabeçalho com data e ações rápidas, Hoje, Esta semana, Visitadas recentemente (com prévia real),
 // modelos/tipos prontos/modelos pessoais e Todas as páginas. Decisões em docs/DEVELOPMENT.md.
+import { requestPageCreation } from '../library/PageCreation'
 import { t, getLocale } from '../../i18n'
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { Lock, Star } from 'lucide-react'
@@ -114,7 +115,7 @@ export function HomeView() {
   const quickBridge = api as unknown as QuickCaptureBridge
 
   const report = (cause: unknown) => setError(cause instanceof Error ? cause.message : t("Não foi possível criar a página. Tente novamente.", "Could not create the page. Please try again."))
-  const create = () => actions.openPage(actions.createPage(null))
+  const create = () => requestPageCreation()
   const open = (id: string, e: React.MouseEvent) => e.metaKey || e.ctrlKey ? actions.openInNewTab({ type: 'page', id }) : actions.openPage(id)
   const useTemplate = async (id: string) => {
     setBusy(id); setError('')

@@ -1,3 +1,5 @@
+import { LibraryView } from './components/library/LibraryView'
+import { PageCreationHost, requestPageCreation } from './components/library/PageCreation'
 import PRODUCT from '../shared/product.json' with { type: 'json' }
 import COMPAT from '../shared/compatibility.ts'
 import { BackupRecovery, showRestoredNotice } from './components/backup/BackupSettings'
@@ -92,7 +94,7 @@ function runCommand(command: string) {
   if (command === 'focus-mode') { focusMode.fromCommand(); return }
   if (command === 'settings') { requestSettingsSection('capture'); actions.setSettingsOpen(true); return }
   try { assertCanClose() } catch (error) { actions.reportSaveError(error); return }
-  if (command === 'new-page') actions.openPage(actions.createPage(null))
+  if (command === 'new-page') requestPageCreation()
   else if (command === 'new-tab') actions.openInNewTab({ type: 'home' })
   else if (command === 'reopen-tab') actions.reopenTab()
   else if (command === 'close-tab' && state.settings.activeTabId) actions.closeTab(state.settings.activeTabId)
@@ -205,7 +207,7 @@ function AppShell() {
           if (next) actions.activateTab(next.id)
         })
         case 'search': return run(() => actions.setSearchOpen(!getState().searchOpen))
-        case 'new-page': return run(() => actions.openPage(actions.createPage(null)))
+        case 'new-page': return run(() => requestPageCreation())
         case 'new-window': if (api.openWindow) run(() => runCommand('new-window')); return
         case 'new-tab': case 'reopen-tab': case 'close-tab': case 'reload': case 'daily-today': case 'calendar-panel': return run(() => runCommand(id))
         case 'ask': return run(toggleAskPanel)
@@ -268,6 +270,8 @@ function AppShell() {
             <GraphView />
           ) : route.type === 'productivity' ? (
             <ProductivityView />
+          ) : route.type === 'library' ? (
+            <LibraryView scope={route.scope} />
           ) : route.type === 'objectType' ? (
             <TypeCollectionPage key={route.id} typeId={route.id} />
           ) : (
@@ -289,6 +293,7 @@ function AppShell() {
       <SubpagesHost />
       <ToastHost />
       <TemplatePromptHost />
+      <PageCreationHost />
       <VoiceTasksHost />
       <ScheduleTaskHost />
       <TaskEventSyncHost />

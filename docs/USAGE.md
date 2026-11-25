@@ -12,6 +12,12 @@ When pasting a URL, the menu offers the representations available for that link:
 
 Drag a tab by its title to the left or right side of another tab to reorder it. Pinned tabs keep their pinned status. Tabs in a group can move within that group, and dragging one outside it moves the entire group.
 
+## Library
+
+Open **Library** from the sidebar and search by title or content. Use the **Type** filter to narrow the results. A page with multiple types appears once in the library and can appear under each of its types. Open **Untyped** for regular pages and database rows that have no type. The library opens the original item in its existing location.
+
+The sidebar lists your five most recent pages. Select **View all** to open the full recent history. When you create a page through **New page**, choose its type in the dialog or leave it **Untyped**.
+
 ## Databases and object types
 
 A database organizes pages as rows with properties. Use column headers and view settings to configure properties, filters, sorting, grouping, text wrapping, and frozen columns. Formulas and rollups are calculated; relations connect database records.

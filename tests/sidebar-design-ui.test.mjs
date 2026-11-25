@@ -80,7 +80,7 @@ const actions = {
   setSearchOpen: value => calls.push(['search', value]),
   setInboxOpen: value => calls.push(['inbox', value]),
   setSettingsOpen: value => calls.push(['settings', value]),
-  navigate: route => calls.push(['navigate', route.type]),
+  navigate: route => calls.push(route.type === 'library' ? ['navigate', route.type, route.scope] : ['navigate', route.type]),
   updateSettings: value => { calls.push(['updateSettings', value]); Object.assign(state.settings, value) },
   createPage: () => 'new',
   createDatabase: () => 'db',
@@ -127,7 +127,8 @@ sidebarSource = sidebarSource.replace(/^import \{ t \} from .*$/m, 'const { t } 
   .replace(/^import \{ SidebarTypes \} from .*$/m, 'const SidebarTypes = () => null')
   .replace(/^import \{ openTypesManager \} from .*$/m, 'const openTypesManager = () => {}')
   .replace(/^import \{ openTypesGallery \} from .*$/m, 'const openTypesGallery = () => {}')
-  .replace(/^import \{ sidebarTypes \} from .*$/m, 'const sidebarTypes = () => []')
+  .replace(/^import \{ requestPageCreation \} from .*$/m, 'const requestPageCreation = () => {}')
+  .replace(/^import \{ isQueryable \} from .*$/m, 'const isQueryable = () => true')
   .replace(/^import \{ SelectionBar, SelectionMenu \} from .*$/m, 'const SelectionBar = () => null, SelectionMenu = () => null')
   .replace(/^import \{ clearSelection, selectedIds \} from .*$/m, 'const clearSelection = () => {}, selectedIds = () => []')
   .replace(/^import \{ toggleAskPanel, useAskPanel \} from .*$/m, 'const toggleAskPanel = () => {}, useAskPanel = () => ({ open: false })')
@@ -155,48 +156,25 @@ test('sidebar navigation and workspace menu open the connected local actions', a
   await act(async () => root.unmount())
 })
 
-test('sidebar recents: 5 by default, expand up to 15, collapse again, state persisted in settings.recentExpanded', async () => {
+test('sidebar keeps five recent pages and links to all recents and Untyped', async () => {
   recentList = Array.from({ length: 20 }, (_, i) => ({ id: `r${i}`, title: `Recent ${i}`, database: null, icon: null }))
-  state.route = { type: 'page', id: 'r0' }
-  state.settings.recentExpanded = false
+  state.route = { type: 'page', id: 'r9' }
+  state.settings.recentExpanded = true
   const root = createRoot(document.getElementById('app'))
   const render = () => act(async () => root.render(React.createElement(Sidebar)))
   const rows = () => [...document.querySelectorAll('.sb-recents .sb-row:not(.sb-recents-more)')].map(row => row.textContent)
-  const more = () => document.querySelector('.sb-recents-more')
   await render()
-  assert.equal(rows().length, 5)
-  assert.equal(more().textContent, 'Show 10 more')
-  assert.equal(more().getAttribute('aria-expanded'), 'false')
-
-  await act(async () => { more().click() })
-  assert.deepEqual(calls.at(-1), ['updateSettings', { recentExpanded: true }])
-  assert.equal(state.settings.recentExpanded, true, 'expanded state is stored in settings')
-  await render()
-  assert.equal(rows().length, 15, 'expands to at most 15')
-  assert.equal(more().textContent, 'Show less')
-  assert.equal(more().getAttribute('aria-expanded'), 'true')
-
-  await act(async () => { more().click() })
-  assert.deepEqual(calls.at(-1), ['updateSettings', { recentExpanded: false }])
-  await render()
-  assert.equal(rows().length, 5)
-
-  // Active page beyond the first 5: it becomes the first row (still 5 rows) and is marked active.
-  state.route = { type: 'page', id: 'r9' }
-  await render()
-  assert.equal(rows().length, 5)
-  assert.equal(rows()[0], 'Recent 9')
-  assert.ok(document.querySelector('.sb-recents .sb-row--active')?.textContent === 'Recent 9', 'active row is marked')
-  assert.ok(!rows().includes('Recent 4'), 'oldest visible row gives way')
-
-  // Few recents: no toggle at all.
-  recentList = recentList.slice(0, 4)
-  await render()
-  assert.ok(more() === null, 'no toggle with 5 or fewer recents')
+  assert.deepEqual(rows(), ['Recent 0', 'Recent 1', 'Recent 2', 'Recent 3', 'Recent 4'])
+  const all = document.querySelector('.sb-recents-more')
+  assert.equal(all.textContent, 'View all')
+  await act(async () => all.click())
+  assert.deepEqual(calls.at(-1), ['navigate', 'library', 'recent'])
+  const untyped = [...document.querySelectorAll('.sb-row-title')].find(element => element.textContent === 'Untyped')
+  await act(async () => untyped.closest('button').click())
+  assert.deepEqual(calls.at(-1), ['navigate', 'library', 'untyped'])
   await act(async () => root.unmount())
   recentList = [page]; state.route = { type: 'page', id: 'p1' }
 })
-
 
 test('closing a focused sidebar moves focus to main before applying inert', async () => {
   const root = createRoot(document.getElementById('app'))

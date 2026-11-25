@@ -1,3 +1,4 @@
+import { requestPageCreation } from '../library/PageCreation'
 import PRODUCT from '../../../shared/product.json' with { type: 'json' }
 import { Fragment, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { ChevronRight } from 'lucide-react'
@@ -114,7 +115,7 @@ export function SearchModal() {
   const matched = useMemo(() => textQuery.trim() ? searchEngine.matchSet(textQuery, filters.match) : new Set<string>(), [textQuery, filters.match, indexRevision])
   const status = indexStatus()
   const close = () => actions.setSearchOpen(false)
-  const create = () => { actions.openPage(actions.createPage(null, { title: commandsOnly ? '' : trimmed })); close() }
+  const create = () => { close(); requestPageCreation({ title: commandsOnly ? '' : trimmed }) }
   const run = (operation: () => unknown | Promise<unknown>) => {
     setCommandError('')
     void Promise.resolve().then(operation).then(close).catch(error => setCommandError(error instanceof Error ? error.message : t('Não foi possível concluir a ação.', 'Could not complete the action.')))

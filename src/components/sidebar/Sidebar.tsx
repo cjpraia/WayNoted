@@ -5,7 +5,7 @@ import { MAIN_ID } from '../../a11y/SkipLink'
 import { protectedTitle } from '../../security/pageLock'
 // Barra lateral do aplicativo.
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
-import { ChevronDown, ChevronRight, LayoutGrid, PanelLeft, Plus, SquarePen } from 'lucide-react'
+import { ChevronDown, ChevronRight, LayoutGrid, LibraryBig, PanelLeft, Plus, SquarePen } from 'lucide-react'
 import { actions, api, selectors, useStore } from '../../store'
 import type { Page, LocalWorkspace } from '../../types'
 import { MenuItem, Popover, menuKeyNav, type Anchor } from './Popover'
@@ -24,7 +24,8 @@ import { MessageCircleQuestion } from 'lucide-react'
 import { toggleAskPanel, useAskPanel } from '../../ai/panel'
 import { SidebarTypes } from '../objecttypes/SidebarTypes'
 import { openTypesGallery } from '../../objecttypes/ui'
-import { sidebarTypes } from '../../objecttypes/visibility'
+import { requestPageCreation } from '../library/PageCreation'
+import { isQueryable } from '../../query/engine'
 import { SelectionBar, SelectionMenu } from '../../subpages/SelectionBar'
 import { clearSelection, selectedIds } from '../../subpages/selection'
 import { shortcutHint } from '../../shortcuts'
@@ -144,7 +145,7 @@ export function Sidebar() {
     document.addEventListener('mouseup', onUp)
   }
 
-  const newRootPage = (init?: Partial<Page>) => actions.openPage(actions.createPage(null, init))
+  const newRootPage = (init?: Partial<Page>) => requestPageCreation(init)
 
   // Soltar sobre a área vazia de "Particular" move para o fim da raiz.
   const onRootDragOver = (e: DragEvent) => {
@@ -161,14 +162,9 @@ export function Sidebar() {
   }
 
   const favorites = selectors.favorites()
-  // Recentes enxutos como no Export Bundle: 5 por padrão, "Mostrar mais" amplia até 15.
-  const RECENT_COLLAPSED = 5, RECENT_EXPANDED = 15
-  const recentAll = selectors.recent(RECENT_EXPANDED)
-  const recentExpanded = !!settings.recentExpanded && recentAll.length > RECENT_COLLAPSED
-  // Recolhido, a página ativa nunca "some": se ela está além das 5 primeiras, passa a ser a primeira linha.
-  const activeId = route.type === 'page' ? route.id : null
-  const activeBeyond = !recentExpanded && activeId ? recentAll.findIndex(page => page.id === activeId) >= RECENT_COLLAPSED : false
-  const recent = recentExpanded ? recentAll : activeBeyond ? [recentAll.find(page => page.id === activeId)!, ...recentAll.filter(page => page.id !== activeId).slice(0, RECENT_COLLAPSED - 1)] : recentAll.slice(0, RECENT_COLLAPSED)
+  const recent = selectors.recent(50).filter(page => isQueryable(state.pages, page.id)).slice(0, 5)
+  const libraryActive = route.type === 'library' && route.scope === 'all'
+  const untypedActive = route.type === 'library' && route.scope === 'untyped'
   const rootPages = selectors.children(null)
   const wsName = settings.workspaceName.trim() || `${PRODUCT.name}`
   const isHome = route.type === 'home'
@@ -229,6 +225,9 @@ export function Sidebar() {
               <MessageCircleQuestion size={18} strokeWidth={1.75} aria-hidden />
             </button>
           </div>
+          <button type="button" className={`sb-row sb-nav${libraryActive ? ' sb-row--active' : ''}`} aria-current={libraryActive ? 'page' : undefined} onClick={() => actions.navigate({ type: 'library', scope: 'all' })}>
+            <span className="sb-row-icon"><LibraryBig size={18} aria-hidden /></span><span className="sb-row-title">{t('Acervo', 'Library')}</span>
+          </button>
           <DailyFlowNav route={route} />
         </nav>
 
@@ -239,12 +238,10 @@ export function Sidebar() {
               {recent.map(page => <button key={page.id} type="button" className={`sb-row sb-nav${route.type === 'page' && route.id === page.id ? ' sb-row--active' : ''}`} onClick={() => actions.openPage(page.id)}>
                 <span className="sb-row-icon"><TreePageIcon page={page} size={18} /></span><span className="sb-row-title">{protectedTitle(page, t('Página protegida', 'Protected page')) ?? (page.title || (page.database ? t('Sem título', 'Untitled') : t('Nova página', 'New page')))}</span>
               </button>)}
-              {recentAll.length > RECENT_COLLAPSED && (
-                <button type="button" className="sb-row sb-nav sb-recents-more" aria-expanded={recentExpanded} onClick={() => actions.updateSettings({ recentExpanded: !recentExpanded })}>
-                  <span className="sb-row-icon"><Icon name={recentExpanded ? 'chevron-up' : 'chevron-down'} size={16} /></span>
-                  <span className="sb-row-title">{recentExpanded ? t('Mostrar menos', 'Show less') : t('Mostrar mais {n}', 'Show {n} more', { n: recentAll.length - RECENT_COLLAPSED })}</span>
-                </button>
-              )}
+              <button type="button" className="sb-row sb-nav sb-recents-more" aria-current={route.type === 'library' && route.scope === 'recent' ? 'page' : undefined} onClick={() => actions.navigate({ type: 'library', scope: 'recent' })}>
+                <span className="sb-row-icon"><ChevronRight size={16} aria-hidden /></span>
+                <span className="sb-row-title">{t('Ver todos', 'View all')}</span>
+              </button>
             </section>}
             {favorites.length > 0 && (
               <Section
@@ -259,12 +256,14 @@ export function Sidebar() {
                 ))}
               </Section>
             )}
-            {/* Só aparece com ao menos um tipo em uso ou escolhido (docs/USAGE.md). */}
-            {settings.objectTypesSidebar !== false && sidebarTypes(state.pages, settings.objectTypes ?? []).length > 0 && (
+            {settings.objectTypesSidebar !== false && (
               <Section title={t('Tipos', 'Types')} closed={!!sections.types} onToggle={() => toggleSection('types')} addLabel={t('Explorar tipos', 'Explore types')} onAdd={() => openTypesGallery()}>
                 <SidebarTypes />
               </Section>
             )}
+            <button type="button" className={`sb-row sb-nav${untypedActive ? ' sb-row--active' : ''}`} aria-current={untypedActive ? 'page' : undefined} onClick={() => actions.navigate({ type: 'library', scope: 'untyped' })}>
+              <span className="sb-row-icon"><LayoutGrid size={18} aria-hidden /></span><span className="sb-row-title">{t('Sem tipo', 'Untyped')}</span>
+            </button>
             <Section
               title={t("Particular", "Private")}
               closed={!!sections.private}
@@ -392,7 +391,7 @@ function WorkspaceMenu(props: { name: string; userName: string; onClose: () => v
           hint={shortcutHint('new-page')}
           onClick={() => {
             props.onClose()
-            actions.openPage(actions.createPage(null))
+            requestPageCreation()
           }}
         />
         <MenuItem

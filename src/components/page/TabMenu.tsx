@@ -26,7 +26,7 @@ export function TabMenu({ tab, anchor, onClose }: { tab: NonNullable<Settings['o
       const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (at + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length
       items[next]?.focus()
     }}>
-      {item(t('Copiar link', 'Copy link'), () => copyText(tab.route.type === 'page' ? `workspace://page/${tab.route.id}${tab.route.blockId ? `#block=${tab.route.blockId}` : tab.route.viewId ? `#view=${tab.route.viewId}` : ''}` : "workspace://home"))}
+      {item(t('Copiar link', 'Copy link'), () => copyText(tab.route.type === 'page' ? `workspace://page/${tab.route.id}${tab.route.blockId ? `#block=${tab.route.blockId}` : tab.route.viewId ? `#view=${tab.route.viewId}` : ''}` : tab.route.type === 'library' ? `workspace://library?scope=${tab.route.scope}` : 'workspace://home'))}
       {item(t('Atualizar aba', 'Refresh tab'), async () => {
         await actions.flushAll()
         actions.activateTab(tab.id)

@@ -735,12 +735,12 @@ export async function editTemplateAsPage(typeId: string): Promise<string | null>
 // ---------- coleção ----------
 
 /** Cria um objeto (página na raiz) com o tipo, valores e modelo. Usado pelo "+ Novo" da coleção. */
-export function createObject(typeId: string, props: Record<string, PropValue> = {}, init: Partial<Page> = {}): string {
+export function createObject(typeId: string, props: Record<string, PropValue> = {}, init: Partial<Page> = {}, parentId: string | null = null): string {
   const types = objectTypes()
   const type = findType(types, typeId)
   if (!type) throw new Error(tr('Tipo indisponível.', 'Type unavailable.'))
   const count = typeIndex(getState().pages, types).get(typeId)?.length ?? 0
-  const id = actions.createPage(null, { icon: type.icon, ...init })
+  const id = actions.createPage(parentId, { icon: type.icon, ...init })
   const page = getState().pages[id]
   const patch = applyTypePatch(types, page, typeId, { count, locale: locale() }) ?? {}
   const fields = new Set(effectiveProperties(types, typeId).map((prop) => prop.id))

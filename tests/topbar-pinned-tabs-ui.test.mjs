@@ -30,6 +30,7 @@ source = source.replace(/import\s+(\{[\s\S]*?\})\s+from\s+'([^']+)'/g, (match, b
   if (module === 'react' || module === 'lucide-react') return match
   return `const ${bindings.replace(/\btype\s+\w+\s*,?/g, '').replace(/(\w+) as (\w+)/g, '$1: $2')}=globalThis.__topbar`
 }).replace(/^import type .*$/gm, '').replace(/^import '[^']+\.css'$/gm, '')
+source = source.replace(/^import \{ libraryTitle \} from .*$/m, 'const libraryTitle = scope => scope')
 const out = await transformWithOxc(source, 'Topbar.tsx', { jsx: { runtime: 'automatic' } })
 const { Topbar } = await import(`data:text/javascript;base64,${Buffer.from(out.code.replace(/from ["'](react(?:\/jsx-runtime)?|lucide-react)["']/g, (_m, name) => `from ${JSON.stringify(import.meta.resolve(name))}`)).toString('base64')}`)
 

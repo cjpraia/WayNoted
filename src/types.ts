@@ -326,9 +326,11 @@ export interface LocalNotification { id: string; pageId: string; title: string; 
   /** Excluído na Caixa de entrada; marcador impede que a mesma ocorrência dispare de novo. */
   dismissedAt?: number }
 export interface LocalWorkspace { id: string; name: string; createdAt: number; current?: boolean }
+export type LibraryScope = 'all' | 'recent' | 'untyped'
 export type Route = { type: 'home' } | { type: 'graph' } | { type: 'productivity' } | { type: 'tasks' } | { type: 'review' } | { type: 'page'; id: string; blockId?: string; viewId?: string; commentId?: string }
   /** Coleção de um tipo como tela própria (docs/USAGE.md). */
   | { type: 'objectType'; id: string }
+  | { type: 'library'; scope: LibraryScope }
 
 /** Destinos de workspace:// além das rotas da interface (electron/deep-links.cjs). */
 export type DeepLinkRoute = Route | { type: 'daily'; date: string } | { type: 'search'; q: string } | { type: 'new'; title: string }

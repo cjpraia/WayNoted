@@ -1,3 +1,4 @@
+import { requestPageCreation } from '../library/PageCreation'
 import COMPAT from '../../../shared/compatibility.ts'
 import { t, getLocale } from '../../i18n'
 // Árvore de páginas da barra lateral: linhas, expandir/recolher e arrastar e soltar.
@@ -347,7 +348,8 @@ function PageRow(props: { page: Page; depth: number; draggable: boolean; expande
           data-tip={t("Adicionar uma página dentro", "Add a subpage")}
           onClick={(e) => {
             e.stopPropagation()
-            actions.openPage(actions.createPage(page.id))
+            if (page.database) actions.openPage(actions.createPage(page.id))
+            else requestPageCreation({}, page.id)
           }}
         >
           <Plus size={16} strokeWidth={1.7} />

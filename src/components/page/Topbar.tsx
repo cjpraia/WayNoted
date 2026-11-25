@@ -1,3 +1,4 @@
+import { libraryTitle } from '../library/labels'
 import { t, getLocale } from '../../i18n'
 // Barra superior: navegação, breadcrumbs e ações da página.
 import { useEffect, useRef, useState, type DragEvent } from 'react'
@@ -196,7 +197,7 @@ export function Topbar() {
         {tabs.map(tab => {
           const tabPage = tab.route.type === 'page' ? selectors.page(tab.route.id) : undefined
           const tabType = tab.route.type === 'objectType' ? settings.objectTypes?.find(type => type.id === (tab.route as { id: string }).id) : undefined
-          const title = tabType ? tabType.name : tab.route.type === 'home' ? t("Meu dia", "My day") : tab.route.type === 'graph' ? t("Grafo", "Graph") : tab.route.type === 'productivity' ? t("Produtividade", "Productivity") : tab.route.type === 'tasks' ? t("Tarefas", "Tasks") : tab.route.type === 'review' ? t("Revisão", "Review") : tabPage?.title || (tabPage?.database ? t("Sem título", "Untitled") : t("Nova página", "New page"))
+          const title = tab.route.type === 'library' ? libraryTitle(tab.route.scope) : tabType ? tabType.name : tab.route.type === 'home' ? t("Meu dia", "My day") : tab.route.type === 'graph' ? t("Grafo", "Graph") : tab.route.type === 'productivity' ? t("Produtividade", "Productivity") : tab.route.type === 'tasks' ? t("Tarefas", "Tasks") : tab.route.type === 'review' ? t("Revisão", "Review") : tabPage?.title || (tabPage?.database ? t("Sem título", "Untitled") : t("Nova página", "New page"))
           const active = settings.activeTabId === tab.id
           return <div className={`shell-tab${dropTarget?.id === tab.id ? (dropTarget.after ? ' is-drop-after' : ' is-drop-before') : ''}${active ? ' is-active' : ''}${tab.pinned ? ' is-pinned' : ''}${tab.pinned && !tabs[tabs.indexOf(tab) + 1]?.pinned ? ' is-pin-end' : ''}${tab.group ? ' is-grouped' : ''}`} key={tab.id}
             onDragOver={event => {
@@ -252,7 +253,7 @@ export function Topbar() {
           <nav className="pg-crumbs" aria-label={t("Caminho da página", "Page path")}>
             <span className="pg-crumb is-current is-static">
               {routeType ? <TypeIcon value={routeType.icon} /> : route.type === 'graph' ? <Icon name="graph" size={14} className="pg-crumb-svg" /> : route.type === 'productivity' ? <ProductivityIcon size={14} className="pg-crumb-svg" /> : route.type === 'tasks' ? <Icon name="tasks" size={14} className="pg-crumb-svg" /> : route.type === 'review' ? <Icon name="review" size={14} className="pg-crumb-svg" /> : <Icon name="home" size={14} className="pg-crumb-svg" />}
-              <span className="pg-crumb-title">{routeType ? `${t('Tipos', 'Types')} › ${routeType.name}` : route.type === 'graph' ? t("Grafo", "Graph") : route.type === 'productivity' ? t("Produtividade", "Productivity") : route.type === 'tasks' ? t("Tarefas", "Tasks") : route.type === 'review' ? t("Revisão", "Review") : t("Meu dia", "My day")}</span>
+              <span className="pg-crumb-title">{route.type === 'library' ? libraryTitle(route.scope) : routeType ? `${t('Tipos', 'Types')} › ${routeType.name}` : route.type === 'graph' ? t("Grafo", "Graph") : route.type === 'productivity' ? t("Produtividade", "Productivity") : route.type === 'tasks' ? t("Tarefas", "Tasks") : route.type === 'review' ? t("Revisão", "Review") : t("Meu dia", "My day")}</span>
             </span>
           </nav>
         )}
