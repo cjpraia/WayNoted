@@ -10,7 +10,7 @@ import { actions, api, selectors, useStore } from '../../store'
 import type { Page, LocalWorkspace } from '../../types'
 import { MenuItem, Popover, menuKeyNav, type Anchor } from './Popover'
 import { PageMenu, RenamePopover } from './PageMenu'
-import { PageIcon as TreePageIcon, PageNode, PageTree, TreeContext, applyDrop, type DropTarget, type TreeCtx } from './PageTree'
+import { PageIcon as TreePageIcon, PageNode, PageTree, TreeContext, applyDrop, treeChildren, type DropTarget, type TreeCtx } from './PageTree'
 import { TooltipLayer } from './Tooltip'
 import { TrashPopover } from './TrashPopover'
 import { DailyFlowNav } from '../../daily/DailyFlowNav'
@@ -165,7 +165,7 @@ export function Sidebar() {
   const recent = selectors.recent(50).filter(page => isQueryable(state.pages, page.id)).slice(0, 5)
   const libraryActive = route.type === 'library' && route.scope === 'all'
   const untypedActive = route.type === 'library' && route.scope === 'untyped'
-  const rootPages = selectors.children(null)
+  const rootPages = treeChildren(null)
   const wsName = settings.workspaceName.trim() || `${PRODUCT.name}`
   const isHome = route.type === 'home'
   const menuPage = menu ? selectors.page(menu.pageId) : undefined
@@ -269,7 +269,7 @@ export function Sidebar() {
               closed={!!sections.private}
               onToggle={() => toggleSection('private')}
               addLabel={t("Adicionar uma página", "Add a page")}
-              onAdd={() => newRootPage()}
+              onAdd={() => newRootPage({ sidebarPrivate: true })}
             >
               <div
                 role="tree"
@@ -283,7 +283,7 @@ export function Sidebar() {
                 }}
               >
                 <PageTree parentId={null} depth={0} draggable />
-                <button type="button" className="sb-row sb-add-row" onClick={() => newRootPage()}>
+                <button type="button" className="sb-row sb-add-row" onClick={() => newRootPage({ sidebarPrivate: true })}>
                   <span className="sb-row-icon">
                     <Plus size={16} strokeWidth={1.7} />
                   </span>

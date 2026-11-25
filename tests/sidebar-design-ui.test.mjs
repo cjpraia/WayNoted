@@ -94,7 +94,8 @@ const mocks = {
   MenuItem: ({ icon, label, onClick }) => React.createElement('button', { role: 'menuitem', onClick }, icon, label),
   Popover: ({ children, label }) => React.createElement('div', { className: 'test-popover', role: 'dialog', 'aria-label': label }, children),
   menuKeyNav: () => {}, PageMenu: () => null, RenamePopover: () => null,
-  protectedTitle: () => null, PageNode: () => null, PageTree: () => null, TreeContext: React.createContext(null), applyDrop: () => {},
+  protectedTitle: () => null, PageNode: () => null, PageTree: () => null, TreeContext: React.createContext(null), applyDrop: () => {}, treeChildren: () => [page],
+  requestPageCreation: init => calls.push(['create', init]),
   TreePageIcon: ({ page }) => React.createElement(BlockIcon, { name: page.database ? 'database' : 'page' }),
   TooltipLayer: () => null,
   BlockIcon,
@@ -113,7 +114,7 @@ sidebarSource = sidebarSource.replace(/^import \{ t \} from .*$/m, 'const { t } 
   .replace(/^import \{ actions, api, selectors, useStore \} from .*$/m, 'const { actions, api, selectors, useStore } = globalThis.__sidebarDesignTest')
   .replace(/^import \{ MenuItem, Popover, menuKeyNav, type Anchor \} from .*$/m, 'const { MenuItem, Popover, menuKeyNav } = globalThis.__sidebarDesignTest')
   .replace(/^import \{ PageMenu, RenamePopover \} from .*$/m, 'const { PageMenu, RenamePopover } = globalThis.__sidebarDesignTest')
-  .replace(/^import \{ PageIcon as TreePageIcon, PageNode, PageTree, TreeContext, applyDrop, type DropTarget, type TreeCtx \} from .*$/m, 'const { TreePageIcon, PageNode, PageTree, TreeContext, applyDrop } = globalThis.__sidebarDesignTest')
+  .replace(/^import \{ PageIcon as TreePageIcon, PageNode, PageTree, TreeContext, applyDrop, treeChildren, type DropTarget, type TreeCtx \} from .*$/m, 'const { TreePageIcon, PageNode, PageTree, TreeContext, applyDrop, treeChildren } = globalThis.__sidebarDesignTest')
   .replace(/^import \{ TooltipLayer \} from .*$/m, 'const { TooltipLayer } = globalThis.__sidebarDesignTest')
   .replace(/^import \{ TrashPopover \} from .*$/m, 'const { TrashPopover } = globalThis.__sidebarDesignTest')
   .replace(/^import \{ protectedTitle \} from .*$/m, 'const { protectedTitle } = globalThis.__sidebarDesignTest')
@@ -127,7 +128,7 @@ sidebarSource = sidebarSource.replace(/^import \{ t \} from .*$/m, 'const { t } 
   .replace(/^import \{ SidebarTypes \} from .*$/m, 'const SidebarTypes = () => null')
   .replace(/^import \{ openTypesManager \} from .*$/m, 'const openTypesManager = () => {}')
   .replace(/^import \{ openTypesGallery \} from .*$/m, 'const openTypesGallery = () => {}')
-  .replace(/^import \{ requestPageCreation \} from .*$/m, 'const requestPageCreation = () => {}')
+  .replace(/^import \{ requestPageCreation \} from .*$/m, 'const { requestPageCreation } = globalThis.__sidebarDesignTest')
   .replace(/^import \{ isQueryable \} from .*$/m, 'const isQueryable = () => true')
   .replace(/^import \{ SelectionBar, SelectionMenu \} from .*$/m, 'const SelectionBar = () => null, SelectionMenu = () => null')
   .replace(/^import \{ clearSelection, selectedIds \} from .*$/m, 'const clearSelection = () => {}, selectedIds = () => []')
@@ -144,6 +145,10 @@ test('sidebar navigation and workspace menu open the connected local actions', a
   await click(document.querySelector('.sb-quick-home'))
   await click(document.querySelector('.sb-quick-icon'))
   assert.deepEqual(calls.slice(0, 3), [['search', true], ['navigate', 'home'], ['inbox', true]])
+  await click(document.querySelector('.sb-compose-btn'))
+  assert.deepEqual(calls.at(-1), ['create', undefined])
+  await click(document.querySelector('.sb-add-row'))
+  assert.deepEqual(calls.at(-1), ['create', { sidebarPrivate: true }])
   assert.match(document.querySelector('.sb-recents').textContent, /Projects/)
   assert.equal(document.querySelector('.sb-footer [aria-label="Trash"]'), null)
 

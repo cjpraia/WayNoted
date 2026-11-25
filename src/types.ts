@@ -60,6 +60,8 @@ export interface Page extends DatabaseRowConfig {
   removedByBlock?: { ownerId: string; blockId: string }
   /** Creation through /page or /database; differs from children created in the sidebar. */
   blockOwnerId?: string | null
+  /** Explicit placement in the Particular tree when this page is at the workspace root. */
+  sidebarPrivate?: boolean
   /** Child ownership transfers needed to undo/redo a block-to-page conversion. */
   blockConversion?: { sourceId: string; childIds: string[] }
   /** Proteção por senha (src/security): definida pelo processo principal, nunca pelo renderer. */

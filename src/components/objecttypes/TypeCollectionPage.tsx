@@ -26,13 +26,17 @@ import { fieldSummary } from '../../objecttypes/visibility'
 import '../database/dbview.css'
 import './objecttypes.css'
 import { Button, IconButton } from '../ui/Button'
+import { isPrivateRoot } from '../sidebar/privateRoots'
+import { liveChildren } from '../../perf/pageIndex'
+import { protectedTitle } from '../../security/pageLock'
 
-/** "Particular › Projetos › Ana" — onde a página mora na árvore. */
-export function pagePath(page: Page, pages: Record<string, Page>, root: string): string {
+/** O caminho descreve a árvore existente, mesmo quando ela começa no Acervo. */
+export function pagePath(page: Page, pages: Record<string, Page>, privateLabel: string, libraryLabel = privateLabel, protectedLabel = '…'): string {
   const parts: string[] = []
+  let root = page
   let parent = page.parentId ? pages[page.parentId] : undefined
-  for (let depth = 0; parent && depth < 32; depth++) { parts.unshift(parent.title || '…'); parent = parent.parentId ? pages[parent.parentId] : undefined }
-  return [root, ...parts].join(' › ')
+  for (let depth = 0; parent && depth < 32; depth++) { root = parent; parts.unshift(protectedTitle(parent, protectedLabel) ?? (parent.title || '…')); parent = parent.parentId ? pages[parent.parentId] : undefined }
+  return [isPrivateRoot(root, liveChildren(pages, root.id).length > 0) ? privateLabel : libraryLabel, ...parts].join(' › ')
 }
 
 export function TypeCollectionPage({ typeId }: { typeId: string }) {
@@ -77,7 +81,7 @@ export function TypeCollectionPage({ typeId }: { typeId: string }) {
       </div>
     </header>
     <TypeCollection type={type} onOpen={open} empty={empty} />
-    <UntypedPages type={type} pathOf={(page) => pagePath(page, pages, t('Particular', 'Private'))} />
+    <UntypedPages type={type} pathOf={(page) => pagePath(page, pages, t('Particular', 'Private'), t('Acervo', 'Library'), t('Página protegida', 'Protected page'))} />
     {where && <WherePopover type={type} anchor={where} onClose={() => setWhere(null)} />}
     {adding && <ExistingPagePicker type={type} anchor={adding} onClose={() => setAdding(null)} />}
     {more && <DbPopover anchor={more} onClose={() => setMore(null)} label={t('Mais ações do tipo', 'More type actions')}>
@@ -101,7 +105,7 @@ function WherePopover({ type, anchor, onClose }: { type: ObjectType; anchor: Ele
   return <DbPopover anchor={anchor} onClose={onClose} label={t('Onde estão as páginas', 'Where the pages are')}>
     <Menu width={320}>
       <MenuLabel>{t('Onde estão as páginas', 'Where the pages are')}</MenuLabel>
-      {list.slice(0, 50).map((page) => <MenuItem key={page.id} icon={<PageIcon value={page.icon} fallback="page" />} label={<span className="ot-where"><span>{page.title || t('Sem título', 'Untitled')}</span><small>{pagePath(page, pages, t('Particular', 'Private'))}</small></span>} onClick={() => { onClose(); actions.openPage(page.id) }} />)}
+      {list.slice(0, 50).map((page) => <MenuItem key={page.id} icon={<PageIcon value={page.icon} fallback="page" />} label={<span className="ot-where"><span>{page.title || t('Sem título', 'Untitled')}</span><small>{pagePath(page, pages, t('Particular', 'Private'), t('Acervo', 'Library'), t('Página protegida', 'Protected page'))}</small></span>} onClick={() => { onClose(); actions.openPage(page.id) }} />)}
       {list.length > 50 && <MenuLabel>{t('e mais {n}', 'and {n} more', { n: list.length - 50 })}</MenuLabel>}
     </Menu>
   </DbPopover>

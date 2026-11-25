@@ -19,11 +19,41 @@ const ops = await import('../src/objecttypes/actions.ts')
 const adjust = await import('../src/objecttypes/adjust.ts')
 const { buildTypeCollection } = await import('../src/objecttypes/collection.ts')
 const { clearToasts, visibleToasts } = await import('../src/components/ui/toastQueue.ts')
+const { isPrivateRoot } = await import('../src/components/sidebar/privateRoots.ts')
+const { libraryPages } = await import('../src/components/library/model.ts')
+const { movePagesTo } = await import('../src/subpages/actions.ts')
 
 await actions.init()
 const settle = () => new Promise((resolve) => setTimeout(resolve, 30))
 const pages = () => getState().pages
 const types = () => ops.objectTypes()
+
+test('classification, folder placement and Acervo visibility are independent', () => {
+  const project = ops.createType({ name: 'Projeto da jornada' })
+  const resource = ops.createType({ name: 'Recurso da jornada' })
+  const folder = actions.createPage(null, { title: 'Trabalho', sidebarPrivate: true })
+  const note = ops.createObject(resource, {}, { title: 'Referência' })
+  const visible = (id: string) => isPrivateRoot(pages()[id], Object.values(pages()).some(page => page.parentId === id && !page.trashed))
+  const collection = (typeId: string) => buildTypeCollection(pages(), types(), types().find(type => type.id === typeId)!, { title: 'Nome' }).rows.map(row => row.id)
+  assert.equal(visible(note), false)
+  assert.equal(visible(folder), true)
+  assert.ok(collection(resource).includes(note))
+  movePagesTo([note], folder)
+  ops.removeType([note], resource)
+  assert.ok(!collection(resource).includes(note))
+  assert.ok(libraryPages(pages(), types(), 'untyped', []).some(page => page.id === note))
+  ops.applyType([note], project, { toast: false })
+  assert.equal(pages()[note].parentId, folder)
+  assert.ok(collection(project).includes(note))
+  assert.ok(!libraryPages(pages(), types(), 'untyped', []).some(page => page.id === note))
+  movePagesTo([note], null)
+  assert.equal(visible(note), true)
+  assert.ok(collection(project).includes(note))
+  const oldPage = { ...pages()[folder], sidebarPrivate: undefined }
+  assert.equal(isPrivateRoot(oldPage, true), true)
+  assert.equal(isPrivateRoot(oldPage, false), false)
+  assert.equal(isPrivateRoot({ ...oldPage, sidebarPrivate: false, passwordLock: { rootId: folder, hideTitle: true } }, false), true)
+})
 
 /** Banco (já nasce com Tags) com as propriedades de teste (Etiquetas multisseleção, Nota texto, Total fórmula) e uma linha. */
 function makeDatabase(title: string) {

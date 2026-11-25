@@ -190,7 +190,7 @@ export function movePagesTo(ids: string[], parentId: string | null, index?: numb
   const sameDb = (id: string) => !!parentId && pages[id]?.parentId === parentId
   const leaving = ids.filter((id) => sourceDb(id) && !sameDb(id) && !destSchema)
   if (!destSchema && !leaving.length) {
-    ids.forEach((id, i) => actions.movePage(id, parentId, index === undefined ? undefined : index + i))
+    ids.forEach((id, i) => actions.movePage(id, parentId, index === undefined ? undefined : index + i, parentId === null))
     return { moved: ids.length, excluded: [], into: 'plain', hidden: 0, databaseTitle: '' }
   }
   const { eligible, excluded } = destSchema ? classify(pages, ids.filter((id) => !sameDb(id))) : { eligible: ids.map((id) => pages[id]).filter((p): p is Page => !!p), excluded: [] }
@@ -200,6 +200,7 @@ export function movePagesTo(ids: string[], parentId: string | null, index?: numb
   for (const row of rows) {
     if (destSchema && !sameDb(row.id)) patches[row.id] = mappingPatch(row, mapRowIntoSchema(row, destSchema.properties, types(), sourceDb(row.id)?.database?.properties))
     else if (!destSchema && sourceDb(row.id)) { const out = rowOutOfDatabase(row, sourceDb(row.id)!.database!.properties, types()); patches[row.id] = out.patch; hidden += out.hidden }
+    if (parentId === null) patches[row.id] = { ...patches[row.id], sidebarPrivate: true }
   }
   const tracked = [...rows.map((r) => r.id), ...(parentId ? [parentId] : [])]
   let moved: string[] = []

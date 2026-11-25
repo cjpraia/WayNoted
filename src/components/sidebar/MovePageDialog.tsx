@@ -7,6 +7,7 @@ import { moveDestinations } from '../modals/search.mts'
 import { PageIcon } from './PageTree'
 import { movePagesTo } from '../../subpages/actions'
 import { announceMove } from '../../subpages/bulk'
+import { isPrivateRoot } from './privateRoots'
 import './move.css'
 
 export function MovePageDialog({ pageId, onClose }: { pageId: string; onClose: () => void }) {
@@ -24,9 +25,20 @@ export function MovePageDialog({ pageId, onClose }: { pageId: string; onClose: (
     return () => { if (previous?.isConnected) previous.focus() }
   }, [])
   if (!page) return null
+  const inPrivate = isPrivateRoot(page, selectors.childrenShared(page.id).length > 0)
   const move = async (parentId: string | null) => {
     setBusy(true); setError('')
-    try { const result = movePagesTo([pageId], parentId); await actions.flushMeta(); announceMove(result); onClose() }
+    try {
+      if (parentId === null && page.parentId === null) {
+        actions.updatePage(pageId, { sidebarPrivate: true }, false)
+        await actions.flushMeta()
+      } else {
+        const result = movePagesTo([pageId], parentId)
+        await actions.flushMeta()
+        announceMove(result)
+      }
+      onClose()
+    }
     catch (cause) { setError(cause instanceof Error ? cause.message : t("Não foi possível salvar a mudança. Tente novamente.", "Could not save the change. Please try again.")) }
     finally { setBusy(false) }
   }
@@ -41,8 +53,8 @@ export function MovePageDialog({ pageId, onClose }: { pageId: string; onClose: (
     <header><h2 id="move-title">{t("Mover “{title}” para", "Move “{title}” to", {title:page.title || t("Sem título", "Untitled")})}</h2><button onClick={onClose} disabled={busy} aria-label={t("Fechar", "Close")}><X size={18} /></button></header>
     <label className="move-search"><Search size={16} /><input ref={input} value={query} onChange={e => setQuery(e.target.value)} placeholder={t("Buscar uma página…", "Search for a page…")} aria-label={t("Buscar destino", "Search destinations")} /></label>
     <div className="move-targets">
-      <button disabled={busy || page.parentId === null} onClick={() => void move(null)}><FolderInput size={18} /><span>{settings.workspaceName || t("Espaço de trabalho", "Workspace")}<small>{t("Particular · nível principal", "Private · top level")}</small></span>{page.parentId === null && <em>{t("Atual", "Current")}</em>}</button>
-      {targets.map(target => <button key={target.id} disabled={busy || page.parentId === target.id} onClick={() => void move(target.id)}><PageIcon page={target} size={18} /><span>{target.title || t("Sem título", "Untitled")}<small>{selectors.ancestors(target.id).map(ancestor => ancestor.title || t("Sem título", "Untitled")).join(' / ') || (target.database ? t("Banco de dados", "Database") : t("Página particular", "Private page"))}</small></span>{page.parentId === target.id && <em>{t("Atual", "Current")}</em>}</button>)}
+      <button disabled={busy || inPrivate} onClick={() => void move(null)}><FolderInput size={18} /><span>{page.parentId === null && !inPrivate ? t('Mostrar em Particular', 'Show in Private') : t('Particular', 'Private')}<small>{settings.workspaceName || t("Espaço de trabalho", "Workspace")} · {t('nível principal', 'top level')}</small></span>{inPrivate && <em>{t("Atual", "Current")}</em>}</button>
+      {targets.map(target => <button key={target.id} disabled={busy || page.parentId === target.id} onClick={() => void move(target.id)}><PageIcon page={target} size={18} /><span>{target.title || t("Sem título", "Untitled")}<small>{selectors.ancestors(target.id).map(ancestor => ancestor.title || t("Sem título", "Untitled")).join(' / ') || (target.database ? t("Banco de dados", "Database") : t("Página", "Page"))}</small></span>{page.parentId === target.id && <em>{t("Atual", "Current")}</em>}</button>)}
       {!targets.length && <p>{t("Nenhuma página disponível para este destino.", "No page is available as a destination.")}</p>}
     </div>
     {error && <div className="move-error" role="alert">{error}<button disabled={busy} onClick={() => {

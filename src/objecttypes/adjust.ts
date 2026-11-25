@@ -71,6 +71,8 @@ export interface UntypedOptions {
   excludeDatabaseIds?: ReadonlySet<string>
   /** Texto de busca já normalizado com `fold`. */
   query?: string
+  /** O Acervo também lista páginas bloqueadas para edição, sem permitir reclassificá-las pelo seletor. */
+  includeEditLocked?: boolean
 }
 
 /** Páginas sem nenhum tipo: normais e linhas de banco; fora lixeira, bancos, lousas, bloqueadas, protegidas e páginas-modelo de tipos. */
@@ -96,7 +98,7 @@ export function untypedPages(pages: Record<string, Page>, types: TypeList, optio
   const out: Page[] = []
   for (const id in pages) {
     const page = pages[id]
-    if (page.types?.length || page.database || page.canvas || page.locked || page.passwordLock || page.trashed || templateSources.has(id)) continue
+    if (page.types?.length || page.database || page.canvas || (page.locked && !options.includeEditLocked) || page.passwordLock || page.trashed || templateSources.has(id)) continue
     if (page.parentId && options.excludeDatabaseIds?.has(page.parentId)) continue
     if (!isLive(id)) continue
     if (q && !fold(page.title).includes(q)) continue

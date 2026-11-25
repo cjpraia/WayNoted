@@ -57,6 +57,7 @@ function PageCreationDialog({ request, close }: { request: CreationRequest; clos
         {typeId && !settings.objectTypes?.some(type => type.id === typeId) && <option value={typeId}>{t('Tipo indisponível', 'Type unavailable')}</option>}
         {settings.objectTypes?.map(type => <option key={type.id} value={type.id}>{type.name}</option>)}
       </select></label>
+      {!request.parentId && request.init.sidebarPrivate && <p>{t('Local: Particular', 'Location: Private')}</p>}
       {error && <p role="alert">{error}</p>}
       <div className="library-create-actions">
         <button type="button" onClick={close}>{t('Cancelar', 'Cancel')}</button>

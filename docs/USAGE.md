@@ -18,6 +18,8 @@ Open **Library** from the sidebar and search by title or content. Use the **Type
 
 The sidebar lists your five most recent pages. Select **View all** to open the full recent history. When you create a page through **New page**, choose its type in the dialog or leave it **Untyped**.
 
+Pages created from the Library, the global **New page** action, or a type collection don't fill up the **Private** tree. Use the **+** in **Private** to create a page there, or use **+** on a page in the tree to create a subpage. Both can have any type or stay untyped. Use **Show in Private** in a top-level page's menu to add it to the tree, or **Move page to** to put it inside another page. Changing a type changes where the page is listed by type, without changing its parent. Private is a sidebar location; it doesn't change access or password protection.
+
 ## Databases and object types
 
 A database organizes pages as rows with properties. Use column headers and view settings to configure properties, filters, sorting, grouping, text wrapping, and frozen columns. Formulas and rollups are calculated; relations connect database records.
