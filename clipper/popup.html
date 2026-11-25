@@ -3,25 +3,49 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Workspace Clipper</title>
+<title>WayNoted Web Clipper</title>
 <link rel="stylesheet" href="ui.css">
 </head>
 <body class="popup">
 <main>
-  <h1 id="title">Recortar para o Workspace</h1>
-  <p id="page" class="muted" aria-live="polite"></p>
-  <div id="setup" hidden>
-    <p>Pareie a extensão com o Workspace antes do primeiro uso.</p>
-    <button id="open-options" class="primary">Abrir opções</button>
-  </div>
-  <form id="form" hidden>
-    <label class="check"><input type="radio" name="mode" value="page" checked> <span id="l-page">Página (texto limpo)</span></label>
-    <label class="check"><input type="radio" name="mode" value="selection"> <span id="l-selection">Só a seleção</span> <small id="sel-info" class="muted"></small></label>
-    <label class="check"><input type="checkbox" id="markdown" checked> <span id="l-markdown">Preservar formatação (Markdown)</span></label>
-    <label class="check"><input type="checkbox" id="image" checked> <span id="l-image">Incluir link da imagem destaque</span></label>
-    <button id="send" class="primary" type="submit">Enviar</button>
+  <header class="brand">
+    <img src="icons/icon-48.png" alt="" width="32" height="32">
+    <h1 id="title">WayNoted Web Clipper</h1>
+    <button id="open-options" type="button" class="quiet" hidden></button>
+  </header>
+
+  <section id="setup" class="panel flow" hidden>
+    <h2 id="setup-title"></h2>
+    <p id="setup-info" class="muted"></p>
+    <button id="pair" type="button" class="primary"></button>
+  </section>
+
+  <form id="form" class="flow" hidden>
+    <section class="panel flow compact" aria-labelledby="page">
+      <h2 id="page"></h2>
+      <p id="site" class="muted source"></p>
+    </section>
+    <fieldset id="capture-options" class="flow compact">
+      <legend id="capture-label"></legend>
+      <label class="choice">
+        <input type="radio" name="mode" value="page" checked>
+        <span><strong id="l-page"></strong><small id="page-info" class="muted"></small></span>
+      </label>
+      <label class="choice">
+        <input type="radio" name="mode" value="selection">
+        <span><strong id="l-selection"></strong><small id="sel-info" class="muted"></small></span>
+      </label>
+    </fieldset>
+    <fieldset id="content-options" class="flow compact">
+      <legend id="content-label" class="visually-hidden"></legend>
+      <label class="check"><input type="checkbox" id="markdown" checked> <span id="l-markdown"></span></label>
+      <label class="check"><input type="checkbox" id="image" checked> <span id="l-image"></span></label>
+    </fieldset>
+    <button id="send" class="primary" type="submit"></button>
   </form>
-  <p id="status" role="status" aria-live="polite"></p>
+
+  <p id="status" role="status" hidden></p>
+  <a id="open-clip" class="primary action" target="_blank" hidden></a>
 </main>
 <script src="identity.js"></script>
 <script src="api.js"></script>

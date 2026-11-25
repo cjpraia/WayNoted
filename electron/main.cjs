@@ -133,7 +133,7 @@ function registerIpc() {
   // Espelho Markdown em texto claro, opt-in e somente leitura (docs/DEVELOPMENT.md D1).
   registerMirrorIpc({ trustedHandler, context, dataDir, userData: () => app.getPath('userData'), dialog, shell, app })
   // Agentes (A1/A2): clientes com escopos, aprovação de escritas, registro de chamadas, conector MCP e CLI no PATH.
-  registerAgentIpc({ trustedHandler, context, accessFor: agentAccessFor, apiInfo: localApiState, dialog, nativeT, app })
+  registerAgentIpc({ trustedHandler, context, accessFor: agentAccessFor, apiInfo: localApiState, dialog, nativeT, app, shell })
   // B5: abrir .md avulso sem importar (o renderer só conhece fileId, nunca caminhos).
   registerOpenFileIpc({ trustedHandler, context, dialog, nativeT, openFiles })
   registerNoticesIpc({ trustedHandler, app, shell })

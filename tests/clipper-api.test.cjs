@@ -81,6 +81,8 @@ test('recorte: cria a linha em "Recortes da web" com URL e data, corpo em blocos
   const database = Object.values(meta.pages).find(item => item.title === 'Recortes da web')
   assert.ok(database?.database && database.parentId === null, 'banco na raiz')
   const row = meta.pages[created.pageId]
+  assert.equal(database.fullWidth, true)
+  assert.equal(row.fullWidth, true)
   assert.equal(row.parentId, database.id); assert.equal(row.title, 'Um artigo')
   const urlProp = database.database.properties.find(p => p.type === 'url'), dateProp = database.database.properties.find(p => p.type === 'date')
   assert.equal(row.props[urlProp.id], 'https://exemplo.com/artigo?x=1')

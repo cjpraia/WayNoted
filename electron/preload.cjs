@@ -71,6 +71,7 @@ contextBridge.exposeInMainWorld('api', {
   localApiInfo: () => ipcRenderer.invoke('np:localApiInfo'),
   agentOverview: () => ipcRenderer.invoke('np:agentOverview'),
   agentPending: () => ipcRenderer.invoke('np:agentPending'),
+  clipperPrepareInstall: () => ipcRenderer.invoke('np:clipperPrepareInstall'),
   clipperPairStart: () => ipcRenderer.invoke('np:clipperPairStart'),
   clipperPairCancel: () => ipcRenderer.invoke('np:clipperPairCancel'),
   agentCreateClient: (input) => ipcRenderer.invoke('np:agentCreateClient', input),

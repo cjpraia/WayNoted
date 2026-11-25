@@ -3,9 +3,10 @@
 const os = require('node:os')
 const path = require('node:path')
 const connector = require('./agent-connector.cjs')
+const { prepareClipperInstall } = require('./clipper-install.cjs')
 
 function registerAgentIpc(deps) {
-  const { trustedHandler, context, accessFor, apiInfo, dialog, nativeT, app } = deps
+  const { trustedHandler, context, accessFor, apiInfo, dialog, nativeT, app, shell } = deps
   const ws = e => context(e).workspaceId
   const paths = () => {
     const packaged = !!app.isPackaged
@@ -20,6 +21,23 @@ function registerAgentIpc(deps) {
     const id = ws(e), access = accessFor(id), info = await apiInfo(id)
     const { binPath } = paths()
     return { apiEnabled: info.enabled, url: info.url ?? null, clients: await access.listClients(), settings: await access.settings(), pending: access.listPending(), pairing: access.pairingState(), cli: { available: !!binPath, ...(binPath ? await connector.cliStatus({ binPath, home: os.homedir() }) : {}) } }
+  })
+  // Chrome loads an unpacked extension from a real directory, outside app.asar.
+  let preparingClipper
+  const prepareClipper = (onlyPrepared = false) => {
+    if (!preparingClipper) {
+      preparingClipper = prepareClipperInstall(path.join(app.getAppPath(), 'clipper'), app.getPath('userData'), { onlyPrepared })
+        .finally(() => { preparingClipper = undefined })
+    }
+    return preparingClipper
+  }
+  if (app.isPackaged) void prepareClipper(true).catch(error => console.warn('Web Clipper was not refreshed:', error.message))
+  trustedHandler('np:clipperPrepareInstall', async () => {
+    let installation = await prepareClipper()
+    // An explicit request may have joined the startup refresh before a folder existed.
+    if (!installation) installation = await prepareClipper()
+    const error = await shell.openPath(installation.directory)
+    return { ...installation, revealed: !error }
   })
   // B1: código de pareamento do web clipper (5 min, uso único). Exige a API local ligada; o token nunca é exibido.
   trustedHandler('np:clipperPairStart', async e => {

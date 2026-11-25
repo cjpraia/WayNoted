@@ -17,16 +17,31 @@
     if (url.protocol !== 'http:' || url.hostname !== '127.0.0.1' || !Number.isInteger(port) || port < 1 || port > 65535 || url.username || url.password || (url.pathname !== '/' && url.pathname !== '') || url.search || url.hash) return null
     return 'http://127.0.0.1:' + port
   }
-  function load() { return new Promise(function (resolve) { chrome.storage.local.get(legacyKeys.length ? [KEY].concat(legacyKeys) : KEY, function (items) { resolve((items && (items[KEY] || legacyKeys.map(function (key) { return items[key] }).find(Boolean))) || {}) }) }) }
-  function save(config) { return new Promise(function (resolve) { var o = {}; o[KEY] = config; chrome.storage.local.set(o, resolve) }) }
-  function clear() { return Promise.all([KEY].concat(legacyKeys).map(function (key) { return new Promise(function (resolve) { chrome.storage.local.remove(key, resolve) }) })) }
+  function storageCall(method, value) {
+    return new Promise(function (resolve, reject) {
+      chrome.storage.local[method](value, function (result) {
+        var error = chrome.runtime?.lastError
+        if (error) reject(new Error(error.message))
+        else resolve(result)
+      })
+    })
+  }
+  function load() {
+    return storageCall('get', [KEY].concat(legacyKeys)).then(function (items) {
+      return items && (items[KEY] || legacyKeys.map(function (key) { return items[key] }).find(Boolean)) || {}
+    })
+  }
+  function save(config) { return storageCall('set', { [KEY]: config }) }
+  function clear() { return storageCall('remove', [KEY].concat(legacyKeys)) }
 
   function request(base, path, options) {
+    base = normalizeBase(base)
+    if (!base) return Promise.reject(Object.assign(new Error('Invalid local address'), { code: 'OFFLINE' }))
     options = options || {}
     var headers = { 'Content-Type': 'application/json' }
     if (options.token) headers.Authorization = 'Bearer ' + options.token
     var controller = new AbortController(), timer = setTimeout(function () { controller.abort() }, 15000)
-    return fetch(base + path, { method: options.method || 'POST', headers: headers, body: options.body === undefined ? undefined : JSON.stringify(options.body), signal: controller.signal, credentials: 'omit', cache: 'no-store' })
+    return fetch(base + path, { method: options.method || 'POST', headers: headers, body: options.body === undefined ? undefined : JSON.stringify(options.body), signal: controller.signal, credentials: 'omit', cache: 'no-store', redirect: 'error' })
       .then(function (response) {
         return response.json().catch(function () { return {} }).then(function (data) {
           if (!response.ok) { var error = new Error(data.error || ('HTTP ' + response.status)); error.status = response.status; error.code = data.code; throw error }

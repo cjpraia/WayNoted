@@ -487,6 +487,7 @@ export interface NativeApi {
   localApiInfo?(): Promise<{ enabled: boolean; url?: string }>
   agentOverview?(): Promise<import('./agent/types').AgentOverview>
   agentPending?(): Promise<import('./agent/types').AgentApproval[]>
+  clipperPrepareInstall?(): Promise<{ directory: string; version: string; revealed: boolean }>
   clipperPairStart?(): Promise<{ code: string; expiresAt: number; url: string }>
   clipperPairCancel?(): Promise<boolean>
   agentCreateClient?(input: { name: string; scopes: import('./agent/types').AgentScope[]; autoWrite?: boolean }): Promise<{ client: import('./agent/types').AgentClientView; token: string; snippets: import('./agent/types').AgentSnippets }>

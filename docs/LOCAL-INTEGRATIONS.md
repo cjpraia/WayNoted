@@ -91,7 +91,9 @@ Failed deliveries are retried with increasing delays. Deduplicate by event ID: a
 
 ## Web clipper and native features
 
-The clipper uses separate pairing and can only create clips; it does not receive general access to notes. See [Web Clipper](../clipper/README.md) for installation and pairing.
+In **Settings → Data → Agents → Web clipper**, select **Prepare extension folder**. In Chrome, open `chrome://extensions`, switch on Developer mode, and select the prepared folder with **Load unpacked**. The packaged app refreshes a previously prepared folder when it opens. You can also prepare it again manually. Reload the extension from its Chrome card to apply an update. The app uses a stable location so that Chrome can keep the same extension and pairing.
+
+The clipper uses separate pairing and can only create clips; it does not receive general access to notes. See [Web Clipper](../clipper/README.md) for pairing and capturing pages.
 
 Apple Calendar, Reminders, Notes import, and Apple embeddings remain macOS-only. Internal tasks, calendar views, and daily notes work on both platforms. OCR uses the OS engine on macOS and Windows. Windows needs an installed OCR language. Native dictation uses offline OS speech recognition and requires an installed recognizer for the selected language and microphone permission. Availability depends on the Windows image and language; the app reports unavailable recognizers instead of uploading audio. Windows Hello requires a configured compatible device/account. Configure native features in the app and Windows/macOS settings.
 

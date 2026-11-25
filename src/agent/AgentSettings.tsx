@@ -27,6 +27,37 @@ function CopyButton({ value, label, onCopied }: { value: string; label: string; 
   return <Button onClick={() => void (api.copyText ? api.copyText(value) : navigator.clipboard.writeText(value)).then(() => onCopied(t('Copiado.', 'Copied.')), () => onCopied(t('Não foi possível copiar.', 'Could not copy.')))}>{label}</Button>
 }
 
+function ClipperInstallation() {
+  const [installation, setInstallation] = useState<{ directory: string; version: string; revealed: boolean } | null>(null)
+  const [preparing, setPreparing] = useState(false)
+  const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null)
+  if (!api.clipperPrepareInstall) return null
+  const prepare = async () => {
+    setPreparing(true)
+    setMessage(null)
+    try {
+      const result = await api.clipperPrepareInstall!()
+      setInstallation(result)
+      if (!result.revealed) setMessage({ text: t('A pasta foi preparada. Copie o caminho para encontrá-la no Chrome.', 'The folder is ready. Copy its path to find it in Chrome.') })
+    } catch (error) {
+      setInstallation(null)
+      setMessage({ text: t('Não foi possível preparar a extensão. {detail}', 'Could not prepare the extension. {detail}', { detail: clean(error) }), error: true })
+    } finally {
+      setPreparing(false)
+    }
+  }
+  return <div className="st-row st-row-col">
+    <span className="st-label">{t('Instalar no Chrome', 'Install in Chrome')}</span>
+    <span className="st-hint">{t('Prepare a pasta, abra chrome://extensions, ative o Modo do desenvolvedor e selecione a pasta em “Carregar sem compactação”. Após atualizar o WayNoted, recarregue a extensão no Chrome.', 'Prepare the folder, open chrome://extensions, turn on Developer mode, and select the folder under “Load unpacked”. After updating WayNoted, reload the extension in Chrome.')}</span>
+    <div className="ag-form">
+      <Button onClick={() => void prepare()} disabled={preparing}>{preparing ? t('Preparando…', 'Preparing…') : t('Preparar pasta da extensão', 'Prepare extension folder')}</Button>
+      {installation && <CopyButton value={installation.directory} label={t('Copiar caminho da pasta', 'Copy folder path')} onCopied={text => setMessage({ text })} />}
+    </div>
+    {installation && <code className="ag-code" role="status">{installation.directory} · v{installation.version}</code>}
+    {message && <p className={message.error ? 'ag-warn' : 'ag-note'} role={message.error ? 'alert' : 'status'}>{message.text}</p>}
+  </div>
+}
+
 export function AgentSettingsCards({ Card }: { Card: Card }) {
   const { locale } = useI18n()
   const [overview, setOverview] = useState<AgentOverview | null>(null)
@@ -104,7 +135,8 @@ export function AgentSettingsCards({ Card }: { Card: Card }) {
       </div>
       {message && <p className={message.error ? 'ag-warn' : 'ag-note'} role="status">{message.text}</p>}
     </Card>
-    <Card title={t('Web clipper (navegador)', 'Web clipper (browser)')} subtitle={t('A extensão em clipper/ envia a página atual só para este Mac e cria páginas na tabela “Recortes da web”. Ela nunca lê nem edita o resto.', 'The extension in clipper/ sends the current page only to this computer and creates pages in the “Web clips” table. It never reads or edits anything else.')}>
+    <Card title={t('Web clipper (navegador)', 'Web clipper (browser)')} subtitle={t('A extensão salva a página atual ou a seleção na tabela “Recortes da web”, neste computador.', 'The extension saves the current page or selection to the “Web clips” table on this computer.')}>
+      <ClipperInstallation />
       <div className="st-row st-row-col">
         <span className="st-label">{t('Parear a extensão', 'Pair the extension')}</span>
         <span className="st-hint">{t('Gerar o código é a sua aprovação: depois dele, a extensão pareada cria recortes sem perguntar de novo, e só isso. O código vale 5 minutos e funciona uma vez.', 'Generating the code is your approval: afterwards the paired extension creates clips without asking again, and nothing else. The code lasts 5 minutes and works once.')}</span>

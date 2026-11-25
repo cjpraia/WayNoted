@@ -14,7 +14,10 @@ for (const page of ['popup', 'options']) test(`clipper ${page} loads its shipped
     dom.window.chrome = { tabs: { query: async () => [] }, runtime: { openOptionsPage() {} }, storage: { local: {
       get(keys, callback) { callback(Object.fromEntries((Array.isArray(keys) ? keys : [keys]).filter(key => key in store).map(key => [key, store[key]]))) },
       set(value, callback) { Object.assign(store, value); callback() },
-      remove(key, callback) { delete store[key]; callback() },
+      remove(keys, callback) {
+        for (const key of Array.isArray(keys) ? keys : [keys]) delete store[key]
+        callback()
+      },
     } } }
     for (const script of dom.window.document.querySelectorAll('script[src]')) dom.window.eval(fs.readFileSync(path.join(root, script.getAttribute('src')), 'utf8'))
     await new Promise(resolve => setImmediate(resolve))

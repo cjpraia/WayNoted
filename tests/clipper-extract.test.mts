@@ -84,7 +84,7 @@ test('api.js: só aceita http://127.0.0.1:porta; token fora do repositório; fet
   const calls: { url: string; init: Record<string, unknown> }[] = []
   const store: Record<string, unknown> = {}
   const sandbox: Record<string, unknown> = {
-    chrome: { storage: { local: { get: (key: string, cb: (v: unknown) => void) => cb({ [key]: store[key] }), set: (o: Record<string, unknown>, cb: () => void) => { Object.assign(store, o); cb() }, remove: (key: string, cb: () => void) => { delete store[key]; cb() } } } },
+    chrome: { storage: { local: { get: (keys: string[], cb: (v: unknown) => void) => cb(Object.fromEntries(keys.map(key => [key, store[key]]))), set: (o: Record<string, unknown>, cb: () => void) => { Object.assign(store, o); cb() }, remove: (keys: string[], cb: () => void) => { keys.forEach(key => { delete store[key] }); cb() } } } },
     fetch: async (url: string, init: Record<string, unknown>) => { calls.push({ url, init }); return { ok: true, status: 200, json: async () => ({ token: 'npc_x', folder: 'Recortes da web' }) } },
     AbortController, setTimeout, clearTimeout, URL, Promise, JSON, String, Number, console,
   }
@@ -99,7 +99,9 @@ test('api.js: só aceita http://127.0.0.1:porta; token fora do repositório; fet
   assert.deepEqual(calls.map(c => c.url), ['http://127.0.0.1:5123/v1/clip/pair', 'http://127.0.0.1:5123/v1/clip'])
   assert.equal((calls[0].init.headers as Record<string, string>).Authorization, undefined, 'pareamento sem token')
   assert.equal((calls[1].init.headers as Record<string, string>).Authorization, 'Bearer npc_x')
-  assert.ok(calls.every(c => c.init.credentials === 'omit'))
+  assert.ok(calls.every(c => c.init.credentials === 'omit' && c.init.redirect === 'error'))
+  await assert.rejects(api.send({ base: 'http://example.test:5123', token: 'npc_x' }, { title: 't' }), { code: 'OFFLINE' })
+  assert.equal(calls.length, 2, 'stored configuration cannot send the token outside localhost')
   await api.save({ base: 'b', token: 't' }); assert.equal((await api.load()).token, 't')
 })
 
@@ -108,8 +110,68 @@ test('manifesto: MV3, permissões mínimas, só 127.0.0.1, sem content scripts n
   assert.equal(manifest.manifest_version, 3)
   assert.deepEqual([...manifest.permissions].sort(), ['activeTab', 'scripting', 'storage'])
   assert.deepEqual(manifest.host_permissions, ['http://127.0.0.1/*'])
+  for (const [size, icon] of Object.entries(manifest.icons)) {
+    const png = readFileSync(new URL(`../clipper/${icon}`, import.meta.url))
+    assert.equal(png.toString('ascii', 12, 16), 'IHDR')
+    assert.equal(png.readUInt32BE(16), Number(size))
+    assert.equal(png.readUInt32BE(20), Number(size))
+  }
   assert.equal(manifest.content_scripts, undefined); assert.equal(manifest.background, undefined)
   assert.ok(!JSON.stringify(manifest).includes('<all_urls>'))
   for (const file of ['popup.html', 'options.html']) assert.ok(!/<script(?![^>]*\bsrc=)/i.test(source(file)), `${file}: sem script inline`)
   for (const file of ['popup.js', 'options.js', 'api.js']) assert.ok(!/https?:\/\/(?!127\.0\.0\.1)[a-z]/i.test(source(file).replace(/\/\/.*$/gm, '').replace(/chrome-extension:\/\//g, '')), `${file}: nenhum outro host`)
+})
+
+test('popup saves the selection once and links to the note acknowledged by WayNoted', async () => {
+  const dom = new JSDOM(source('popup.html'), { runScripts: 'outside-only' })
+  const win = dom.window
+  const id = 'f3f403a8-2d66-4316-99c8-3cda1990ebff'
+  const payload = { title: 'Article title', selection: 'Excerpt', image: 'https://example.test/image.png' }
+  const sends: object[] = []
+  const extracted: object[] = []
+  let acknowledge!: () => void
+  const saved = new Promise(resolve => {
+    acknowledge = () => resolve({ pageId: id, title: payload.title, folder: 'Web clips' })
+  })
+  Object.assign(win, {
+    WorkspaceProduct: { name: 'WayNoted' },
+    WorkspaceClipper: {
+      load: async () => ({ base: 'http://127.0.0.1:5123', token: 'npc_test' }),
+      send: async (_config: object, clip: object) => { sends.push(clip); return saved },
+    },
+    chrome: {
+      tabs: { query: async () => [{ id: 7, title: payload.title, url: 'https://example.test/article' }] },
+      scripting: { executeScript: async (script: { args?: object[] }) => {
+        if (!script.args) return []
+        extracted.push(...script.args)
+        return [{ result: { ...payload } }]
+      } },
+    },
+  })
+  function element<T extends HTMLElement>(selector: string) { return win.document.querySelector<T>(selector)! }
+  const tick = () => new Promise(resolve => setImmediate(resolve))
+
+  try {
+    win.eval(source('popup.js'))
+    await tick()
+    assert.equal(element('#form').hidden, false)
+    const selection = element<HTMLInputElement>('input[value="selection"]')
+    selection.click()
+    assert.equal(element<HTMLInputElement>('#markdown').disabled, true)
+    element<HTMLInputElement>('#image').checked = false
+    element<HTMLFormElement>('#form').requestSubmit()
+    element<HTMLFormElement>('#form').requestSubmit()
+    await tick()
+    assert.deepEqual(extracted.map(value => JSON.stringify(value)), ['{"markdown":false,"selectionOnly":true}'])
+    assert.deepEqual(sends, [{ ...payload, image: '' }])
+    assert.equal(element('#open-clip').hidden, true, 'await real acknowledgement')
+    acknowledge()
+    await tick()
+    assert.equal(element('#form').hidden, true)
+    assert.equal(element('#open-clip').hidden, false)
+    assert.equal(element<HTMLAnchorElement>('#open-clip').href, `workspace://page/${id}`)
+    assert.equal(element('#status').textContent, 'Saved in “Web clips”: Article title')
+  } finally {
+    win.close()
+  }
 })
