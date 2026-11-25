@@ -24,6 +24,7 @@ api-token.json
 credentials.json
 # Local reports and screenshots do not belong in source documentation.
 /.artifacts/
+/.qa-status/
 # Editor configuration is local to this checkout.
 /.claude/
 /native/windows/bin/

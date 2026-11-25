@@ -48,7 +48,7 @@ const paths = await packager({
   ...(platform === 'darwin' ? { appBundleId: PRODUCT.bundleId + (test ? '.test' : ''), extendInfo: 'build/app-info.plist' } : {}),
   protocols: [{ name: PRODUCT.name, schemes: [PRODUCT.protocol, COMPAT.previousProtocol, ...(PRODUCT.protocolAliases ?? [])] }],
   extraResource: [nativeFile, ...(platform === 'win32' ? [path.join(nativeDirectory, 'bin'), path.join(nativeDirectory, 'native-licenses')] : ['build/bin'])],
-  ignore: /^\/(src|docs|tests|release|release-test|build|native|node_modules|\.artifacts|\.git|\.claude|tsconfig\.json|vite\.config\.ts|index\.html|package-lock\.json|\.gitignore)($|\/)/,
+  ignore: /^\/(src|docs|tests|release|release-test|build|native|node_modules|\.artifacts|\.qa-status|\.git|\.claude|tsconfig\.json|vite\.config\.ts|index\.html|package-lock\.json|\.gitignore)($|\/)/,
 })
 for (const directory of paths) {
   const app = directory.endsWith('.app') ? directory : path.join(directory, PRODUCT.executable + '.app')
