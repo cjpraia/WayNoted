@@ -4,6 +4,8 @@
 
 Create a page from the sidebar or **New page**. Edit its title and add text, headings, lists, tasks, images, files, and other blocks. Type `/` to insert or transform a block. The handle beside a block provides actions, movement, and a link to that block.
 
+New pages start at full width. Use **Full width** in the page menu to change it for that page. The trail at the top follows the actual parent pages. Select an ancestor to open it, or use **…** to reach intermediate pages when space is limited.
+
 Use **Copy block** in the block handle menu to copy a block and its children. Paste into WayNoted to retain supported block structure and formatting. Other apps can paste HTML or plain text. A simple table also provides tab-separated values for spreadsheets. Blocks that cannot be copied faithfully, such as live views and local attachment records, are represented as readable text and trigger a notice.
 
 Pages can contain subpages, columns, and toggle lists. Internal links use `workspace://`. Open global search with **⌘K**; see [Keyboard shortcuts](KEYBOARD-SHORTCUTS.md) for other commands.

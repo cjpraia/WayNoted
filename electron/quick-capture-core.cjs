@@ -88,7 +88,7 @@ function inboxDatabase(locale, uid = randomUUID) {
 function basePage(meta, id, parentId, now, author, init = {}) {
   const siblings = Object.values(meta.pages).filter(page => page.parentId === parentId)
   return { title: '', icon: null, cover: null, coverPosition: 50, favorite: false, trashed: false, trashedAt: null, createdAt: now, updatedAt: now,
-    createdBy: author, updatedBy: author, order: Math.max(-1, ...siblings.map(page => Number(page.order) || 0)) + 1, fullWidth: false, smallText: false,
+    createdBy: author, updatedBy: author, order: Math.max(-1, ...siblings.map(page => Number(page.order) || 0)) + 1, fullWidth: true, smallText: false,
     font: 'default', locked: false, text: '', ...init, id, parentId }
 }
 

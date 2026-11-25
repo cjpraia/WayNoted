@@ -44,6 +44,8 @@ test('default destination creates the "Notas rápidas" database once and adds th
   const inbox = first.meta.pages[first.parentId]
   assert.equal(inbox.title, 'Notas rápidas'); assert.ok(inbox.database); assert.equal(first.createdInbox, true)
   const row = first.meta.pages[first.pageId]
+  assert.equal(inbox.fullWidth, true)
+  assert.equal(row.fullWidth, true)
   assert.equal(row.parentId, first.parentId); assert.equal(row.title, 'Comprar pão'); assert.equal(row.text, 'na padaria'); assert.equal(row.createdBy, 'Ana')
   const tagsProp = inbox.database.properties.find(prop => prop.type === 'multiSelect')
   assert.equal(tagsProp.options[0].name, 'casa'); assert.deepEqual(row.props[tagsProp.id], [tagsProp.options[0].id])

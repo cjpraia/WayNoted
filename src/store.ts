@@ -732,7 +732,7 @@ export const actions = {
       createdBy: state.settings.userName || message('Você', 'You'),
       updatedBy: state.settings.userName || message('Você', 'You'),
       order: nextOrder(parentId),
-      fullWidth: false,
+      fullWidth: true,
       smallText: false,
       font: 'default',
       locked: false,

@@ -81,6 +81,25 @@
   font-size: 14px;
   line-height: 1.2;
 }
+.pg-crumbs-fit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.pg-crumb-row {
+  grid-area: 1 / 1;
+  display: flex;
+  min-width: 0;
+}
+.pg-crumb-measure {
+  width: max-content;
+  visibility: hidden;
+}
+.pg-crumb-row.is-compact .pg-crumb-item:first-child {
+  flex-shrink: 2;
+}
+.pg-crumb-item.pg-crumb-item-more {
+  flex-shrink: 0;
+}
 .pg-crumb-item {
   display: flex;
   align-items: center;
@@ -88,6 +107,7 @@
   flex-shrink: 1;
 }
 .pg-crumb-sep {
+  display: inline-flex;
   color: var(--text-placeholder);
   margin: 0 2px;
   flex-shrink: 0;
@@ -107,6 +127,7 @@
 }
 .pg-crumb.is-current {
   color: var(--text);
+  font-weight: 600;
 }
 .pg-crumb:not(.is-static):hover {
   background: var(--bg-hover);
@@ -125,6 +146,11 @@
 .pg-crumb-svg {
   color: var(--icon);
   flex-shrink: 0;
+}
+.pg-popover.pg-crumb-menu {
+  max-width: calc(100vw - 16px);
+  max-height: min(384px, calc(100vh - 16px));
+  overflow-y: auto;
 }
 .pg-crumb-more {
   padding: 0 var(--space-1);

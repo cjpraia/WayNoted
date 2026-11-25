@@ -15,14 +15,24 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true
 const t = (pt, en, vars = {}) => en.replace(/\{(\w+)\}/g, (_m, key) => vars[key] ?? '')
 let state
 const unpinned = []
+const opened = []
 const reordered = []
+const pages = new Map()
 const noop = () => {}
 globalThis.__topbar = {
   t, getLocale: () => 'en-US',
   useStore: () => state,
-  selectors: new Proxy({ canGoBack: () => false, canGoForward: () => false, page: () => undefined, ancestors: () => [] }, { get: (target, key) => target[key] ?? (() => undefined) }),
-  actions: new Proxy({ reorderTab: (...args) => reordered.push(args), pinTab: id => { unpinned.push(id); state = { ...state, settings: { ...state.settings, openTabs: state.settings.openTabs.map(tab => tab.id === id ? { ...tab, pinned: !tab.pinned } : tab) } } } }, { get: (target, key) => target[key] ?? noop }),
-  shortcutHint: () => '', TabMenu: () => null, PageMenu: () => null, Popover: () => null, relativeTime: () => '', PageIcon: () => null, PageComments: () => null, MovePageDialog: () => null, BlockIcon: () => null, Icon: () => null, copyText: noop,
+  selectors: new Proxy({ canGoBack: () => false, canGoForward: () => false, page: id => pages.get(id), ancestors: id => {
+    const chain = []
+    let parent = pages.get(pages.get(id)?.parentId)
+    while (parent) {
+      chain.unshift(parent)
+      parent = pages.get(parent.parentId)
+    }
+    return chain
+  } }, { get: (target, key) => target[key] ?? (() => undefined) }),
+  actions: new Proxy({ reorderTab: (...args) => reordered.push(args), openPage: id => opened.push(id), pinTab: id => { unpinned.push(id); state = { ...state, settings: { ...state.settings, openTabs: state.settings.openTabs.map(tab => tab.id === id ? { ...tab, pinned: !tab.pinned } : tab) } } } }, { get: (target, key) => target[key] ?? noop }),
+  shortcutHint: () => '', TabMenu: () => null, PageMenu: () => null, Popover: ({ children }) => children, dailyDateOf: () => null, localDay: () => '2026-11-22', relativeTime: () => '', PageIcon: () => null, PageComments: () => null, MovePageDialog: () => null, BlockIcon: () => null, Icon: () => null, copyText: noop,
   useGraphSettings: () => ({ local: { open: false } }), toggleLocalGraph: noop,
 }
 let source = await readFile(new URL('../src/components/page/Topbar.tsx', import.meta.url), 'utf8')
@@ -58,6 +68,69 @@ test('pinned tabs keep their title, show a pin button and unpin on click', async
   assert.ok(after[0].querySelector('.shell-tab-pin') === null, 'unpinned tab lost its pin')
   assert.ok(after[0].querySelector('.shell-tab-close'))
   await act(async () => root.unmount())
+})
+
+test('breadcrumbs follow parent pages and keep intermediate pages reachable when space runs out', async () => {
+  for (const [id, parentId, title] of [
+    ['root', null, 'Recursos'],
+    ['middle', 'root', 'Produtos'],
+    ['leaf', 'middle', 'Planos e preços'],
+  ]) pages.set(id, { id, parentId, title, updatedAt: 0, types: ['unrelated-type'] })
+  let availableWidth = 600
+  let resize
+  const originalWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth')
+  const originalClientWidth = Object.getOwnPropertyDescriptor(dom.window.Element.prototype, 'clientWidth')
+  Object.defineProperty(HTMLElement.prototype, 'offsetWidth', { configurable: true, get: () => 360 })
+  Object.defineProperty(dom.window.Element.prototype, 'clientWidth', { configurable: true, get: () => availableWidth })
+  globalThis.ResizeObserver = class {
+    constructor(callback) { resize = callback }
+    observe() {}
+    disconnect() {}
+  }
+  globalThis.requestAnimationFrame = callback => setTimeout(callback, 0)
+  globalThis.cancelAnimationFrame = clearTimeout
+
+  const root = createRoot(document.getElementById('app'))
+  const renderPage = async id => {
+    state = { route: { type: 'page', id }, settings: {} }
+    await act(async () => root.render(React.createElement(Topbar)))
+  }
+  const trail = () => document.querySelector('nav[aria-label="Page path"]')
+  const visibleTitles = () => [...trail().querySelectorAll('button.pg-crumb .pg-crumb-title')].map(node => node.textContent)
+
+  try {
+    await renderPage('root')
+    assert.deepEqual(visibleTitles(), ['Recursos'])
+    assert.equal(trail().querySelector('[aria-current="page"]').textContent, 'Recursos')
+
+    await renderPage('leaf')
+    assert.deepEqual(visibleTitles(), ['Recursos', 'Produtos', 'Planos e preços'])
+    await act(async () => trail().querySelector('button[title="Recursos"]').click())
+    assert.deepEqual(opened, ['root'])
+
+    availableWidth = 210
+    await act(async () => resize())
+    assert.deepEqual(visibleTitles(), ['Recursos', 'Planos e preços'])
+    const more = trail().querySelector('button[aria-label="Show full path"]')
+    await act(async () => more.click())
+    assert.equal(more.getAttribute('aria-expanded'), 'true')
+    await act(async () => document.getElementById(more.getAttribute('aria-controls')).querySelector('button').click())
+    assert.deepEqual(opened, ['root', 'middle'])
+    assert.equal(more.getAttribute('aria-expanded'), 'false')
+
+    availableWidth = 600
+    await act(async () => resize())
+    assert.deepEqual(visibleTitles(), ['Recursos', 'Produtos', 'Planos e preços'])
+    assert.equal(trail().querySelector('.pg-crumb-more'), null)
+  } finally {
+    await act(async () => root.unmount())
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', originalWidth)
+    Object.defineProperty(dom.window.Element.prototype, 'clientWidth', originalClientWidth)
+    delete globalThis.ResizeObserver
+    delete globalThis.requestAnimationFrame
+    delete globalThis.cancelAnimationFrame
+    pages.clear()
+  }
 })
 
 test('dragging a tab title drops on the chosen side of a pinned tab', async () => {

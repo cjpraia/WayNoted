@@ -1,7 +1,7 @@
 import { libraryTitle } from '../library/labels'
 import { t, getLocale } from '../../i18n'
 // Barra superior: navegação, breadcrumbs e ações da página.
-import { useEffect, useRef, useState, type DragEvent } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState, type DragEvent } from 'react'
 import { ChevronLeft, ChevronRight, PanelLeft, Lock, MoreHorizontal, Star, Plus, X, FolderInput } from 'lucide-react'
 import { actions, selectors, useStore } from '../../store'
 import type { Page } from '../../types'
@@ -47,45 +47,107 @@ function PageIcon({ page, size = 14 }: { page: Page; size?: number }) {
   )
 }
 
-function Crumb({ page, current }: { page: Page; current?: boolean }) {
+function crumbTitle(page: Page) {
+  return page.title || (page.database ? t("Sem título", "Untitled") : t("Nova página", "New page"))
+}
+
+function Crumb({ page, current, measuring }: { page: Page; current?: boolean; measuring?: boolean }) {
+  const title = crumbTitle(page)
+  const className = `pg-crumb${current ? ' is-current' : ''}`
+  const content = <>
+    <PageIcon page={page} />
+    <span className="pg-crumb-title">{title}</span>
+    {current && dailyDateOf(page.id) === localDay() && <span className="pg-crumb-today">{t("Hoje", "Today")}</span>}
+  </>
+
+  if (measuring) return <span className={className}>{content}</span>
   return (
-    <button className={`pg-crumb${current ? ' is-current' : ''}`} aria-current={current ? 'page' : undefined} onClick={() => actions.openPage(page.id)} title={page.title || (page.database ? t("Sem título", "Untitled") : t("Nova página", "New page"))}>
-      <PageIcon page={page} />
-      <span className="pg-crumb-title">{page.title || (page.database ? t("Sem título", "Untitled") : t("Nova página", "New page"))}</span>
-      {current && dailyDateOf(page.id) === localDay() && <span className="pg-crumb-today">{t("Hoje", "Today")}</span>}
+    <button className={className} aria-current={current ? 'page' : undefined} onClick={() => actions.openPage(page.id)} title={title}>
+      {content}
     </button>
   )
 }
 
+function CrumbSeparator() {
+  return <span className="pg-crumb-sep" aria-hidden="true"><ChevronRight size={12} /></span>
+}
+
 function Breadcrumbs({ page }: { page: Page }) {
   const [hiddenOpen, setHiddenOpen] = useState(false)
+  const [compact, setCompact] = useState(false)
+  const trailRef = useRef<HTMLElement>(null)
+  const measureRef = useRef<HTMLDivElement>(null)
   const moreRef = useRef<HTMLButtonElement>(null)
+  const firstHiddenRef = useRef<HTMLButtonElement>(null)
+  const menuId = useId()
   const chain = [...selectors.ancestors(page.id), page]
-  const collapse = chain.length > 4
-  const hidden = collapse ? chain.slice(1, chain.length - 2) : []
-  const visible = collapse ? [chain[0], null, ...chain.slice(-2)] : chain
+  const hasIntermediate = chain.length > 2
+  const collapse = hasIntermediate && compact
+  const hidden = collapse ? chain.slice(1, -1) : []
+  const visible = collapse ? [chain[0], null, page] : chain
+
+  useLayoutEffect(() => {
+    const trail = trailRef.current
+    const measure = measureRef.current
+    if (!trail || !measure) return
+    const fitTrail = () => {
+      const nextCompact = measure.offsetWidth > trail.clientWidth
+      setCompact(nextCompact)
+      if (!nextCompact) setHiddenOpen(false)
+    }
+    fitTrail()
+    const observer = new ResizeObserver(fitTrail)
+    observer.observe(trail)
+    observer.observe(measure)
+    return () => observer.disconnect()
+  }, [hasIntermediate])
+
+  useEffect(() => {
+    if (!collapse || !hiddenOpen) return
+    const frame = requestAnimationFrame(() => firstHiddenRef.current?.focus())
+    return () => cancelAnimationFrame(frame)
+  }, [collapse, hiddenOpen])
+
+  function closeHidden() {
+    setHiddenOpen(false)
+    moreRef.current?.focus()
+  }
 
   return (
-    <nav className="pg-crumbs" aria-label={t("Caminho da página", "Page path")}>
-      {visible.map((p, i) => (
-        <span className="pg-crumb-item" key={p ? p.id : 'more'}>
-          {i > 0 && <span className="pg-crumb-sep">/</span>}
-          {p ? (
-            <Crumb page={p} current={p.id === page.id} />
-          ) : (
-            <button ref={moreRef} className="pg-crumb pg-crumb-more" aria-label={t("Mostrar caminho completo", "Show full path")} aria-expanded={hiddenOpen} aria-haspopup="menu" onClick={() => setHiddenOpen((v) => !v)}>
-              …
-            </button>
-          )}
-        </span>
-      ))}
-      {hiddenOpen && (
-        <Popover anchor={moreRef.current} onClose={() => setHiddenOpen(false)} className="pg-menu" width={240}>
-          <div className="pg-menu-section">
-            {hidden.map((p) => (
+    <nav ref={trailRef} className="pg-crumbs pg-crumbs-fit" aria-label={t("Caminho da página", "Page path")}>
+      {hasIntermediate && (
+        <div ref={measureRef} className="pg-crumb-row pg-crumb-measure" aria-hidden="true" inert>
+          {chain.map((p, i) => (
+            <span className="pg-crumb-item" key={p.id}>
+              {i > 0 && <CrumbSeparator />}
+              <Crumb page={p} current={p.id === page.id} measuring />
+            </span>
+          ))}
+        </div>
+      )}
+      <div className={`pg-crumb-row${collapse ? ' is-compact' : ''}`}>
+        {visible.map((p, i) => (
+          <span className={`pg-crumb-item${p ? '' : ' pg-crumb-item-more'}`} key={p ? p.id : 'more'}>
+            {i > 0 && <CrumbSeparator />}
+            {p ? (
+              <Crumb page={p} current={p.id === page.id} />
+            ) : (
+              <button ref={moreRef} className="pg-crumb pg-crumb-more" aria-label={t("Mostrar caminho completo", "Show full path")} aria-expanded={hiddenOpen} aria-controls={hiddenOpen ? menuId : undefined} onClick={() => setHiddenOpen((v) => !v)}>
+                …
+              </button>
+            )}
+          </span>
+        ))}
+      </div>
+      {collapse && hiddenOpen && (
+        <Popover anchor={moreRef.current} onClose={closeHidden} className="pg-menu pg-crumb-menu" width={240}>
+          <div id={menuId} className="pg-menu-section">
+            {hidden.map((p, i) => (
               <button
                 key={p.id}
+                ref={i === 0 ? firstHiddenRef : undefined}
                 className="pg-menu-item"
+                title={crumbTitle(p)}
                 onClick={() => {
                   setHiddenOpen(false)
                   actions.openPage(p.id)
@@ -94,7 +156,7 @@ function Breadcrumbs({ page }: { page: Page }) {
                 <span className="pg-menu-icon">
                   <PageIcon page={p} size={16} />
                 </span>
-                <span className="pg-menu-label">{p.title || t("Sem título", "Untitled")}</span>
+                <span className="pg-menu-label">{crumbTitle(p)}</span>
               </button>
             ))}
           </div>
@@ -248,7 +310,7 @@ export function Topbar() {
     <header className={`pg-topbar${settings.sidebarCollapsed ? ' is-collapsed' : ''}`}>
       <div className="pg-tb-left">
         {page ? (
-          <Breadcrumbs page={page} />
+          <Breadcrumbs key={page.id} page={page} />
         ) : (
           <nav className="pg-crumbs" aria-label={t("Caminho da página", "Page path")}>
             <span className="pg-crumb is-current is-static">

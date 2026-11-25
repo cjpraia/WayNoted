@@ -124,7 +124,7 @@ function blocksFromInput(input) {
 const hasCanvas = blocks => (Array.isArray(blocks) ? blocks : []).some(block => block?.type === 'canvas' || hasCanvas(block?.children))
 function newPage(meta, { id, parentId = null, title, props, text = '', database, icon = null }) {
   const now = Date.now()
-  return { id, parentId, title, icon, cover: null, coverPosition: 50, favorite: false, trashed: false, trashedAt: null, createdAt: now, updatedAt: now, createdBy: 'Local API', updatedBy: 'Local API', order: Math.max(0, ...Object.values(meta.pages).map(p => p.order)) + 1, fullWidth: false, smallText: false, font: 'default', locked: false, text, ...(text ? { bodyText: text } : {}), ...(props ? { props } : {}), ...(database ? { database } : {}) }
+  return { id, parentId, title, icon, cover: null, coverPosition: 50, favorite: false, trashed: false, trashedAt: null, createdAt: now, updatedAt: now, createdBy: 'Local API', updatedBy: 'Local API', order: Math.max(0, ...Object.values(meta.pages).map(p => p.order)) + 1, fullWidth: true, smallText: false, font: 'default', locked: false, text, ...(text ? { bodyText: text } : {}), ...(props ? { props } : {}), ...(database ? { database } : {}) }
 }
 const CLIP_ROUTES = new Set(['/v1/clip', '/v1/clip/pair', '/v1/clip/whoami'])
 const clampLimit = (value, fallback = 200) => Math.max(1, Math.min(1000, Math.floor(Number(value)) || fallback))

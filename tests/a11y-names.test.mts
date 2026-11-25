@@ -82,7 +82,7 @@ test('landmarks: complementary (barra lateral) com navigation, main nomeado e sk
   const app = read('src/App.tsx')
   assert.match(app, /<main className="app-main" id=\{MAIN_ID\} tabIndex=\{-1\} aria-label=/)
   const topbar = read('src/components/page/Topbar.tsx')
-  assert.equal((topbar.match(/<nav className="pg-crumbs" aria-label=/g) ?? []).length, 2)
+  assert.equal((topbar.match(/<nav[^>]*aria-label=\{t\("Caminho da página", "Page path"\)\}/g) ?? []).length, 2)
   assert.ok(topbar.includes("aria-current={current ? 'page' : undefined}"))
 })
 

@@ -38,6 +38,21 @@ test('initialization is idempotent and initial content is indexed', async () => 
   assert.match(JSON.stringify([...documents.values()]), /Welcome to/)
 })
 
+test('new pages default to full width and retain individual width choices', async () => {
+  const existing = actions.createPage(null, { fullWidth: false })
+  const root = actions.createPage(null)
+  const child = actions.createPage(root)
+  assert.equal(selectors.page(existing)?.fullWidth, false)
+  assert.equal(selectors.page(root)?.fullWidth, true)
+  assert.equal(selectors.page(child)?.fullWidth, true)
+
+  actions.updatePage(child, { fullWidth: false })
+  await actions.flushMeta()
+  assert.equal(savedMeta.pages[existing].fullWidth, false)
+  assert.equal(savedMeta.pages[root].fullWidth, true)
+  assert.equal(savedMeta.pages[child].fullWidth, false)
+})
+
 test('nested duplicate references the copied children and leaves the original unchanged', async () => {
   const root = actions.createPage(null, { title: 'Original' }), child = actions.createDatabase(root)
   const row = actions.createRow(child, {}, { title: 'Linha' })
