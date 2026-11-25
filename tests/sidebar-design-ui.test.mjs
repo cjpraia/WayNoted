@@ -109,6 +109,7 @@ mocks.PageIcon = mocks.TreePageIcon
 mocks.TrashPopover = (await import(await moduleUrl(trashSource, 'TrashPopover.tsx'))).TrashPopover
 let sidebarSource = await readFile(new URL('../src/components/sidebar/Sidebar.tsx', import.meta.url), 'utf8')
 sidebarSource = sidebarSource.replace(/^import \{ t \} from .*$/m, 'const { t } = globalThis.__sidebarDesignTest')
+  .replace(/^import \{ MAIN_ID \} from .*$/m, 'const MAIN_ID = "app-main"')
   .replace(/^import \{ actions, api, selectors, useStore \} from .*$/m, 'const { actions, api, selectors, useStore } = globalThis.__sidebarDesignTest')
   .replace(/^import \{ MenuItem, Popover, menuKeyNav, type Anchor \} from .*$/m, 'const { MenuItem, Popover, menuKeyNav } = globalThis.__sidebarDesignTest')
   .replace(/^import \{ PageMenu, RenamePopover \} from .*$/m, 'const { PageMenu, RenamePopover } = globalThis.__sidebarDesignTest')
@@ -194,4 +195,46 @@ test('sidebar recents: 5 by default, expand up to 15, collapse again, state pers
   assert.ok(more() === null, 'no toggle with 5 or fewer recents')
   await act(async () => root.unmount())
   recentList = [page]; state.route = { type: 'page', id: 'p1' }
+})
+
+
+test('closing a focused sidebar moves focus to main before applying inert', async () => {
+  const root = createRoot(document.getElementById('app'))
+  const main = document.createElement('main')
+  main.id = 'app-main'
+  main.tabIndex = -1
+  document.body.append(main)
+  const render = () => act(async () => root.render(React.createElement(Sidebar)))
+  try {
+    state.settings.sidebarCollapsed = false
+    await render()
+    const sidebar = document.querySelector('aside.sb')
+    const close = sidebar.querySelector('.sb-collapse-btn')
+    close.focus()
+    assert.equal(document.activeElement, close)
+    const toggle = sidebar.toggleAttribute.bind(sidebar)
+    sidebar.toggleAttribute = (name, value) => {
+      if (name === 'inert' && value) assert.equal(document.activeElement, main)
+      return toggle(name, value)
+    }
+    await act(async () => { close.click() })
+    await render()
+    assert.equal(document.activeElement, main)
+    assert.equal(sidebar.hasAttribute('inert'), true)
+    assert.equal(sidebar.hasAttribute('aria-hidden'), false)
+
+    state.settings.sidebarCollapsed = false
+    await render()
+    assert.equal(sidebar.hasAttribute('inert'), false)
+    const outside = main.appendChild(document.createElement('button'))
+    outside.focus()
+    sidebar.toggleAttribute = toggle
+    state.settings.sidebarCollapsed = true
+    await render()
+    assert.equal(document.activeElement, outside, 'do not steal focus from outside the sidebar')
+  } finally {
+    await act(async () => root.unmount())
+    state.settings.sidebarCollapsed = false
+    main.remove()
+  }
 })

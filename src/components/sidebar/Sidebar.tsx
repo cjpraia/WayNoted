@@ -1,9 +1,10 @@
 import PRODUCT from '../../../shared/product.json' with { type: 'json' }
 import COMPAT from '../../../shared/compatibility.ts'
 import { t } from '../../i18n'
+import { MAIN_ID } from '../../a11y/SkipLink'
 import { protectedTitle } from '../../security/pageLock'
 // Barra lateral do aplicativo.
-import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { ChevronDown, ChevronRight, LayoutGrid, PanelLeft, Plus, SquarePen } from 'lucide-react'
 import { actions, api, selectors, useStore } from '../../store'
 import type { Page, LocalWorkspace } from '../../types'
@@ -47,6 +48,20 @@ export function Sidebar() {
   const askOpen = useAskPanel().open
   const { settings, route } = state
   const collapsed = settings.sidebarCollapsed
+  const sidebarRef = useRef<HTMLElement>(null)
+
+  useLayoutEffect(() => {
+    const sidebar = sidebarRef.current
+    if (!sidebar) return
+    // Transfere o foco antes de desativar os controles, inclusive ao recolher por atalho ou pelo tamanho da janela.
+    const active = document.activeElement
+    if (collapsed && active instanceof HTMLElement && sidebar.contains(active)) {
+      const main = document.getElementById(MAIN_ID)
+      if (main) main.focus({ preventScroll: true })
+      else active.blur()
+    }
+    sidebar.toggleAttribute('inert', collapsed)
+  }, [collapsed])
 
   // Largura local durante o arraste; persiste no mouseup.
   const [dragWidth, setDragWidth] = useState<number | null>(null)
@@ -161,10 +176,10 @@ export function Sidebar() {
 
   return (
     <aside
+      ref={sidebarRef}
       className={`sb${collapsed ? ' sb--collapsed' : ''}${dragWidth !== null ? ' sb--resizing' : ''}`}
       style={{ width: collapsed ? 0 : width }}
       aria-label={t("Barra lateral", "Sidebar")}
-      inert={collapsed || undefined}
       onKeyDown={(e) => { if (e.key === 'Escape' && !e.defaultPrevented && selectedIds().length && !(e.target as HTMLElement).closest('input,textarea,[role="dialog"],[role="menu"]')) { e.preventDefault(); clearSelection() } }}
     >
       <div className="sb-inner" style={{ width }}>
