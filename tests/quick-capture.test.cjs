@@ -99,3 +99,54 @@ test('main process wires quick capture, tray, focus menu and keeps running witho
   assert.match(source, /quickCapture\.handleUrl/)
   assert.ok(UUID.test('11111111-1111-4111-8111-111111111111'))
 })
+
+test('selected type and its inherited URL coexist with the capture destination and database fields', () => {
+  const original = meta()
+  original.settings.objectTypes = [
+    { id: 'resource', name: 'Recurso', properties: [{ id: 'type-url', name: 'URL', type: 'url' }] },
+    { id: 'video', name: 'Vídeo', parentTypes: ['resource'], properties: [{ id: 'other-url', name: 'Legenda', type: 'url' }] },
+  ]
+  const destinationId = '22222222-2222-4222-8222-222222222222'
+  const sourceUrl = 'https://example.com/recurso'
+  const blocks = [para('resumo')]
+  const result = core.applyQuickNote(original, { title: 'Vídeo', typeId: 'video', destinationId, sourceUrl, tags: ['ideia'], blocks })
+  const row = result.meta.pages[result.pageId]
+  assert.equal(row.parentId, destinationId)
+  assert.deepEqual(row.types, ['video'])
+  assert.deepEqual(row.typeProps, { 'type-url': sourceUrl })
+  assert.deepEqual(row.props, { 'p-url': sourceUrl, 'p-tags': ['o1'] })
+  assert.deepEqual(result.blocks[0], blocks[0])
+  assert.equal(result.blocks.at(-1).content[1].href, sourceUrl)
+  assert.equal(Object.keys(result.meta.pages).length, Object.keys(original.pages).length + 1)
+  assert.equal(original.pages[result.pageId], undefined)
+})
+
+test('removing the selected type rejects capture without changing the pages; no explicit type stays unclassified', () => {
+  const original = meta()
+  const sourceUrl = 'https://example.com/recurso'
+  assert.throws(() => core.applyQuickNote(original, { title: 'Rascunho', typeId: 'removed', sourceUrl }), { code: 'CAPTURE_TYPE_UNAVAILABLE' })
+  assert.deepEqual(original, meta())
+  const result = core.applyQuickNote(original, { title: 'Rascunho', typeId: null, sourceUrl })
+  assert.equal(result.meta.pages[result.pageId].types, undefined)
+  assert.equal(result.blocks.at(-1).content[1].href, sourceUrl)
+})
+
+test('capture choices expose only type ID and name, and strict URL mapping rejects ambiguity', () => {
+  const { captureTypePatch, listCaptureTypes } = require('../electron/capture-types.cjs')
+  const sourceUrl = 'https://example.com/recurso'
+  const original = { settings: { objectTypes: [
+    { id: 'ambiguous', name: 'Bancos', properties: [{ id: 'one', name: 'URL', type: 'url' }, { id: 'two', name: 'URL', type: 'url' }], template: {} },
+    { id: 'renamed', name: 'Recurso', properties: [{ id: 'renamed-url', name: 'Endereço do artigo', type: 'url' }] },
+    { id: 'text', name: 'Nota', properties: [] },
+    { id: 'broken' },
+  ] } }
+  assert.deepEqual(listCaptureTypes(original), [
+    { id: 'ambiguous', name: 'Bancos' },
+    { id: 'renamed', name: 'Recurso' },
+    { id: 'text', name: 'Nota' },
+  ])
+  assert.deepEqual(captureTypePatch(original, 'text', { sourceUrl }), { types: ['text'] })
+  assert.deepEqual(captureTypePatch(original, 'renamed', { sourceUrl, requiredUrl: true }), { types: ['renamed'], typeProps: { 'renamed-url': sourceUrl } })
+  assert.throws(() => captureTypePatch(original, 'ambiguous', { sourceUrl, requiredUrl: true }), { code: 'CAPTURE_TYPE_URL_UNAVAILABLE' })
+  assert.throws(() => captureTypePatch(original, 'text', { sourceUrl, requiredUrl: true }), { code: 'CAPTURE_TYPE_URL_UNAVAILABLE' })
+})

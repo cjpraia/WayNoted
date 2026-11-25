@@ -82,6 +82,16 @@ body.qn-body-root { user-select: text; cursor: auto; }
 }
 .qn-field > svg { color: var(--icon); flex: none; }
 .qn-field input { border: 0; outline: 0; background: transparent; font-size: 12.5px; color: var(--text); min-width: 0; }
+.qn-type { max-width: 100%; }
+.qn-type select {
+  min-width: 0;
+  max-width: 200px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+}
+:root[data-theme='dark'] .qn-type select { color-scheme: dark; }
 .qn-tags { flex: 1; min-width: 200px; flex-wrap: wrap; }
 .qn-tags input { flex: 1; min-width: 80px; }
 .qn-date input { width: 118px; color-scheme: light; }

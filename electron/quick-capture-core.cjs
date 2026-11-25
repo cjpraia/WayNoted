@@ -3,6 +3,7 @@ const COMPAT = require('../shared/compatibility.cjs')
 // Lógica pura da captura rápida (sem Electron): preferências, destino, criação da nota.
 const { randomUUID } = require('node:crypto')
 const { indexBlocks, isLivePage } = require('./content-index.cjs')
+const { captureTypePatch, validCaptureUrl: validHttp } = require('./capture-types.cjs')
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const DEFAULT_PREFS = Object.freeze({ shortcut: process.platform === 'darwin' ? 'Alt+Command+N' : 'Alt+Control+N', captureShortcut: process.platform === 'darwin' ? 'Alt+Shift+Command+N' : 'Alt+Shift+Control+N', showTray: true, trayTasks: true, trayCount: false, openAtLogin: false, inbox: {} })
@@ -93,7 +94,6 @@ function basePage(meta, id, parentId, now, author, init = {}) {
 
 function cleanText(value, max) { return typeof value === 'string' ? value.replace(/\u0000/g, '').slice(0, max) : '' }
 function validDate(value) { return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && new Date(value + 'T00:00:00Z').toISOString().slice(0, 10) === value }
-function validHttp(value) { try { const url = new URL(value); return (url.protocol === 'http:' || url.protocol === 'https:') && value.length <= 4000 } catch { return false } }
 
 /** Valida a entrada vinda da janela rápida. Lança Error com mensagem pt/en. */
 function validateInput(input) {
@@ -104,7 +104,7 @@ function validateInput(input) {
   const tags = Array.isArray(input.tags) ? [...new Set(input.tags.filter(tag => typeof tag === 'string').map(tag => tag.trim().slice(0, 100)).filter(Boolean))].slice(0, 30) : []
   const destinationId = typeof input.destinationId === 'string' && UUID.test(input.destinationId) ? input.destinationId : null
   const date = validDate(input.date) ? input.date : null
-  return { title, blocks, tags, destinationId, date, dateValue: date ? validDateValue(input.dateValue, date) : null, sourceUrl: validHttp(input.sourceUrl) ? input.sourceUrl : null }
+  return { title, blocks, tags, destinationId, typeId: input.typeId ?? null, date, dateValue: date ? validDateValue(input.dateValue, date) : null, sourceUrl: validHttp(input.sourceUrl) ? input.sourceUrl : null }
 }
 
 /** Data completa de "@amanhã às 9h" / "@todo dia 5" (src/quick/tokens.ts): só campos conhecidos e válidos. */
@@ -144,6 +144,7 @@ function sourceBlock(url, locale) {
  */
 function applyQuickNote(meta, rawInput, { inboxId = null, now = Date.now(), uid = randomUUID, author, pageId = uid() } = {}) {
   const input = validateInput(rawInput)
+  const type = captureTypePatch(meta, input.typeId, { sourceUrl: input.sourceUrl })
   const locale = meta.settings?.locale === 'en-US' ? 'en-US' : 'pt-BR'
   const by = author || meta.settings?.userName || (locale === 'en-US' ? 'You' : 'Você')
   const blocks = input.sourceUrl ? [...input.blocks, sourceBlock(input.sourceUrl, locale)] : input.blocks
@@ -189,7 +190,7 @@ function applyQuickNote(meta, rawInput, { inboxId = null, now = Date.now(), uid 
     if (urlProp && input.sourceUrl) props[urlProp.id] = input.sourceUrl
   }
   const indexed = indexBlocks(blocks, meta.syncedBlocks)
-  pages[pageId] = basePage({ pages }, pageId, parentId, now, by, { title, ...indexed, ...(parent.database ? { props } : {}) })
+  pages[pageId] = basePage({ pages }, pageId, parentId, now, by, { title, ...indexed, ...type, ...(parent.database ? { props } : {}) })
   return { meta: { ...meta, pages }, pageId, parentId, inboxId: input.destinationId ? inboxId : parentId, blocks, createdInbox: !!createdInbox }
 }
 

@@ -21,7 +21,7 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true
 const saved = [], saves = []
 let lockedState = true
 dom.window.quickApi = {
-  init: async () => ({ locale: 'pt-BR', theme: 'light', workspaceName: `${PRODUCT.name}`, draft: { title: 'Ideia guardada', body: 'texto do rascunho' }, prefill: null, workspaceId: 'default', locked: lockedState }),
+  init: async () => ({ types: lockedState ? [] : [{ id: 'resource', name: 'Recurso' }], locale: 'pt-BR', theme: 'light', workspaceName: `${PRODUCT.name}`, draft: { title: 'Ideia guardada', body: 'texto do rascunho' }, prefill: null, workspaceId: 'default', locked: lockedState }),
   search: async () => [], destination: async () => null,
   saveDraft: async draft => { saved.push(JSON.stringify(draft)); return { locked: lockedState } },
   save: async input => { saves.push(input); if (lockedState) throw new Error("Error invoking remote method 'npq:save': Error: VAULT_LOCKED: Desbloqueie"); return { pageId: 'p', parentId: 'q', workspaceId: 'default' } },
@@ -54,6 +54,7 @@ test(`espaço bloqueado: mostra "Desbloqueie o ${PRODUCT.name} para salvar", des
   assert.equal(saveButton.disabled, true)
   assert.equal(document.querySelector('.qn-title').value, 'Ideia guardada')
   assert.equal(document.querySelector('.qn-body').value, 'texto do rascunho')
+  assert.equal(document.querySelector('.qn-type'), null)
   // ⌘↵ com o espaço bloqueado não tenta salvar a nota: só guarda o rascunho.
   await act(async () => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', metaKey: true })); await wait(20) })
   assert.equal(saves.length, 0)
@@ -77,4 +78,42 @@ test('botão de microfone: presente, nomeado, liga o ditado local e vira "Parar"
   assert.equal(document.querySelector('.qn-mic').getAttribute('aria-pressed'), 'true')
   await act(async () => root.unmount())
   lockedState = true
+})
+
+test('tipo de captura fica no rascunho; erro de tipo removido preserva texto e permite escolher outro tipo', async () => {
+  lockedState = false
+  const ui = dom.window.quickApi, originalInit = ui.init, originalSave = ui.save
+  const draft = { title: 'Página QA', body: 'texto preservado', typeId: 'deleted', destination: { id: 'destination', title: 'Pasta QA' } }
+  ui.init = async () => ({ ...(await originalInit()), draft, types: [{ id: 'resource', name: 'Recurso' }] })
+  ui.save = async input => {
+    saves.push(input)
+    if (input.typeId === 'deleted') throw new Error('Tipo indisponível. Escolha outro tipo.')
+    return { pageId: 'p', parentId: input.destinationId, workspaceId: 'default' }
+  }
+  const root = createRoot(document.getElementById('app'))
+  try {
+    await act(async () => { root.render(React.createElement(QuickNote)); await wait(30) })
+    const select = document.querySelector('.qn-type select')
+    assert.equal(select.value, 'deleted')
+    assert.equal(select.selectedOptions[0].textContent, 'Tipo indisponível')
+    assert.equal(select.selectedOptions[0].disabled, true)
+    await act(async () => { document.querySelector('.qn-save').click(); await wait(20) })
+    assert.match(document.querySelector('[role="alert"]').textContent, /Tipo indisponível/)
+    assert.equal(document.querySelector('.qn-body').value, 'texto preservado')
+    await act(async () => {
+      select.value = 'resource'
+      select.dispatchEvent(new dom.window.Event('change', { bubbles: true }))
+    })
+    await act(async () => { await wait(275) })
+    assert.equal(JSON.parse(saved.at(-1)).typeId, 'resource')
+    await act(async () => { document.querySelector('.qn-save').click(); await wait(20) })
+    assert.equal(saves.at(-1).typeId, 'resource')
+    assert.equal(saves.at(-1).destinationId, 'destination')
+    assert.equal(saves.at(-1).workspaceId, 'default')
+  } finally {
+    await act(async () => root.unmount())
+    ui.init = originalInit
+    ui.save = originalSave
+    lockedState = true
+  }
 })

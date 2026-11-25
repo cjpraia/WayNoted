@@ -25,6 +25,7 @@ export function QuickNote() {
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
   const [date, setDate] = useState('')
+  const [typeId, setTypeId] = useState<string | null>(null)
   const [sourceUrl, setSourceUrl] = useState<string | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -67,6 +68,7 @@ export function QuickNote() {
     setInit(value)
     setLocked(!!value.locked)
     setTitle(draft.title ?? ''); setBody(draft.body ?? ''); setDestination(draft.destination ?? null)
+    setTypeId(draft.typeId ?? null)
     setTags(draft.tags ?? []); setDate(draft.date ?? ''); setSourceUrl(draft.sourceUrl ?? null)
     setError(null); setPickerOpen(false); setTagInput('')
     requestAnimationFrame(() => {
@@ -91,7 +93,7 @@ export function QuickNote() {
   useEffect(() => { document.documentElement.lang = locale }, [locale])
 
   // Rascunho preservado: Esc, clique fora ou ⌘Q não perdem o texto.
-  const draft = useMemo<QuickDraft>(() => ({ title, body, destination, tags, date, sourceUrl }), [title, body, destination, tags, date, sourceUrl])
+  const draft = useMemo<QuickDraft>(() => ({ title, body, destination, typeId, tags, date, sourceUrl }), [title, body, destination, typeId, tags, date, sourceUrl])
   useEffect(() => {
     if (!loaded.current) return
     const timer = setTimeout(() => void quick().saveDraft(draft).then(result => { if (result) setLocked(result.locked) }).catch(() => {}), 250)
@@ -119,7 +121,7 @@ export function QuickNote() {
   const canDate = !destination || !!info?.date, canTags = !destination || !!info?.tags
   const tokens = useMemo(() => extractQuickTokens(title, body, { locale, dates: canDate, tags: canTags }), [title, body, locale, canDate, canTags])
   const save = useCallback(async () => {
-    if (busy) return
+    if (busy || !init) return
     if (locked) { await quick().saveDraft(draft).catch(() => {}); return }
     const blocks = markdownToBlocks(tokens.body)
     if (!tokens.title.trim() && !blocksPlainText(blocks).trim()) { setError(t('Escreva algo antes de salvar.', 'Write something before saving.')); return }
@@ -127,15 +129,15 @@ export function QuickNote() {
     const pendingTags = [...(tagInput.trim() ? [...tags, tagInput.trim()] : tags), ...tokens.tags]
     const dateValue = tokens.date
     try {
-      await quick().save({ title: tokens.title.trim(), blocks, destinationId: destination?.id ?? null, tags: canTags ? pendingTags : [], date: dateValue ? dateValue.start : info?.date && date ? date : null, dateValue: dateValue ?? undefined, sourceUrl })
+      await quick().save({ workspaceId: init.workspaceId, typeId, title: tokens.title.trim(), blocks, destinationId: destination?.id ?? null, tags: canTags ? pendingTags : [], date: dateValue ? dateValue.start : info?.date && date ? date : null, dateValue: dateValue ?? undefined, sourceUrl })
       loaded.current = false
-      setTitle(''); setBody(''); setTags([]); setTagInput(''); setDate(''); setSourceUrl(null)
+      setTitle(''); setBody(''); setTags([]); setTagInput(''); setDate(''); setTypeId(null); setSourceUrl(null)
       await quick().close()
     } catch (cause) {
       if (/VAULT_LOCKED/.test(String((cause as Error)?.message ?? cause))) { setLocked(true); await quick().saveDraft(draft).catch(() => {}); return }
       setError(cause instanceof Error ? cause.message.replace(/^Error invoking remote method '[^']+': (Error: )?/, '') : String(cause))
     } finally { setBusy(false) }
-  }, [busy, locked, draft, tokens, tags, tagInput, destination, info, date, sourceUrl, t, canTags])
+  }, [busy, init, locked, draft, tokens, tags, tagInput, destination, info, date, typeId, sourceUrl, t, canTags])
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -167,6 +169,8 @@ export function QuickNote() {
   }
 
   if (!init) return <div className="qn" aria-busy="true" />
+  const types = init.types
+  const showType = !locked && (types.length > 0 || !!typeId)
   const destinationLabel = destination ? destination.title || t('Sem título', 'Untitled') : t('Caixa de entrada rápida', 'Quick inbox')
   const words = (title + ' ' + body).trim().split(/\s+/).filter(Boolean).length
 
@@ -198,7 +202,15 @@ export function QuickNote() {
         onKeyDown={event => { if (event.key === 'Enter' && !event.metaKey && !event.ctrlKey) { event.preventDefault(); bodyRef.current?.focus() } }} />
       <textarea ref={bodyRef} className="qn-body" value={body} onChange={event => setBody(event.target.value)} spellCheck
         placeholder={t('Escreva… Markdown leve: # título, - lista, [ ] tarefa, **negrito** · @amanhã às 9h define a data · #tag', 'Write… Light Markdown: # heading, - list, [ ] task, **bold** · @tomorrow 9am sets the date · #tag')} aria-label={t('Conteúdo', 'Content')} />
-      {(info?.database && (info.tags || info.date)) || sourceUrl ? <div className="qn-meta">
+      {showType || (info?.database && (info.tags || info.date)) || sourceUrl ? <div className="qn-meta">
+        {showType && <label className="qn-field qn-type">
+          {t('Tipo', 'Type')}
+          <select value={typeId ?? ''} disabled={busy} onChange={event => { setTypeId(event.target.value || null); setError(null) }}>
+            <option value="">{t('Sem tipo', 'No type')}</option>
+            {typeId && !types.some(type => type.id === typeId) && <option value={typeId} disabled>{t('Tipo indisponível', 'Type unavailable')}</option>}
+            {types.map(type => <option key={type.id} value={type.id}>{type.name || t('Sem nome', 'Unnamed')}</option>)}
+          </select>
+        </label>}
         {info?.tags && <label className="qn-field qn-tags"><Tag size={14} aria-hidden />
           {tags.map(tag => <span key={tag} className="qn-chip">{tag}<button onClick={() => setTags(tags.filter(item => item !== tag))} aria-label={t('Remover {tag}', 'Remove {tag}', { tag })}><X size={11} /></button></span>)}
           <input list="qn-tag-options" value={tagInput} onChange={event => event.target.value.endsWith(',') ? addTag(event.target.value) : setTagInput(event.target.value)}

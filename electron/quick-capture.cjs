@@ -5,6 +5,7 @@ const path = require('node:path')
 const { fileURLToPath } = require('node:url')
 const { atomicWrite, readJson } = require('./storage.cjs')
 const core = require('./quick-capture-core.cjs')
+const { listCaptureTypes } = require('./capture-types.cjs')
 const { createQuickDrafts } = require('./quick-drafts.cjs')
 
 const WIDTH = 640, HEIGHT = 460
@@ -161,15 +162,19 @@ function createQuickCapture(deps) {
   }
 
   async function save(input) {
+    const workspaceId = target
+    if (input?.workspaceId != null && input.workspaceId !== workspaceId) {
+      throw new Error('O espaço da captura mudou. Reabra a captura para continuar. / The capture workspace changed. Reopen Quick Capture to continue.')
+    }
     saving = true
     try {
       await loadPrefs()
-      if (isLocked(target)) throw new Error(lockedMessage())
-      const store = deps.storage(target)
+      if (isLocked(workspaceId)) throw new Error(lockedMessage())
+      const store = deps.storage(workspaceId)
       const meta = await store.loadMeta().catch(error => { if (error?.code === 'VAULT_LOCKED') throw new Error(lockedMessage()); throw error })
       if (!meta) throw new Error(`Abra o ${PRODUCT.name} uma vez antes de capturar notas / Open ${PRODUCT.name} once before capturing notes`)
       const pageId = require('node:crypto').randomUUID()
-      const inboxId = await inboxFor(target)
+      const inboxId = await inboxFor(workspaceId)
       const plan = core.applyQuickNote(meta, input, { inboxId, pageId })
       await store.saveDoc(pageId, plan.blocks)
       const { assignSequences } = await import('./meta-merge.mjs')
@@ -178,20 +183,22 @@ function createQuickCapture(deps) {
         result = core.applyQuickNote(current, input, { inboxId, pageId })
         return assignSequences(current, result.meta)
       })
-      if (result.inboxId && inboxId !== result.inboxId) await drafts.saveInbox(target, result.inboxId)
-      deps.broadcast(target, { meta: next })
-      await drafts.clear(target)
-      return { pageId: result.pageId, parentId: result.parentId, workspaceId: target }
+      if (result.inboxId && inboxId !== result.inboxId) await drafts.saveInbox(workspaceId, result.inboxId)
+      deps.broadcast(workspaceId, { meta: next })
+      await drafts.clear(workspaceId)
+      return { pageId: result.pageId, parentId: result.parentId, workspaceId }
     } finally { saving = false }
   }
   function registerIpc() {
     handle('npq:init', async () => {
-      const { draft, locked } = await drafts.load(target)
+      const workspaceId = target, pendingPrefill = prefill
+      const { draft, locked } = await drafts.load(workspaceId)
       // Bloqueado: nada do espaço é lido (nem idioma/tema/nome); a janela mostra só o aviso.
-      const meta = locked ? null : await workspaceMeta().catch(error => { if (error?.code === 'VAULT_LOCKED') return null; throw error })
-      const settings = meta?.settings ?? {}
-      const locale = settings.locale === 'en-US' || (!meta && /^en/i.test((electron.app?.getPreferredSystemLanguages?.()[0] ?? electron.app?.getLocale?.() ?? ''))) ? 'en-US' : 'pt-BR'
-      return { locale, theme: settings.theme ?? 'system', workspaceName: locked ? `${PRODUCT.name}` : settings.workspaceName || `${PRODUCT.name}`, draft, prefill, workspaceId: target, locked: locked || isLocked(target) }
+      const meta = locked ? null : await deps.storage(workspaceId).loadMeta().catch(error => { if (error?.code === 'VAULT_LOCKED') return null; throw error })
+      const workspaceLocked = locked || isLocked(workspaceId)
+      const settings = workspaceLocked ? {} : meta?.settings ?? {}
+      const locale = settings.locale === 'en-US' || ((!meta || workspaceLocked) && /^en/i.test((electron.app?.getPreferredSystemLanguages?.()[0] ?? electron.app?.getLocale?.() ?? ''))) ? 'en-US' : 'pt-BR'
+      return { locale, theme: settings.theme ?? 'system', workspaceName: settings.workspaceName || PRODUCT.name, draft, prefill: pendingPrefill, workspaceId, locked: workspaceLocked, types: workspaceLocked ? [] : listCaptureTypes(meta) }
     })
     handle('npq:search', async query => isLocked(target) ? [] : core.searchDestinations(await workspaceMeta(), typeof query === 'string' ? query.slice(0, 200) : ''))
     handle('npq:destination', async id => {

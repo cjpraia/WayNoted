@@ -38,6 +38,8 @@ A **Query** block gathers pages and tasks by criteria. See [Live queries](QUERIE
 
 A daily note holds content for a date. **Tasks** collects checklist items and dated records; **Productivity** includes activity and spaced review. The sidebar calendar helps navigate dates. Quick capture, macOS Calendar, and Reminders integrations are configurable and require system permissions.
 
+In Quick Capture, use **Type** to classify the new note, or leave it as **No type**. The note is saved to the chosen destination in either case.
+
 ## Canvas and files
 
 The canvas arranges notes, shapes, connectors, images, and page or database cards on a freeform surface. Page cards remain linked to their original content. Export a canvas as PNG, SVG, or PDF.

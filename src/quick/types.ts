@@ -4,8 +4,9 @@ import type { ThemeSetting } from '../types'
 export interface QuickDestination { id: string; title: string; icon: string | null; database: boolean; path: string }
 export interface QuickDestinationInfo { id: string; title: string; database: boolean; tags?: { id: string; name: string; options: string[] } | null; date?: { id: string; name: string } | null }
 export interface QuickPrefill { text?: string; title?: string; sourceUrl?: string | null }
-export interface QuickDraft { title?: string; body?: string; destination?: QuickDestination | null; tags?: string[]; date?: string; sourceUrl?: string | null }
-export interface QuickInit { locale: Locale; theme: ThemeSetting; workspaceName: string; draft: QuickDraft; prefill: QuickPrefill | null; workspaceId: string; /** Espaço com senha bloqueado: só o rascunho (na memória) fica disponível. */ locked?: boolean }
+export interface QuickCaptureType { id: string; name: string }
+export interface QuickDraft { typeId?: string | null; title?: string; body?: string; destination?: QuickDestination | null; tags?: string[]; date?: string; sourceUrl?: string | null }
+export interface QuickInit { types: QuickCaptureType[]; locale: Locale; theme: ThemeSetting; workspaceName: string; draft: QuickDraft; prefill: QuickPrefill | null; workspaceId: string; /** Espaço com senha bloqueado: só o rascunho (na memória) fica disponível. */ locked?: boolean }
 
 /** Ponte da janela rápida (electron/quick-preload.cjs). */
 export interface QuickApi {
@@ -15,7 +16,7 @@ export interface QuickApi {
   destination(id: string): Promise<QuickDestinationInfo | null>
   /** `locked`: o espaço está bloqueado e o rascunho ficou só na memória do app (não foi a disco). */
   saveDraft(draft: QuickDraft): Promise<{ locked: boolean } | void>
-  save(input: { title: string; blocks: unknown[]; destinationId: string | null; tags: string[]; date: string | null; /** Data completa (hora/repetição) vinda de "@amanhã às 9h". */ dateValue?: import('../types').DateValue; sourceUrl: string | null }): Promise<{ pageId: string; parentId: string; workspaceId: string }>
+  save(input: { workspaceId: string; typeId: string | null; title: string; blocks: unknown[]; destinationId: string | null; tags: string[]; date: string | null; /** Data completa (hora/repetição) vinda de "@amanhã às 9h". */ dateValue?: import('../types').DateValue; sourceUrl: string | null }): Promise<{ pageId: string; parentId: string; workspaceId: string }>
   close(): Promise<void>
   open(pageId: string): Promise<void>
   /** Ditado local (reconhecimento no próprio computador); a janela rápida só inicia, para, cancela e abre o painel de permissão. */
