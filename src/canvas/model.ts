@@ -25,10 +25,11 @@ export interface StyleProps { opacity?: number; strokeStyle?: Exclude<StrokeStyl
 export interface BoxBase extends StyleProps { id: string; x: number; y: number; w: number; h: number; rotation?: number; locked?: boolean; groupId?: string }
 export interface PageCardObject extends BoxBase { type: 'page'; pageId: string }
 export interface DatabaseCardObject extends BoxBase { type: 'database'; pageId: string }
-export interface NoteObject extends BoxBase { type: 'note'; text: string; color: CanvasColor }
-export interface TextObject extends BoxBase { type: 'text'; text: string; color: CanvasColor; fontSize: number; bold?: true; italic?: true; align?: 'left' | 'center' | 'right' }
+export interface TextStyle { fontSize?: number; bold?: true; italic?: true; align?: 'left' | 'center' | 'right' }
+export interface NoteObject extends BoxBase, TextStyle { type: 'note'; text: string; color: CanvasColor; textColor?: CanvasColor }
+export interface TextObject extends BoxBase, TextStyle { type: 'text'; text: string; color: CanvasColor; fontSize: number; background?: CanvasColor }
 export type FillKind = 'tint' | 'solid' | 'none' | 'hachure' | 'cross'
-export interface ShapeObject extends BoxBase { type: 'shape'; shape: ShapeKind; text: string; color: CanvasColor; fill: FillKind; /** Corner radius (rectangles). */ radius?: number }
+export interface ShapeObject extends BoxBase, TextStyle { type: 'shape'; shape: ShapeKind; text: string; color: CanvasColor; textColor?: CanvasColor; fill: FillKind; mindMap?: 'root' | 'branch'; /** Corner radius (rectangles). */ radius?: number }
 export interface DrawObject extends BoxBase { type: 'draw'; points: number[]; color: CanvasColor; size: number }
 export interface ImageObject extends BoxBase { type: 'image'; src: string; name: string }
 export interface FileObject extends BoxBase { type: 'file'; data: string; name: string; size: number; mime: string }
@@ -38,6 +39,8 @@ export interface ConnectorObject extends StyleProps { id: string; type: 'connect
 
 export type BoxObject = PageCardObject | DatabaseCardObject | NoteObject | TextObject | ShapeObject | DrawObject | ImageObject | FileObject | SectionObject
 export type CanvasObject = BoxObject | ConnectorObject
+export type TextBoxObject = TextObject | NoteObject | ShapeObject
+export const isTextBox = (object: CanvasObject): object is TextBoxObject => object.type === 'text' || object.type === 'note' || object.type === 'shape'
 export type CanvasObjectType = CanvasObject['type']
 export const BOX_TYPES: readonly string[] = ['page', 'database', 'note', 'text', 'shape', 'draw', 'image', 'file', 'section']
 
@@ -118,16 +121,24 @@ export function normalizeObject(raw: unknown): CanvasObject | null {
   normalizeStyle(raw, box)
   const rotation = num(raw.rotation, 0, -360, 360)
   if (rotation && rotatable(box as unknown as CanvasObject)) box.rotation = rotation
+  if (raw.type === 'text' || raw.type === 'note' || raw.type === 'shape') {
+    if (raw.type === 'text' || (typeof raw.fontSize === 'number' && Number.isFinite(raw.fontSize))) {
+      box.fontSize = num(raw.fontSize, raw.type === 'text' ? 20 : 16, 6, 400)
+    }
+    if (raw.bold === true) box.bold = true
+    if (raw.italic === true) box.italic = true
+    if (raw.align === 'center' || raw.align === 'right' || (raw.align === 'left' && raw.type === 'shape')) box.align = raw.align
+    if (raw.type === 'text' && CANVAS_COLORS.includes(raw.background as CanvasColor)) box.background = raw.background
+    if (raw.type !== 'text' && CANVAS_COLORS.includes(raw.textColor as CanvasColor) && raw.textColor !== 'default') box.textColor = raw.textColor
+  }
   switch (raw.type) {
     case 'page': case 'database':
       if (typeof raw.pageId !== 'string' || !raw.pageId) return null
       box.pageId = raw.pageId; break
     case 'note': box.text = str(raw.text); box.color = color(raw.color, 'yellow'); break
-    case 'text': box.text = str(raw.text); box.color = color(raw.color, 'default'); box.fontSize = num(raw.fontSize, 20, 6, 400)
-      if (raw.bold === true) box.bold = true
-      if (raw.italic === true) box.italic = true
-      if (raw.align === 'center' || raw.align === 'right') box.align = raw.align; break
+    case 'text': box.text = str(raw.text); box.color = color(raw.color, 'default'); break
     case 'shape': box.shape = ['rect', 'ellipse', 'diamond'].includes(raw.shape as string) ? raw.shape : 'rect'; box.text = str(raw.text); box.color = color(raw.color, 'blue')
+      if (raw.mindMap === 'root' || raw.mindMap === 'branch') box.mindMap = raw.mindMap
       box.fill = ['solid', 'none', 'hachure', 'cross'].includes(raw.fill as string) ? raw.fill : 'tint'
       if (typeof raw.radius === 'number' && Number.isFinite(raw.radius) && raw.radius !== 8) box.radius = Math.max(0, Math.min(200, raw.radius)); break
     case 'draw': {

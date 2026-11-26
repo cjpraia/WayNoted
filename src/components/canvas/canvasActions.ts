@@ -6,7 +6,7 @@ import { flushDoc } from '../page/util'
 import { iconLabel } from '../page/PageIcon'
 import { lockedAncestor, protectedAncestor } from '../../security/pageLock'
 import { canvasDocument, CANVAS_VERSION, DARK_PALETTE, DEFAULT_SIZE, LIGHT_PALETTE, readCanvasDocument, type CanvasObject, type CanvasPalette } from '../../canvas/model'
-import { objectBounds, unionRects, type Point } from '../../canvas/geometry'
+import { objectBounds, objectExportBounds, unionRects, type Point } from '../../canvas/geometry'
 import { createBox, lookupOf } from '../../canvas/ops'
 import { DEAD_LABEL, drawScene, type CardInfo } from '../../canvas/render'
 import { canvasToSvg } from '../../canvas/svg'
@@ -117,7 +117,7 @@ function exportObjects(objects: readonly CanvasObject[], selection?: Set<string>
 export function canvasSvg(objects: readonly CanvasObject[], theme: 'light' | 'dark', selection?: Set<string>): string {
   DEAD_LABEL.value = t('página na lixeira', 'page in trash')
   const pages = getState().pages
-  return canvasToSvg(exportObjects(objects, selection), { palette: paletteFor(theme), card: id => cardInfo(pages, id) })
+  return canvasToSvg(exportObjects(objects, selection), { palette: paletteFor(theme), sectionName: t('Seção', 'Section'), card: id => cardInfo(pages, id) })
 }
 
 export async function exportCanvas(format: 'png' | 'svg' | 'pdf', title: string, objects: readonly CanvasObject[], theme: 'light' | 'dark', selection?: Set<string>): Promise<boolean> {
@@ -142,7 +142,7 @@ export async function exportCanvas(format: 'png' | 'svg' | 'pdf', title: string,
 export async function canvasPng(objects: readonly CanvasObject[], theme: 'light' | 'dark'): Promise<Blob> {
   DEAD_LABEL.value = t('página na lixeira', 'page in trash')
   const lookup = lookupOf(objects)
-  const area = unionRects(objects.map(o => objectBounds(o, lookup)))!
+  const area = unionRects(objects.map(o => objectExportBounds(o, lookup)))!
   const pad = 32
   let scale = 2
   const fit = Math.min(8192 / (area.w + pad * 2), 8192 / (area.h + pad * 2), Math.sqrt(40e6 / ((area.w + pad * 2) * (area.h + pad * 2))))
@@ -160,6 +160,6 @@ export async function canvasPng(objects: readonly CanvasObject[], theme: 'light'
     try { await img.decode(); images.set(src, img) } catch { /* Placeholder drawn instead. */ }
   }))
   const pages = getState().pages
-  drawScene(ctx, { k: scale, tx: (pad - area.x) * scale, ty: (pad - area.y) * scale, w, h }, objects, { palette: paletteFor(theme), lookup, card: id => cardInfo(pages, id), image: src => images.get(src) ?? null })
+  drawScene(ctx, { k: scale, tx: (pad - area.x) * scale, ty: (pad - area.y) * scale, w, h }, objects, { palette: paletteFor(theme), lookup, sectionName: t('Seção', 'Section'), sectionZoom: 1, card: id => cardInfo(pages, id), image: src => images.get(src) ?? null })
   return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('PNG')), 'image/png'))
 }

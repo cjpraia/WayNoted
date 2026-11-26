@@ -48,6 +48,10 @@ In Quick Capture, use **Type** to classify the new note, or leave it as **No typ
 
 The canvas arranges notes, shapes, connectors, images, and page or database cards on a freeform surface. Page cards remain linked to their original content. Export a canvas as PNG, SVG, or PDF.
 
+- **Format text.** Select a text box, note, or shape to change its font, size, alignment, emphasis, and text color in the inspector. Text boxes can also have a background color. Use the opacity slider to fade the whole object.
+- **Organize with sections.** Draw a section around your content or use **Create section** in the inspector to frame a selection. Double-click the section header to rename it. Drag the header or border to move the section together with its unlocked contents.
+- **Build a mind map.** Choose **Mind map** or press **M**, then click the canvas and name the central topic. Select any topic and use a **+** handle to add a connected branch in that direction. To add a branch to the right, press **Alt/Option+Enter**. You can also start with the expandable mind map template.
+
 PDFs support highlights, notes, and drawing. OCR and dictation use local OS capabilities when available. Windows requires installed OCR/speech language support; see [Distribution](DISTRIBUTION.md#windows-native-features).
 
 ## Templates

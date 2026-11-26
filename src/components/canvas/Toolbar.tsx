@@ -1,6 +1,7 @@
 // Barra de ferramentas vertical à esquerda (estilo Miro) com menus laterais: formas, conectores, caneta,
 // cores de nota, modelos e biblioteca. Atalhos de tecla (estilo Figma) e numéricos (estilo Excalidraw) nas dicas.
 import { useEffect, useRef, useState } from 'react'
+import { Network } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { NOTE_COLORS, type CanvasColor } from '../../canvas/model'
 import { CANVAS_TEMPLATES, type TemplateId } from '../../canvas/templates'
@@ -57,6 +58,9 @@ export function BoardToolbar(props: Props) {
         {Btn({icon: "text", pt: "Texto", en: "Text", id: "text", active: tool === 'text', onClick: () => pick('text')})}
         {Btn({icon: "pen", pt: "Caneta", en: "Pen", id: "pen", active: tool === 'pen' || tool === 'eraser', caret: true, onClick: () => group('pen', tool === 'eraser' ? 'eraser' : 'pen')})}
         {Btn({icon: "section", pt: "Seção (moldura)", en: "Section (frame)", id: "section", active: tool === 'section', onClick: () => pick('section')})}
+        <IconButton {...hint('Mapa mental', 'Mind map', 'mindmap')} aria-pressed={tool === 'mindmap'} onClick={() => pick('mindmap')}>
+          <Network size={20} strokeWidth={1.6} aria-hidden />
+        </IconButton>
         <span className="cv-sep" />
         {Btn({icon: "page", pt: "Página ou banco (cartão vivo)", en: "Page or database (live card)", onClick: () => { setFlyout(null); props.onPage() }})}
         {Btn({icon: "image", pt: "Imagem", en: "Image", id: 'image' as Tool, onClick: () => { setFlyout(null); props.onImage() }})}

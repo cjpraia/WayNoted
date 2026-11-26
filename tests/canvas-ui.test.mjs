@@ -8,9 +8,11 @@ import { transformWithOxc as baseTransformWithOxc } from 'vite'
 import { inlineProductSource } from './fixtures/product-source.mjs'
 const transformWithOxc = (source, ...args) => baseTransformWithOxc(inlineProductSource(source), ...args)
 import * as model from '../src/canvas/model.ts'
+import { createMindMapRoot } from '../src/canvas/mindMap.ts'
 import * as templates from '../src/canvas/templates.ts'
 import * as tools from '../src/components/canvas/tools.ts'
 import * as sketch from '../src/canvas/sketch.ts'
+import * as textStyle from '../src/canvas/textStyle.ts'
 import * as layers from '../src/canvas/layers.ts'
 
 const dom = new JSDOM('<!doctype html><body><div id="app"></div></body>', { url: 'http://localhost' })
@@ -25,9 +27,9 @@ const t = (_pt, en, vars) => en.replace(/\{(\w+)\}/g, (_, key) => String(vars?.[
 const h = React.createElement
 globalThis.__cv = {
   useI18n: () => ({ locale: 'en-US', t }),
-  ...model, ...templates, ...tools, ...sketch, ...layers,
-  CanvasIcon: () => null,
-  Swatches: ({ colors, value, onPick }) => h('div', { role: 'radiogroup' }, colors.map(c => h('button', { key: c, type: 'button', role: 'radio', 'aria-checked': value === c, 'aria-label': c, onClick: () => onPick(c) }))),
+  ...model, ...templates, ...tools, ...sketch, ...layers, ...textStyle,
+  CanvasIcon: () => null, Network: () => null, Plus: () => null,
+  Swatches: ({ colors, value, onPick, label }) => h('div', { role: 'radiogroup', 'aria-label': label }, colors.map(c => h('button', { key: c, type: 'button', role: 'radio', 'aria-checked': value === c, 'aria-label': c, onClick: () => onPick(c) }))),
   IconButton: ({ label, title, active, onClick, disabled, children, ...rest }) => h('button', { type: 'button', ...rest, 'aria-label': label, title: title ?? label, 'aria-pressed': rest['aria-pressed'] ?? active ?? undefined, disabled, onClick }, children),
   Button: ({ children, onClick, disabled, ...rest }) => h('button', { type: 'button', disabled, onClick, ...rest }, children),
 }
@@ -63,6 +65,9 @@ test('vertical toolbar: tools with Figma/Excalidraw shortcuts, shape and templat
   await click(byLabel('Lasso (freehand select)'))
   assert.deepEqual(calls.at(-1), ['tool', 'lasso'])
   assert.equal(byLabel('Section (frame)').getAttribute('title'), 'Section (frame) (F)')
+  assert.equal(byLabel('Mind map').getAttribute('title'), 'Mind map (M)')
+  await click(byLabel('Mind map'))
+  assert.deepEqual(calls.at(-1), ['tool', 'mindmap'])
   await click(byLabel('Shapes'))
   assert.deepEqual(calls.at(-1), ['tool', 'rect'])
   assert.ok(labels().includes('Ellipse') && labels().includes('Diamond'), 'shape flyout open')
@@ -87,7 +92,7 @@ test('vertical toolbar: tools with Figma/Excalidraw shortcuts, shape and templat
 test('properties panel: geometry fields, fill, stroke, hand-drawn level and fonts patch the selection', async () => {
   let current = { id: 's', type: 'shape', shape: 'rect', x: 10, y: 20, w: 200, h: 100, text: 'A', color: 'blue', fill: 'tint' }
   const patches = []
-  const props = { objects: [current], onPatch: (fn, key) => { current = fn(current); patches.push(key ?? '') }, onAlign: () => {}, onReorder: () => {}, onLock: () => {}, onGroup: () => {}, onUngroup: () => {}, onDelete: () => {}, onDuplicate: () => {}, onEdit: () => {}, onSaveLibrary: () => patches.push('library') }
+  const props = { objects: [current], onTextFormat: textStyle.applyTextFormat, onPatch: (fn, key) => { current = fn(current); patches.push(key ?? '') }, onAlign: () => {}, onReorder: () => {}, onLock: () => {}, onGroup: () => {}, onUngroup: () => {}, onDelete: () => {}, onDuplicate: () => {}, onEdit: () => {}, onSaveLibrary: () => patches.push('library') }
   const root = createRoot(container)
   await act(async () => root.render(h(BoardInspector, props)))
   const x = container.querySelector('input[aria-label="X"]')
@@ -107,6 +112,15 @@ test('properties panel: geometry fields, fill, stroke, hand-drawn level and font
   assert.equal(current.sketch, undefined)
   await click([...container.querySelectorAll('.cv-seg button')].find(b => b.textContent === 'Hand'))
   assert.equal(current.font, 'hand')
+  assert.equal(byLabel('Center text').getAttribute('aria-pressed'), 'true')
+  await click(byLabel('Align text left'))
+  assert.equal(current.align, 'left')
+  await click(byLabel('Font size presets').querySelector('button:nth-child(3)'))
+  assert.equal(current.fontSize, 36)
+  await click(byLabel('Text colour').querySelector('[aria-label="purple"]'))
+  assert.equal(current.textColor, 'purple')
+  assert.equal(current.color, 'blue')
+  assert.equal(byLabel('Text background'), null)
   await click(byLabel('Save to library'))
   assert.equal(patches.at(-1), 'library')
   // Objeto travado: sem controles de edição, mas com destravar.
@@ -127,6 +141,19 @@ test('hand-drawn style is offered for sticky notes and sections, not for text or
     if (offered) { await click(artist); assert.equal(current.sketch, 2) }
     await act(async () => root.unmount())
   }
+})
+
+test('topic properties offer an add-branch button without depending on canvas handles', async () => {
+  let added = 0
+  const topic = createMindMapRoot({ x: 100, y: 100 }, 'Root')
+  const root = createRoot(container)
+  await act(async () => root.render(h(BoardInspector, { objects: [topic], onAddMindMapBranch: () => { added++ } })))
+  assert.equal(container.querySelector('.cv-insp-head strong').textContent, 'Topic')
+  const button = [...container.querySelectorAll('button')].find(button => button.textContent === 'Add branch')
+  assert.ok(button !== undefined)
+  await click(button)
+  assert.equal(added, 1)
+  await act(async () => root.unmount())
 })
 
 test('layers panel: tree, select, rename, hide, lock and drag to reorder', async () => {

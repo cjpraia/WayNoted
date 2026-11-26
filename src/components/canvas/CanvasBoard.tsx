@@ -5,13 +5,14 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { actions, getState, subscribe } from '../../store'
 import { useI18n, t as tNow } from '../../i18n'
 import { foldSearch } from '../../workspace'
-import { fontOf, inkColor, BOX_TYPES, DEFAULT_SIZE, GRID_SIZE, isBox, isCard, isConnector, MAX_FILE_BYTES, objectText, rotatable, type BoxObject, type CanvasColor, type CanvasData, type CanvasObject, type ConnectorEnd, type ConnectorObject, type ShapeKind, type TextObject } from '../../canvas/model'
-import { lassoSelect, nearestDistances, alignOffsets, boxBounds, center, connectorEndAt, connectorGeometry, distributeOffsets, distToPolyline, geometryPolyline, handleAt, hitObject, hitTest, midpointOf, normRect, objectBounds, rectsIntersect, containsRect, resizeRect, rotatePoint, rotationFor, sectionMembers, snapRect, snapToGrid, transformObject, translateObject, unionRects, type Align, type ConnectorBendHandle, type Guide, type Handle, type Lookup, type Point, type Rect } from '../../canvas/geometry'
+import { fontOf, BOX_TYPES, DEFAULT_SIZE, GRID_SIZE, isBox, isCard, isConnector, isTextBox, MAX_FILE_BYTES, objectText, rotatable, swatch, type BoxObject, type CanvasColor, type CanvasData, type CanvasObject, type ConnectorEnd, type ConnectorObject, type SectionObject, type ShapeObject, type ShapeKind, type TextBoxObject } from '../../canvas/model'
+import { lassoSelect, nearestDistances, alignOffsets, boxBounds, center, connectorEndAt, connectorGeometry, distributeOffsets, distToPolyline, geometryPolyline, handleAt, inflate, hitObject, hitTest, midpointOf, normRect, objectBounds, rectsIntersect, containsRect, resizeRect, rotatePoint, rotationFor, sectionHeader, sectionMembers, SECTION_HEADER_MIN_WIDTH, SECTION_HEADER_TOP_OUTSET, snapRect, snapToGrid, transformObject, translateObject, unionRects, type Align, type ConnectorBendHandle, type Guide, type Handle, type Lookup, type Point, type Rect } from '../../canvas/geometry'
 import { SpatialIndex } from '../../canvas/spatial'
 import { samplePressure, wheelIntent } from '../../canvas/gestures'
 import { CanvasHistory } from '../../canvas/history'
 import { collectForCopy, createBox, createConnector, deleteObjects, duplicateObjects, freezeConnectorEnds, groupObjects, lookupOf, parseClipboard, pasteObjects, patchObjects, reorder, serializeClipboard, simplifySamples, strokeFromSamples, strokesAt, ungroupObjects, withGroups, type Reorder } from '../../canvas/ops'
-import { DEAD_LABEL, drawOverlay, drawScene, wrapText, toScreen, toWorld, viewRect, NOTE_FONT, SHAPE_FONT, SECTION_FONT, type Overlay, type View } from '../../canvas/render'
+import { DEAD_LABEL, drawOverlay, drawScene, wrapText, toScreen, toWorld, viewRect, type Overlay, type View } from '../../canvas/render'
+import { applyTextFormat, textBoxColor, textBoxFamily, textBoxFormat, textBoxRect, type TextFormat } from '../../canvas/textStyle'
 import { BoardCard } from './Cards'
 import { cardFor, cardInfo, exportCanvas, paletteFor, registerBoard } from './canvasActions'
 import { BoardMenu, FindBar, Minimap, PagePicker, ZoomControls, type MinimapHandle } from './Chrome'
@@ -23,8 +24,10 @@ import { CANVAS_TEMPLATES, type TemplateId } from '../../canvas/templates'
 import { libraryItem, type CanvasLibraryItem } from '../../canvas/library'
 import { sceneFromPng, sceneFromSvg } from '../../canvas/scene'
 import { TOOL_KEYS, type Tool } from './tools'
+import { createMindMapBranch, createMindMapRoot, isMindMapTopic } from '../../canvas/mindMap'
 
 const PAGE_DND = COMPAT.record027
+const HEADER_QUERY_MARGIN = SECTION_HEADER_MIN_WIDTH + 8
 export const MIN_ZOOM = 0.05, MAX_ZOOM = 4
 /** Zoom below which cards are painted by the canvas instead of DOM. */
 export const CARD_DOM_MIN = 0.22
@@ -41,6 +44,7 @@ type Gesture =
   | { kind: 'resize'; handle: Exclude<Handle, 'rotate'>; start: Point; bounds: Rect; ids: Set<string>; base: CanvasObject[]; single: BoxObject | null }
   | { kind: 'rotate'; id: string; base: CanvasObject[] }
   | { kind: 'create'; type: 'note' | 'text' | 'shape' | 'section'; shape?: ShapeKind; start: Point; dragged: boolean; base: CanvasObject[]; id: string }
+  | { kind: 'mindmap'; start: Point }
   | { kind: 'line'; start: Point; from: ConnectorEnd; arrow: boolean }
   | { kind: 'bend'; connector: ConnectorObject; axis: ConnectorBendHandle['axis']; start: Point; base: CanvasObject[] }
   | { kind: 'endpoint'; id: string; which: 'from' | 'to'; start: Point; base: CanvasObject[] }
@@ -174,7 +178,12 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
     invalidate()
   }
   const setTool = (next: Tool) => { toolRef.current = next; overlayExtra.current.anchor = null; setToolState(next); setCursor(''); invalidate() }
-  const setEditing = (id: string | null) => { editingRef.current = id; setEditingState(id); invalidate() }
+  const setEditing = (id: string | null) => {
+    editingRef.current = id
+    setEditingState(id)
+    if (id) revealSectionTitle(id)
+    invalidate()
+  }
 
   /** Single entry point for changes: history, connector freeze, save. */
   const commit = (next: CanvasObject[], options: { key?: string; select?: string[] } = {}) => {
@@ -231,31 +240,52 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
     }
     animation.current = requestAnimationFrame(step)
   }
-  const fitRect = (r: Rect | null, maxK = 1, animate = true) => {
+  const fitRect = (r: Rect | null, maxK = 1, animate = true, withHeading = false) => {
     const v = viewRef.current
     if (!r || !v.w) return
     const pad = 64
-    const k = Math.max(MIN_ZOOM, Math.min(maxK, (v.w - pad * 2) / Math.max(1, r.w), (v.h - pad * 2) / Math.max(1, r.h)))
-    const target = { k, cx: r.x + r.w / 2, cy: r.y + r.h / 2 }
+    const headingTop = withHeading ? SECTION_HEADER_TOP_OUTSET : 0
+    const headingRight = withHeading ? SECTION_HEADER_MIN_WIDTH : 0
+    const k = Math.max(MIN_ZOOM, Math.min(maxK, (v.w - pad * 2 - headingRight) / Math.max(1, r.w), (v.h - pad * 2 - headingTop) / Math.max(1, r.h)))
+    const target = { k, cx: r.x + r.w / 2 + headingRight / (2 * k), cy: r.y + r.h / 2 - headingTop / (2 * k) }
     if (animate) animateTo(target)
     else { v.k = k; v.tx = v.w / 2 - target.cx * k; v.ty = v.h / 2 - target.cy * k; viewChanged() }
   }
-  const fitAll = (animate = true) => { ensureIndex(); fitRect(indexRef.current.extent(), 1, animate) }
-  const focusObject = (id: string) => {
+  const fitAll = (animate = true) => {
+    ensureIndex()
+    fitRect(indexRef.current.extent(), 1, animate, current().some(o => o.type === 'section' && !o.hidden))
+  }
+  const focusObject = (id: string, animate = true) => {
     ensureIndex()
     const r = indexRef.current.bounds(id)
-    if (!r) return
+    if (!r) return false
     setSelection([id])
-    fitRect(r, 1)
+    fitRect(r, 1, animate, lookupRef.current(id)?.type === 'section')
+    return true
   }
   /** Apresentação simples: ⌥→ / ⌥← percorre as seções (ordem de leitura) e enquadra cada uma. */
   const sectionCursor = useRef(-1)
   const stepSection = (dir: number) => {
-    const sections = objectsRef.current.filter((o): o is BoxObject => o.type === 'section').sort((a, b) => a.y - b.y || a.x - b.x)
+    const sections = objectsRef.current.filter((o): o is SectionObject => o.type === 'section' && !o.hidden).sort((a, b) => a.y - b.y || a.x - b.x)
     if (!sections.length) { setNotice(tNow('Crie seções para apresentar a lousa.', 'Create sections to present the whiteboard.')); return }
     sectionCursor.current = (sectionCursor.current + dir + sections.length) % sections.length
     const s = sections[sectionCursor.current]
-    setSelection([]); fitRect({ x: s.x, y: s.y, w: s.w, h: s.h }, 2)
+    setSelection([]); fitRect(s, 2, true, true)
+  }
+  function revealSectionTitle(id: string) {
+    const section = objectsRef.current.find(o => o.id === id)
+    if (section?.type !== 'section') return
+    const v = viewRef.current
+    const { rect } = sectionHeader(section, v.k)
+    const p = toScreen(v, rect)
+    const x = Math.max(60, Math.min(p.x, v.w - rect.w * v.k - 16))
+    const y = Math.max(52, Math.min(p.y, v.h - rect.h * v.k - 16))
+    if (x !== p.x || y !== p.y) {
+      cancelAnimationFrame(animation.current)
+      v.tx += x - p.x
+      v.ty += y - p.y
+      viewChanged()
+    }
   }
   const viewCenter = () => { const v = viewRef.current; return toWorld(v, { x: v.w / 2, y: v.h / 2 }) }
 
@@ -286,7 +316,7 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
     const lookup = lookupRef.current
     const palette = paletteFor(themeRef.current)
     DEAD_LABEL.value = tNow('página na lixeira', 'page in trash')
-    const visibleIds = indexRef.current.visible(viewRect(v, 80))
+    const visibleIds = indexRef.current.visible(viewRect(v, HEADER_QUERY_MARGIN))
     const visible = visibleIds.map(id => lookup(id)!).filter(Boolean)
     const dpr = window.devicePixelRatio || 1
     // Cartões DOM só quando legíveis (≥ 110 px na tela) e no máximo MAX_DOM_CARDS (os mais centrais); o resto é pintado no canvas.
@@ -300,7 +330,7 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
     const skip = new Set(cardIds)
     const hideText = editingRef.current ? new Set([editingRef.current]) : undefined
     const ctx = scene.getContext('2d')
-    if (ctx) drawScene(ctx, v, visible, { palette, lookup, grid: settingsRef.current.grid, skip, hideText, card: infoFor, image: imageFor }, dpr, GRID_SIZE)
+    if (ctx) drawScene(ctx, v, visible, { palette, lookup, grid: settingsRef.current.grid, sectionName: tNow('Seção', 'Section'), skip, hideText, card: infoFor, image: imageFor }, dpr, GRID_SIZE)
     const octx = over?.getContext('2d')
     if (octx) {
       const selected = [...selectionRef.current].map(id => lookup(id)).filter((o): o is CanvasObject => !!o)
@@ -352,7 +382,7 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
       for (const canvas of [sceneRef.current, overlayRef.current]) if (canvas) { canvas.width = Math.max(1, Math.round(rect.width * dpr)); canvas.height = Math.max(1, Math.round(rect.height * dpr)); canvas.style.width = `${rect.width}px`; canvas.style.height = `${rect.height}px` }
       if (first && rect.width) {
         const saved = readSavedView(pageId)
-        if (focusId) { ensureIndex(); const r = indexRef.current.bounds(focusId); if (r) { fitRect(r, 1, false); setSelection([focusId]) } else fitAll(false) }
+        if (focusId) { if (!focusObject(focusId, false)) fitAll(false) }
         else if (saved) { v.k = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, saved.k)); v.tx = v.w / 2 - saved.cx * v.k; v.ty = v.h / 2 - saved.cy * v.k; viewChanged() }
         else if (objectsRef.current.length) fitAll(false)
         else { v.k = 1; v.tx = v.w / 2; v.ty = v.h / 2; viewChanged() }
@@ -411,7 +441,11 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
   const worldOf = (e: { clientX: number; clientY: number }) => toWorld(viewRef.current, screenOf(e))
   const tol = () => 4 / viewRef.current.k
   const candidatesAround = (p: Point, r = 24) => { ensureIndex(); return indexRef.current.query({ x: p.x - r / viewRef.current.k, y: p.y - r / viewRef.current.k, w: (r * 2) / viewRef.current.k, h: (r * 2) / viewRef.current.k }) }
-  const hitAt = (p: Point) => { const cand = candidatesAround(p); return hitTest(current(), p, tol(), lookupRef.current, cand) }
+  const hitAt = (p: Point) => {
+    // At low zoom a wider title can extend beyond the indexed section frame.
+    const cand = candidatesAround(p, HEADER_QUERY_MARGIN)
+    return hitTest(current(), p, tol(), lookupRef.current, cand, viewRef.current.k)
+  }
   const boxAt = (p: Point) => {
     const cand = candidatesAround(p)
     const objects = current()
@@ -427,7 +461,7 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
   const movingSet = (ids: Set<string>) => {
     const objects = objectsRef.current, lookup = lookupOf(objects)
     const out = withGroups(objects, ids)
-    for (const id of [...out]) { const o = lookup(id); if (o?.type === 'section') for (const m of sectionMembers(o, objects, lookup)) out.add(m) }
+    for (const id of [...out]) { const o = lookup(id); if (o?.type === 'section' && !o.locked) for (const m of sectionMembers(o, objects, lookup)) out.add(m) }
     for (const id of [...out]) if (lookup(id)?.locked) out.delete(id)
     return out
   }
@@ -435,7 +469,26 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
   // ---------- ponteiro ----------
   const capture = (e: ReactPointerEvent) => { try { rootRef.current?.setPointerCapture(e.pointerId) } catch { /* Synthetic events. */ } rootRef.current?.focus({ preventScroll: true }) }
 
+  const insertMindMapRoot = (at: Point) => {
+    if (readOnlyRef.current) return
+    const root = createMindMapRoot(at, t('Tema central', 'Central topic'))
+    commit([...objectsRef.current, root], { select: [root.id] })
+    setTool('select')
+    setEditing(root.id)
+  }
+
+  const spawnMindMapBranch = (source: ShapeObject, side: 'top' | 'right' | 'bottom' | 'left' = 'right') => {
+    if (readOnlyRef.current || source.locked || source.hidden) return
+    const { branch, connector } = createMindMapBranch(objectsRef.current, source, side, t('Novo tópico', 'New topic'))
+    commit([...objectsRef.current, connector, branch], { select: [branch.id] })
+    const view = viewRef.current
+    if (!containsRect(viewRect(view, -64), branch)) fitRect(branch, view.k)
+    setTool('select')
+    setEditing(branch.id)
+  }
+
   const spawnNeighbor = (source: BoxObject, side: 'top' | 'right' | 'bottom' | 'left') => {
+    if (isMindMapTopic(source)) { spawnMindMapBranch(source, side); return }
     const gap = 80
     const copy = { ...structuredClone(source), id: crypto.randomUUID(), rotation: undefined, locked: undefined, groupId: undefined } as BoxObject
     if ('text' in copy) (copy as { text: string }).text = ''
@@ -547,6 +600,10 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
       return
     }
     capture(e)
+    if (toolNow === 'mindmap') {
+      gestureRef.current = { kind: 'mindmap', start: p }
+      return
+    }
     if (toolNow === 'note' || toolNow === 'text' || toolNow === 'section' || toolNow === 'rect' || toolNow === 'ellipse' || toolNow === 'diamond') {
       const type = toolNow === 'rect' || toolNow === 'ellipse' || toolNow === 'diamond' ? 'shape' : toolNow
       gestureRef.current = { kind: 'create', type, shape: type === 'shape' ? toolNow as ShapeKind : undefined, start: p, dragged: false, base: objectsRef.current, id: '' }
@@ -692,7 +749,7 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
         const obj = createBox(g.type, center(r), { shape: g.shape, color: g.type === 'note' ? noteColor : undefined, w: Math.max(16, r.w), h: Math.max(16, r.h) })
         obj.x = r.x; obj.y = r.y
         if (g.id) obj.id = g.id; else g.id = obj.id
-        draftRef.current = [...g.base, obj]
+        draftRef.current = obj.type === 'section' ? [obj, ...g.base] : [...g.base, obj]
         markDirty(); return
       }
       case 'line': {
@@ -752,6 +809,9 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
         return
       case 'marquee': invalidate(); return
       case 'lasso': if (selectionRef.current.size) setTool('select'); invalidate(); return
+      case 'mindmap':
+        if (Math.hypot(p.x - g.start.x, p.y - g.start.y) * viewRef.current.k < 6) insertMindMapRoot(g.start)
+        return
       case 'resize': case 'rotate':
         if (draftRef.current) commit(draftRef.current); return
       case 'create': {
@@ -759,11 +819,9 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
         let id = g.id
         if (!g.dragged) {
           const obj = createBox(g.type, g.start, { shape: g.shape, color: g.type === 'note' ? noteColor : undefined })
-          objects = [...g.base, obj]; id = obj.id
+          objects = obj.type === 'section' ? [obj, ...g.base] : [...g.base, obj]; id = obj.id
         }
         if (!objects) return
-        // Seções novas ficam no fundo (atrás do que já está dentro delas).
-        if (g.type === 'section') { const created = objects.find(o => o.id === id)!; objects = [created, ...objects.filter(o => o.id !== id)] }
         createdRef.current.add(id)
         commit(objects, { select: [id] })
         setTool('select')
@@ -929,14 +987,23 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
     if (e.altKey && (key === 'arrowright' || key === 'arrowleft')) { handled(); stepSection(key === 'arrowright' ? 1 : -1); return }
     if (e.shiftKey && e.code === 'Digit0') { handled(); const c = viewCenter(); animateTo({ k: 1, cx: c.x, cy: c.y }); return }
     if (e.shiftKey && e.code === 'Digit1') { handled(); fitAll(); return }
-    if (e.shiftKey && (e.code === 'Digit2')) { handled(); ensureIndex(); fitRect(unionRects([...selectionRef.current].map(id => indexRef.current.bounds(id)).filter((r): r is Rect => !!r)), 2); return }
+    if (e.shiftKey && e.code === 'Digit2') {
+      handled()
+      ensureIndex()
+      const ids = [...selectionRef.current]
+      const bounds = unionRects(ids.map(id => indexRef.current.bounds(id)).filter((r): r is Rect => !!r))
+      fitRect(bounds, 2, true, ids.some(id => lookupRef.current(id)?.type === 'section'))
+      return
+    }
     if (key === '=' || key === '+') { handled(); zoomAt({ x: viewRef.current.w / 2, y: viewRef.current.h / 2 }, 1.25); return }
     if (key === '-' || key === '_') { handled(); zoomAt({ x: viewRef.current.w / 2, y: viewRef.current.h / 2 }, 0.8); return }
     if (key === 'escape') { handled(); if (toolRef.current !== 'select') setTool('select'); else { setSelection([]); setActiveCard(null) } return }
+    if (key === 'enter' && !ro && !e.altKey && toolRef.current === 'mindmap') { handled(); insertMindMapRoot(viewCenter()); return }
     if (key === 'enter' && selectionRef.current.size === 1) {
       const found = lookupRef.current([...selectionRef.current][0])
       if (!found) return
       const o = found as CanvasObject
+      if (e.altKey && !ro && !o.locked && !o.hidden && isMindMapTopic(o)) { handled(); spawnMindMapBranch(o); return }
       if (isCard(o)) { handled(); setActiveCard(o.id); setTimeout(() => (rootRef.current?.querySelector(`.cv-card[data-id="${CSS.escape(o.id)}"] .bn-editor`) as HTMLElement | null)?.focus(), 60); return }
       if (!ro && !o.locked && (o.type === 'note' || o.type === 'text' || o.type === 'shape' || o.type === 'section' || o.type === 'connector')) { handled(); setEditing(o.id); return }
     }
@@ -1035,22 +1102,35 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
     commit(patchObjects(objectsRef.current, new Set([id]), o => {
       if (o.type === 'section') return { ...o, title: value }
       if (o.type === 'connector') return { ...o, label: value || undefined }
-      if (o.type === 'note') return { ...o, text: value, h: Math.max(o.h, height ?? 0) }
-      if (o.type === 'shape') return { ...o, text: value }
-      if (o.type === 'text') return { ...o, text: value, h: Math.max(o.fontSize * 1.4, height ?? o.h) }
+      if (isTextBox(o)) {
+        const next = { ...o, text: value }
+        const { fontSize } = textBoxFormat(next)
+        if (next.type === 'text') return { ...next, h: Math.max(fontSize * 1.4, height ?? next.h) }
+        if (next.type === 'note') return { ...next, h: Math.max(next.h, height ?? 0) }
+        return fitTextBox(next)
+      }
       return o
     }), { key: `text:${id}` })
   }
-  const fitTextFormat = (o: TextObject): TextObject => {
+  const fitTextBox = (o: TextBoxObject): TextBoxObject => {
+    const { fontSize, weight, italic } = textBoxFormat(o)
+    const rect = textBoxRect(o)
     const ctx = sceneRef.current?.getContext('2d')
-    if (!ctx) return { ...o, h: Math.max(o.h, o.fontSize * 1.4) }
-    const family = o.font ? fontOf(o) : paletteFor(themeRef.current).font
-    const font = `${o.italic ? 'italic ' : ''}${o.bold ? 700 : 400} ${o.fontSize}px ${family}`
-    ctx.save()
-    ctx.font = font
-    const lines = wrapText(s => ctx.measureText(s).width, o.text, Math.max(10, o.w), font)
-    ctx.restore()
-    return { ...o, h: Math.max(o.h, lines.length * o.fontSize * 1.4) }
+    let lines = 1
+    if (ctx) {
+      const family = textBoxFamily(o, paletteFor(themeRef.current))
+      const font = `${italic ? 'italic ' : ''}${weight} ${fontSize}px ${family}`
+      ctx.save()
+      ctx.font = font
+      lines = wrapText(s => ctx.measureText(s).width, o.text, Math.max(10, rect.w), font).length
+      ctx.restore()
+    }
+    const h = Math.max(o.h, Math.ceil(lines * fontSize * 1.4 + o.h - rect.h))
+    return h === o.h ? o : { ...o, h }
+  }
+  const formatTextBox = (o: TextBoxObject, format: TextFormat): TextBoxObject => {
+    const next = applyTextFormat(o, format)
+    return 'fontSize' in format || 'font' in format || 'bold' in format || 'italic' in format || 'background' in format ? fitTextBox(next) : next
   }
   const finishEditing = () => {
     const id = editingRef.current
@@ -1085,6 +1165,20 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
 
   // ---------- painel de propriedades ----------
   const selectedObjects = useMemo(() => { const lookup = lookupOf(objectsRef.current); return [...selection].map(id => lookup(id)).filter((o): o is CanvasObject => !!o) }, [selection, revision])
+  const createSectionFromSelection = () => {
+    const objects = objectsRef.current
+    const selected = selectionRef.current
+    const enclosed = collectForCopy(objects, selected).filter(o => !o.hidden)
+    const lookup = lookupOf(objects)
+    const bounds = unionRects(enclosed.map(o => objectBounds(o, lookup)))
+    if (!bounds) return
+    const rect = inflate(bounds, 32)
+    const section = createBox('section', center(rect), { w: rect.w, h: rect.h })
+    createdRef.current.add(section.id)
+    commit([section, ...objects], { select: [section.id] })
+    setTool('select')
+    setEditing(section.id)
+  }
   const patchSelection = (patch: (o: CanvasObject) => CanvasObject, key?: string) => commit(patchObjects(objectsRef.current, withGroups(objectsRef.current, selectionRef.current), o => o.locked ? o : patch(o)), { key })
 
   // ---------- busca no quadro ----------
@@ -1131,6 +1225,8 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
   const lookupNow = lookupOf(current())
   const cardObjects = domCards ? domCards.split(',').map(id => lookupNow(id)).filter((o): o is Extract<CanvasObject, { type: 'page' | 'database' }> => !!o && isCard(o)) : []
   const liveSet = new Set(liveCards ? liveCards.split(',') : [])
+  const mindMapSource = selectedObjects.length === 1 && isMindMapTopic(selectedObjects[0]) && !selectedObjects[0].locked && !selectedObjects[0].hidden
+    ? selectedObjects[0] : null
   const toolCursor = cursor || (tool === 'hand' ? 'grab' : tool === 'select' ? '' : tool === 'eraser' ? 'none' : 'crosshair')
 
   return (
@@ -1141,7 +1237,7 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
         finishEditing()
       }}>
       <div ref={rootRef} className="cv-surface" tabIndex={0} role="application"
-        aria-label={t('Lousa: {title}. Use V, H, N, T, R, O, D, L, A, P, E e S para trocar de ferramenta.', 'Whiteboard: {title}. Use V, H, N, T, R, O, D, L, A, P, E and S to switch tools.', { title: title || t('Sem título', 'Untitled') })}
+        aria-label={t('Lousa: {title}. Use V, H, N, T, R, O, D, L, A, P, E, S e M para trocar de ferramenta.', 'Whiteboard: {title}. Use V, H, N, T, R, O, D, L, A, P, E, S and M to switch tools.', { title: title || t('Sem título', 'Untitled') })}
         style={{ cursor: toolCursor } as CSSProperties}
         onPointerDownCapture={onPointerDownCapture} onPointerDown={onPointerDown} onPointerMove={onPointerMove}
         onPointerUp={e => finishGesture(e)} onPointerCancel={e => finishGesture(e, true)} onLostPointerCapture={e => { if (gestureRef.current && gestureRef.current.kind !== 'pan') finishGesture(e) }}
@@ -1152,20 +1248,25 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
         <canvas ref={sceneRef} className="cv-scene" aria-hidden />
         <div ref={worldRef} className="cv-world">
           {cardObjects.map(o => <BoardCard key={o.id} object={o} live={liveSet.has(o.id)} selected={selection.has(o.id)} readOnly={readOnly} theme={theme} onActivate={id => { setActiveCard(id); if (!selectionRef.current.has(id)) setSelection([id]) }} />)}
-          {editingObject && <TextEditor object={editingObject} lookup={lookupNow} theme={theme} onChange={editText} onDone={finishEditing} />}
+          {editingObject?.type === 'section'
+            ? <SectionTitleEditor key={editingObject.id} object={editingObject} zoom={zoom} theme={theme} onChange={editText} onDone={finishEditing} />
+            : editingObject && <TextEditor object={editingObject} lookup={lookupNow} theme={theme} onChange={editText} onDone={finishEditing} />}
         </div>
         <canvas ref={overlayRef} className="cv-overlay" aria-hidden />
       </div>
-      {editingObject?.type === 'text' && !readOnly && <div className="cv-format-bar" role="toolbar" aria-label={t('Formatação de texto', 'Text formatting')}
+      {editingObject && isTextBox(editingObject) && !editingObject.locked && !readOnly && <div className="cv-format-bar" role="toolbar" aria-label={t('Formatação de texto', 'Text formatting')}
         onMouseDown={e => {
           if (document.activeElement?.classList.contains('cv-text-editor') && (e.target as Element).closest('button')) e.preventDefault()
         }}
         onKeyDown={e => { if (e.key === 'Escape') finishEditing() }}>
         <TextFormatControls key={editingObject.id} object={editingObject} onFormat={format => commit(patchObjects(objectsRef.current, new Set([editingObject.id]),
-          o => o.type === 'text' && !o.locked ? fitTextFormat({ ...o, ...format }) : o))} />
+          o => isTextBox(o) && !o.locked ? formatTextBox(o, format) : o))} />
       </div>}
       <input ref={imageInput} type="file" accept="image/*" multiple hidden onChange={e => { const files = [...(e.currentTarget.files ?? [])]; e.currentTarget.value = ''; if (files.length) void insertFiles(files, viewCenter()) }} />
-      <BoardToolbar tool={tool} readOnly={readOnly} noteColor={noteColor} onTool={setTool} onNoteColor={setNoteColor}
+      <BoardToolbar tool={tool} readOnly={readOnly} noteColor={noteColor} onTool={next => {
+        setTool(next)
+        if (next === 'mindmap') rootRef.current?.focus({ preventScroll: true })
+      }} onNoteColor={setNoteColor}
         onImage={() => imageInput.current?.click()} onPage={() => setPickerOpen(true)} onUndo={undo} onRedo={redo}
         penColor={penColor.current} onPenColor={c => { penColor.current = c; setRevision(r => r + 1) }} penSize={penSize.current} onPenSize={s => { penSize.current = s; setRevision(r => r + 1) }}
         library={library} canSaveLibrary={selection.size > 0} onTemplate={insertTemplate} onLibraryInsert={insertLibrary} onLibrarySave={saveLibrary} onLibraryDelete={id => actions.updateSettings({ canvasLibrary: library.filter(item => item.id !== id) })} />
@@ -1179,9 +1280,11 @@ export const CanvasBoard = memo(function CanvasBoard({ pageId, title, data, read
       {pickerOpen && <PagePicker excludeId={pageId} onPick={ids => { setPickerOpen(false); addPages(ids); rootRef.current?.focus() }} onClose={() => setPickerOpen(false)} />}
       {(layersOpen || (!readOnly && selectedObjects.length > 0 && !editing)) && <div className="cv-side">
       {layersOpen && <BoardLayers objects={objectsRef.current} selection={selection} readOnly={readOnly} cardTitle={id => infoFor(id).title} onSelect={layersSelect} onPatch={layersPatch} onMove={layersMove} onClose={toggleLayers} />}
-      {!readOnly && selectedObjects.length > 0 && !editing && <BoardInspector objects={selectedObjects} onPatch={patchSelection} onTextFormat={fitTextFormat} onAlign={doAlign} onReorder={doReorder} onLock={toggleLock}
+      {!readOnly && selectedObjects.length > 0 && !editing && <BoardInspector objects={selectedObjects} onPatch={patchSelection} onTextFormat={formatTextBox} onAlign={doAlign} onReorder={doReorder} onLock={toggleLock}
+        onAddMindMapBranch={mindMapSource ? () => spawnMindMapBranch(mindMapSource) : undefined}
         onGroup={() => commit(groupObjects(objectsRef.current, selectionRef.current))} onUngroup={() => commit(ungroupObjects(objectsRef.current, withGroups(objectsRef.current, selectionRef.current)))}
-        onDelete={deleteSelection} onDuplicate={duplicateSelection} onEdit={() => { const o = selectedObjects[0]; if (o) setEditing(o.id) }} onSaveLibrary={() => saveLibrary(t('Item', 'Item'))} />}
+        onDelete={deleteSelection} onDuplicate={duplicateSelection} onEdit={() => { const o = selectedObjects[0]; if (o) setEditing(o.id) }} onSaveLibrary={() => saveLibrary(t('Item', 'Item'))}
+        onCreateSection={selectedObjects.some(o => o.type !== 'connector') && selectedObjects.every(o => o.type !== 'section') ? createSectionFromSelection : undefined} />}
       </div>}
       {readOnly && <div className="cv-readonly" role="status">{t('Somente leitura — desbloqueie a página para editar a lousa.', 'Read-only — unlock the page to edit the whiteboard.')}</div>}
       {notice && <div className="cv-notice" role="status">{notice}</div>}
@@ -1202,10 +1305,44 @@ const paletteSwatch = (c: CanvasColor, dark: boolean) => (dark ? INK_DARK : INK_
 const INK_LIGHT: Record<string, string> = { gray: '#9b9a97', brown: '#a27763', orange: '#d9730d', yellow: '#cb912f', green: '#448361', blue: '#337ea9', purple: '#9065b0', pink: '#c14c8a', red: '#d44c47' }
 const INK_DARK: Record<string, string> = { gray: '#8c8b88', brown: '#a27763', orange: '#d9730d', yellow: '#cb912f', green: '#4f9a72', blue: '#3d8fc4', purple: '#a07cc4', pink: '#d0609c', red: '#e0625d' }
 
+function SectionTitleEditor({ object, zoom, theme, onChange, onDone }: {
+  object: SectionObject
+  zoom: number
+  theme: 'light' | 'dark'
+  onChange(value: string): void
+  onDone(): void
+}) {
+  const { text, fontSize } = sectionHeader(object, zoom)
+  const [, color] = swatch(object.color, theme === 'dark')
+  return <input type="text" className="cv-text-editor cv-section-editor"
+    aria-label={tNow('Nome da seção', 'Section name')} placeholder={tNow('Seção', 'Section')}
+    autoFocus value={object.title.replace(/[\r\n]+/g, ' ')}
+    style={{ left: text.x, top: text.y + 1 / zoom, width: text.w, height: text.h - 2 / zoom, fontSize, fontWeight: 600, color, fontFamily: object.font ? fontOf(object) : undefined }}
+    onFocus={e => e.currentTarget.select()} onChange={e => onChange(e.target.value)}
+    onPointerDown={e => e.stopPropagation()} onDoubleClick={e => e.stopPropagation()}
+    onKeyDown={e => {
+      e.stopPropagation()
+      if (!e.nativeEvent.isComposing && (e.key === 'Enter' || e.key === 'Escape')) {
+        e.preventDefault()
+        onDone()
+      }
+    }} />
+}
+
 /** Text editing overlay placed in world coordinates (scales with the board). */
 function TextEditor({ object, lookup, theme, onChange, onDone }: { object: CanvasObject; lookup: Lookup; theme: 'light' | 'dark'; onChange(value: string, height?: number): void; onDone(): void }) {
   const ref = useRef<HTMLTextAreaElement>(null)
   useEffect(() => { const el = ref.current; if (el) { el.focus(); el.select() } }, [object.id])
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el || object.type !== 'shape') return
+    const insetY = textBoxRect(object).y - object.y
+    el.style.setProperty('--cv-text-top', `${insetY}px`)
+    el.style.height = '0px'
+    const contentHeight = el.scrollHeight
+    el.style.height = `${object.h}px`
+    el.style.setProperty('--cv-text-top', `${insetY + Math.max(0, (object.h - contentHeight) / 2)}px`)
+  }, [object])
   const dark = theme === 'dark'
   let style: CSSProperties = {}
   let value = ''
@@ -1215,18 +1352,25 @@ function TextEditor({ object, lookup, theme, onChange, onDone }: { object: Canva
     style = { left: m.x - 110, top: m.y - 14, width: 220, height: 28, fontSize: 13, textAlign: 'center' }
     value = object.label ?? ''
     className += ' is-label'
-  } else if (isBox(object)) {
+  } else if (isTextBox(object)) {
     const rotation = object.rotation ? `rotate(${object.rotation}deg)` : undefined
-    if (object.type === 'section') { style = { left: object.x + 12, top: object.y + 8, width: object.w - 24, height: SECTION_FONT * 1.8, fontSize: SECTION_FONT, fontWeight: 600 }; value = object.title }
-    else if (object.type === 'note') { style = { left: object.x, top: object.y, width: object.w, height: object.h, fontSize: NOTE_FONT, padding: '12px 14px', transform: rotation }; value = object.text; className += ' is-note' }
-    else if (object.type === 'shape') { style = { left: object.x, top: object.y, width: object.w, height: object.h, fontSize: SHAPE_FONT, fontWeight: 500, textAlign: 'center', padding: `${Math.max(8, object.h / 2 - 12)}px 14px 8px`, transform: rotation }; value = object.text }
-    else if (object.type === 'text') { style = { left: object.x, top: object.y, width: object.w, minHeight: object.h, fontSize: object.fontSize, fontWeight: object.bold ? 700 : 400, fontStyle: object.italic ? 'italic' : 'normal', color: object.color === 'default' ? undefined : inkColor(object.color, dark), textAlign: object.align ?? 'left', transform: rotation }; value = object.text }
+    const palette = paletteFor(theme)
+    const { fontSize, weight, align, italic } = textBoxFormat(object)
+    const rect = textBoxRect(object)
+    const insetX = rect.x - object.x
+    const insetY = rect.y - object.y
+    style = { left: object.x, top: object.y, width: object.w, height: object.h, fontSize, fontWeight: weight,
+      fontFamily: textBoxFamily(object, palette), fontStyle: italic ? 'italic' : 'normal',
+      color: textBoxColor(object, palette), textAlign: align, paddingInline: insetX, paddingBottom: insetY,
+      paddingTop: object.type === 'shape' ? 'var(--cv-text-top)' : insetY,
+      opacity: object.opacity, transform: rotation }
+    value = object.text
   }
-  if (object.font) style = { ...style, fontFamily: fontOf(object) }
+  if (object.font && !isTextBox(object)) style = { ...style, fontFamily: fontOf(object) }
   return <textarea ref={ref} className={className} data-theme-dark={dark || undefined} style={style} value={value}
     aria-label={tNow('Texto do objeto', 'Object text')}
     onPointerDown={e => e.stopPropagation()} onDoubleClick={e => e.stopPropagation()}
-    onChange={e => { const el = e.target; if (object.type === 'text' || object.type === 'note') { el.style.height = 'auto'; const height = el.scrollHeight; el.style.height = ''; onChange(el.value, height) } else onChange(el.value) }}
+    onChange={e => { const el = e.target; if (object.type === 'text' || object.type === 'note') { el.style.height = 'auto'; const height = el.scrollHeight; el.style.height = `${object.h}px`; onChange(el.value, height) } else onChange(el.value) }}
     onKeyDown={e => { e.stopPropagation(); if (e.key === 'Escape' || (e.key === 'Enter' && (e.metaKey || e.ctrlKey))) { e.preventDefault(); onDone() } }} />
 }
 

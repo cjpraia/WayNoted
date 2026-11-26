@@ -1,5 +1,5 @@
 // Geometria pura do quadro: limites, rotação, âncoras/rotas de conectores, hit-test, alças, snap e alinhamento.
-import { isBox, isConnector, MIN_SIZE, rotatable, type BoxObject, type CanvasObject, type ConnectorEnd, type ConnectorObject, type Side } from './model.ts'
+import { isBox, isConnector, MIN_SIZE, rotatable, type BoxObject, type CanvasObject, type ConnectorEnd, type ConnectorObject, type SectionObject, type Side } from './model.ts'
 
 export interface Point { x: number; y: number }
 export interface Rect { x: number; y: number; w: number; h: number }
@@ -205,6 +205,27 @@ export function objectBounds(o: CanvasObject, lookup: Lookup): Rect {
   return inflate(r, o.label ? 24 : 8)
 }
 
+export const SECTION_HEADER_MIN_WIDTH = 136
+export const SECTION_HEADER_TOP_OUTSET = 44
+
+/** Keep section headings readable while the board is zoomed out. Geometry stays in world units. */
+export function sectionHeader(section: SectionObject, zoom = 1) {
+  const screen = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value * zoom)) / zoom
+  const h = screen(28, 26, 34)
+  const gap = screen(8, 8, 10)
+  const rect = { x: section.x, y: section.y - h - gap, w: screen(Math.min(section.w, 240), SECTION_HEADER_MIN_WIDTH, 300), h }
+  const leading = screen(20, 18, 24), trailing = screen(10, 8, 12)
+  const text = { x: rect.x + leading, y: rect.y, w: rect.w - leading - trailing, h }
+  const accent = { x: rect.x + leading / 2 - 2 / zoom, y: rect.y + h / 4, w: 3 / zoom, h: h / 2 }
+  return { rect, text, accent, fontSize: screen(15, 12, 19), radius: screen(6, 5, 8) }
+}
+
+/** Section headings extend above the bounds used for containment and editing handles. */
+export function objectExportBounds(o: CanvasObject, lookup: Lookup): Rect {
+  const bounds = objectBounds(o, lookup)
+  return o.type === 'section' ? unionRects([bounds, sectionHeader(o).rect])! : bounds
+}
+
 // ---------- hit-test ----------
 
 export function drawPoints(o: Extract<BoxObject, { type: 'draw' }>): Point[] {
@@ -214,7 +235,7 @@ export function drawPoints(o: Extract<BoxObject, { type: 'draw' }>): Point[] {
 }
 
 /** Whether world point `p` hits object `o` (tolerance in world units). */
-export function hitObject(o: CanvasObject, p: Point, tol: number, lookup: Lookup): boolean {
+export function hitObject(o: CanvasObject, p: Point, tol: number, lookup: Lookup, zoom = 1): boolean {
   if (o.hidden) return false
   if (isConnector(o)) {
     const g = connectorGeometry(o, lookup)
@@ -225,13 +246,10 @@ export function hitObject(o: CanvasObject, p: Point, tol: number, lookup: Lookup
   }
   const c = center(o)
   const local = rotatePoint(p, c, -(o.rotation ?? 0))
+  if (o.type === 'section' && containsPoint(inflate(sectionHeader(o, zoom).rect, tol), local)) return true
   if (!containsPoint(inflate(o, tol), local)) return false
   if (o.type === 'draw') return distToPolyline(p, drawPoints(o)) <= o.size / 2 + tol
-  if (o.type === 'section') {
-    // Seção: só a moldura e a faixa do título pegam o clique (o interior fica para os filhos e para o laço).
-    const inner = inflate(o, -Math.max(tol, 10))
-    return !containsPoint(inner, local) || local.y <= o.y + 36
-  }
+  if (o.type === 'section') return !containsPoint(inflate(o, -tol), local)
   if (o.type === 'shape' && o.shape !== 'rect' && (o as { fill: string }).fill !== 'none') {
     const nx = (local.x - c.x) / (o.w / 2 + tol), ny = (local.y - c.y) / (o.h / 2 + tol)
     return o.shape === 'ellipse' ? nx * nx + ny * ny <= 1 : Math.abs(nx) + Math.abs(ny) <= 1
@@ -245,7 +263,7 @@ export function hitObject(o: CanvasObject, p: Point, tol: number, lookup: Lookup
 }
 
 /** Topmost hit (objects in z order, last on top). `ids` limits the search (viewport culling). */
-export function hitTest(objects: readonly CanvasObject[], p: Point, tol: number, lookup: Lookup, candidates?: Set<string>): CanvasObject | null {
+export function hitTest(objects: readonly CanvasObject[], p: Point, tol: number, lookup: Lookup, candidates?: Set<string>, zoom = 1): CanvasObject | null {
   // Cards and other DOM-backed boxes are above the canvas layer: test them first, then the rest top-down.
   for (let pass = 0; pass < 2; pass++) {
     for (let i = objects.length - 1; i >= 0; i--) {
@@ -253,7 +271,7 @@ export function hitTest(objects: readonly CanvasObject[], p: Point, tol: number,
       if (candidates && !candidates.has(o.id)) continue
       const card = o.type === 'page' || o.type === 'database'
       if ((pass === 0) !== card) continue
-      if (hitObject(o, p, tol, lookup)) return o
+      if (hitObject(o, p, tol, lookup, zoom)) return o
     }
   }
   return null

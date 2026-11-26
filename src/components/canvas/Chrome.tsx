@@ -21,11 +21,11 @@ export function IconButton({ icon, label, active, onClick, disabled, kbd, size =
 
 export const COLOR_NAMES: Record<CanvasColor, [string, string]> = { default: ['Padrão', 'Default'], gray: ['Cinza', 'Gray'], brown: ['Marrom', 'Brown'], orange: ['Laranja', 'Orange'], yellow: ['Amarelo', 'Yellow'], green: ['Verde', 'Green'], blue: ['Azul', 'Blue'], purple: ['Roxo', 'Purple'], pink: ['Rosa', 'Pink'], red: ['Vermelho', 'Red'] }
 
-export function Swatches({ colors, value, onPick, ink }: { colors: readonly CanvasColor[]; value?: CanvasColor; onPick(c: CanvasColor): void; ink?: boolean }) {
+export function Swatches({ colors, value, onPick, ink, label }: { colors: readonly CanvasColor[]; value?: CanvasColor; onPick(c: CanvasColor): void; ink?: boolean; label?: string }) {
   const { t } = useI18n()
   const { settings } = useStore()
   const dark = document.documentElement.dataset.theme === 'dark' || (settings.theme === 'dark')
-  return <div className="cv-swatches" role="radiogroup" aria-label={t('Cor', 'Colour')}>
+  return <div className="cv-swatches" role="radiogroup" aria-label={label ?? t('Cor', 'Colour')}>
     {colors.map(c => <button key={c} type="button" role="radio" aria-checked={value === c} aria-label={t(...COLOR_NAMES[c])} title={t(...COLOR_NAMES[c])}
       className={`cv-swatch${value === c ? ' is-active' : ''}`} style={{ background: ink ? inkColor(c, dark) : swatch(c, dark)[0], borderColor: swatch(c, dark)[2] }} onClick={() => onPick(c)} />)}
   </div>

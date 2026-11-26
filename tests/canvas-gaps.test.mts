@@ -2,9 +2,9 @@
 // gestos de pinça/caneta por eventos sintéticos, contraste do tema escuro e conector preso a forma.
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { contrast, DARK_PALETTE, LIGHT_PALETTE, normalizeCanvas, normalizeObject, swatch, CANVAS_COLORS, type CanvasObject, type ConnectorObject } from '../src/canvas/model.ts'
+import { contrast, DARK_PALETTE, LIGHT_PALETTE, normalizeCanvas, normalizeObject, swatch, CANVAS_COLORS, type CanvasObject, type ConnectorObject, type SectionObject } from '../src/canvas/model.ts'
 import { buildLayerTree, descendantIds, flattenLayers, layerLabel, moveLayer } from '../src/canvas/layers.ts'
-import { hitTest, lassoSelect, objectBounds, pointInPolygon, segmentsIntersect, connectorEnds, transformObject, translateObject } from '../src/canvas/geometry.ts'
+import { hitTest, lassoSelect, objectBounds, sectionHeader, sectionMembers, pointInPolygon, segmentsIntersect, connectorEnds, transformObject, translateObject } from '../src/canvas/geometry.ts'
 import { SpatialIndex } from '../src/canvas/spatial.ts'
 import { createConnector, lookupOf, patchObjects } from '../src/canvas/ops.ts'
 import { canvasToSvg } from '../src/canvas/svg.ts'
@@ -15,7 +15,7 @@ import { embedInSvg, sceneFromSvg } from '../src/canvas/scene.ts'
 import { createRequire } from 'node:module'
 
 const note = (id: string, x: number, y: number, w = 100, h = 80, extra: Record<string, unknown> = {}) => ({ id, type: 'note', x, y, w, h, text: id, color: 'yellow', ...extra }) as CanvasObject
-const section = (id: string, x: number, y: number, w: number, h: number, extra: Record<string, unknown> = {}) => ({ id, type: 'section', x, y, w, h, title: id, color: 'gray', ...extra }) as CanvasObject
+const section = (id: string, x: number, y: number, w: number, h: number, extra: Record<string, unknown> = {}) => ({ id, type: 'section', x, y, w, h, title: id, color: 'gray', ...extra }) as SectionObject
 const rect = (id: string, x: number, y: number, w = 120, h = 80) => ({ id, type: 'shape', shape: 'rect', x, y, w, h, text: '', color: 'blue', fill: 'tint' }) as CanvasObject
 const ids = (rows: { id: string }[]) => rows.map(r => r.id)
 
@@ -133,6 +133,30 @@ test('lasso: selects what it crosses or contains, whole sections only, never hid
   assert.deepEqual(lassoSelect(objects, [{ x: 405, y: 100 }, { x: 415, y: 100 }, { x: 415, y: 110 }, { x: 405, y: 110 }], lookup), [], 'the rotated box no longer covers its old corner')
   // candidatos restringem a busca (culling pelo índice)
   assert.deepEqual(lassoSelect(objects, lasso, lookup, new Set(['inside'])), ['inside'])
+})
+
+test('section header is readable and selectable at overview zoom without intercepting children', () => {
+  const frame = section('frame', 20, 40, 280, 220)
+  const child = note('child', 50, 50)
+  const objects = [frame, child]
+  const lookup = lookupOf(objects)
+  const zoom = 0.26
+  const { rect: header, fontSize } = sectionHeader(frame, zoom)
+  const hit = (x: number, y: number) => hitTest(objects, { x, y }, 4 / zoom, lookup, undefined, zoom)
+  assert.ok(fontSize * zoom >= 12)
+  assert.equal(hit(header.x + header.w / 2, header.y + header.h / 2)?.id, 'frame')
+  assert.equal(hit(21, 200)?.id, 'frame')
+  assert.equal(hit(80, 70)?.id, 'child')
+  assert.equal(hit(200, 68), null)
+  assert.deepEqual(sectionMembers(frame, objects, lookup), ['child'])
+})
+
+test('section export includes its external header and escapes its title', () => {
+  const frame = section('frame', 20, 40, 280, 220, { title: 'Ideias < rascunho' })
+  const header = sectionHeader(frame).rect
+  const svg = canvasToSvg([frame], { palette: LIGHT_PALETTE, padding: 0 })
+  assert.match(svg, new RegExp(`viewBox="${frame.x} ${header.y} ${frame.w} ${frame.h + frame.y - header.y}"`))
+  assert.match(svg, /Ideias &lt; rascunho/)
 })
 
 // ---------- estilo à mão em notas e seções ----------

@@ -1,9 +1,10 @@
 // Exportação SVG pura do quadro (também usada no HTML exportado e na prévia do bloco /Quadro).
-import { fontOf, inkColor, isBox, swatch, type BoxObject, type CanvasObject, type CanvasPalette, type ConnectorObject, type StyleProps } from './model.ts'
+import { fontOf, inkColor, isBox, swatch, type BoxObject, type CanvasObject, type CanvasPalette, type ConnectorObject, type StyleProps, type TextBoxObject } from './model.ts'
+import { textBoxColor, textBoxFamily, textBoxFormat, textBoxRect } from './textStyle.ts'
 import { dashFor, roughPolyline, shapePaths, sketchBoxPath } from './sketch.ts'
-import { center, connectorGeometry, drawPoints, geometryPolyline, midpointOf, objectBounds, unionRects, type Point, type Rect } from './geometry.ts'
+import { center, connectorGeometry, drawPoints, geometryPolyline, midpointOf, objectExportBounds, sectionHeader, unionRects, type Point, type Rect } from './geometry.ts'
 import { lookupOf } from './ops.ts'
-import { connectorDead, DEAD_LABEL, pressureScale, wrapText, type CardInfo, NOTE_FONT, SHAPE_FONT, SECTION_FONT, CARD_TITLE_FONT } from './render.ts'
+import { connectorDead, DEAD_LABEL, pressureScale, wrapText, fitSectionTitle, sectionTitle, type CardInfo, CARD_TITLE_FONT } from './render.ts'
 
 export interface SvgOptions {
   palette: CanvasPalette
@@ -18,6 +19,7 @@ export interface SvgOptions {
   /** Fixed output width (preview); default = world units. */
   width?: number
   background?: boolean
+  sectionName?: string
 }
 
 export const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -36,24 +38,43 @@ function text(content: string, r: Rect, size: number, color: string, font: strin
   return `<text x="${n(x)}" y="${n(top)}" font-family="${esc(font)}" font-size="${size}" font-weight="${weight}"${italic ? ' font-style="italic"' : ''} fill="${color}" text-anchor="${anchor}">${shown.map((line, i) => `<tspan x="${n(x)}" dy="${i === 0 ? n(size * 1.05) : n(lh)}">${esc(line) || ' '}</tspan>`).join('')}</text>`
 }
 
+function textBoxSvg(o: TextBoxObject, palette: CanvasPalette) {
+  const { fontSize, align, weight, italic } = textBoxFormat(o)
+  return text(o.text, textBoxRect(o), fontSize, textBoxColor(o, palette), textBoxFamily(o, palette),
+    align, o.type === 'shape', weight, italic)
+}
+
 function boxSvg(o: BoxObject, opts: SvgOptions): string {
   const p = opts.palette, dark = p.dark, font = o.font ? fontOf(o) : p.font
   const transform = o.rotation ? ` transform="rotate(${n(o.rotation)} ${n(o.x + o.w / 2)} ${n(o.y + o.h / 2)})"` : ''
   let body = ''
   switch (o.type) {
     case 'section': {
-      const [bg, , stroke] = swatch(o.color, dark)
-      body = `<rect x="${n(o.x)}" y="${n(o.y)}" width="${n(o.w)}" height="${n(o.h)}" rx="12" fill="${bg}" fill-opacity="0.55"${o.sketch ? ' stroke="none"/>' + `<path d="${sketchBoxPath(o, o.sketch)}" fill="none" stroke="${stroke}" stroke-opacity="0.7" stroke-width="${n(o.strokeWidth ?? 2)}" stroke-linecap="round" stroke-linejoin="round"/>` : ` stroke="${stroke}" stroke-opacity="0.7" stroke-width="1.5"/>`}` + text(o.title, { x: o.x + 16, y: o.y + 12, w: o.w - 32, h: SECTION_FONT * 1.4 }, SECTION_FONT, dark ? p.text : swatch(o.color, false)[1], font, 'left', false, 600)
+      const [bg, fg, stroke] = swatch(o.color, dark)
+      const { rect, text: label, accent, fontSize, radius } = sectionHeader(o)
+      const title = fitSectionTitle(measure(fontSize), sectionTitle(o.title, opts.sectionName), label.w)
+      const strokeStyle = o.sketch
+        ? ` stroke="none"/><path d="${sketchBoxPath(o, o.sketch)}" fill="none" stroke="${stroke}" stroke-opacity="0.7" stroke-width="${n(o.strokeWidth ?? 2)}" stroke-linecap="round" stroke-linejoin="round"/>`
+        : ` stroke="${stroke}" stroke-opacity="0.7" stroke-width="1.5"/>`
+      body = `<rect x="${n(o.x)}" y="${n(o.y)}" width="${n(o.w)}" height="${n(o.h)}" rx="12" fill="${bg}" fill-opacity="0.55"${strokeStyle}`
+        + `<rect x="${n(rect.x)}" y="${n(rect.y)}" width="${n(rect.w)}" height="${n(rect.h)}" rx="${n(radius)}" fill="${bg}" stroke="${stroke}"/>`
+        + `<rect x="${n(accent.x)}" y="${n(accent.y)}" width="${n(accent.w)}" height="${n(accent.h)}" rx="${n(accent.w / 2)}" fill="${stroke}"/>`
+        + `<text x="${n(label.x)}" y="${n(label.y + label.h / 2)}" dominant-baseline="central" font-family="${esc(font)}" font-size="${n(fontSize)}" font-weight="600" fill="${fg}">${esc(title)}</text>`
       break
     }
     case 'note': {
-      const [bg, fg] = swatch(o.color, dark)
-      body = `<rect x="${n(o.x)}" y="${n(o.y)}" width="${n(o.w)}" height="${n(o.h)}" rx="4" fill="${bg}"/>` + (o.sketch ? `<path d="${sketchBoxPath(o, o.sketch)}" fill="none" stroke="${swatch(o.color, dark)[2]}" stroke-width="${n(o.strokeWidth ?? 1.8)}" stroke-linecap="round" stroke-linejoin="round"/>` : '') + text(o.text, { x: o.x + 14, y: o.y + 12, w: o.w - 28, h: o.h - 24 }, NOTE_FONT, fg, font)
+      const [bg] = swatch(o.color, dark)
+      body = `<rect x="${n(o.x)}" y="${n(o.y)}" width="${n(o.w)}" height="${n(o.h)}" rx="4" fill="${bg}"/>` + (o.sketch ? `<path d="${sketchBoxPath(o, o.sketch)}" fill="none" stroke="${swatch(o.color, dark)[2]}" stroke-width="${n(o.strokeWidth ?? 1.8)}" stroke-linecap="round" stroke-linejoin="round"/>` : '') + textBoxSvg(o, p)
       break
     }
-    case 'text': body = text(o.text, o, o.fontSize, o.color === 'default' ? p.text : inkColor(o.color, dark), font, o.align ?? 'left', false, o.bold ? 700 : 400, o.italic); break
+    case 'text':
+      if (o.background) {
+        body = `<rect x="${n(o.x)}" y="${n(o.y)}" width="${n(o.w)}" height="${n(o.h)}" rx="4" fill="${swatch(o.background, dark)[0]}"/>`
+      }
+      body += textBoxSvg(o, p)
+      break
     case 'shape': {
-      const [bg, fg, stroke] = swatch(o.color, dark)
+      const [bg, , stroke] = swatch(o.color, dark)
       const width = o.strokeWidth ?? 2
       const paths = shapePaths(o)
       const fill = o.fill === 'solid' ? stroke : o.fill === 'tint' ? bg : 'none'
@@ -61,8 +82,7 @@ function boxSvg(o: BoxObject, opts: SvgOptions): string {
       body = (o.sketch && fill !== 'none' ? `<path d="${shapePaths({ ...o, sketch: undefined }).outline}" fill="${fill}" stroke="none"/>` : '')
         + (paths.hatch ? `<path d="${paths.hatch}" fill="none" stroke="${stroke}" stroke-width="${n(Math.max(1, width * 0.6))}" stroke-linecap="round"/>` : '')
         + `<path d="${paths.outline}" fill="${o.sketch ? 'none' : fill}" stroke="${stroke}" stroke-width="${n(width)}" stroke-linecap="round" stroke-linejoin="round"${dash.length ? ` stroke-dasharray="${dash.map(n).join(' ')}"` : ''}/>`
-      const inset = o.shape === 'rect' ? 12 : o.w * 0.18
-      body += text(o.text, { x: o.x + inset, y: o.y + 8, w: o.w - inset * 2, h: o.h - 16 }, SHAPE_FONT, o.fill === 'solid' ? '#ffffff' : o.fill === 'tint' ? fg : p.text, font, 'center', true, 500)
+      body += textBoxSvg(o, p)
       break
     }
     case 'draw': {
@@ -127,7 +147,7 @@ export function canvasToSvg(all: readonly CanvasObject[], opts: SvgOptions): str
   const objects = all.filter(o => !o.hidden)
   const lookup = lookupOf(all)
   const pad = opts.padding ?? 32
-  const area = opts.bounds ?? unionRects(objects.map(o => objectBounds(o, lookup))) ?? { x: 0, y: 0, w: 400, h: 300 }
+  const area = opts.bounds ?? unionRects(objects.map(o => objectExportBounds(o, lookup))) ?? { x: 0, y: 0, w: 400, h: 300 }
   const box = { x: area.x - pad, y: area.y - pad, w: Math.max(1, area.w + pad * 2), h: Math.max(1, area.h + pad * 2) }
   const width = opts.width ?? Math.round(box.w), height = Math.round(width * box.h / box.w)
   const parts = objects.map(o => isBox(o) ? boxSvg(o, opts) : o.type === 'connector' ? connectorSvg(o, opts, lookup) : '')

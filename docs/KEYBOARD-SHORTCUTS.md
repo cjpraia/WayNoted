@@ -74,6 +74,8 @@ These shortcuts apply while the canvas has focus, except when typing in a text f
 |---|---|
 | V / Q / H | Select / freehand lasso / hand |
 | N / T / F, also S | Note / text / section frame |
+| M | Mind map tool |
+| ⌥Enter | Add a branch to the right of the selected mind map topic |
 | R / O / D | Rectangle / ellipse / diamond |
 | L / A | Line / arrow connector |
 | P / E / I | Pen / eraser / image |

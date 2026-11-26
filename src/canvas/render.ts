@@ -1,8 +1,9 @@
 // Renderizador Canvas 2D do quadro (cena e sobreposição de seleção). Usado na tela e na exportação PNG.
 // Recebe só os objetos visíveis (culling feito pelo índice espacial) e aplica nível de detalhe por zoom.
-import { fontOf, inkColor, isBox, swatch, type BoxObject, type CanvasObject, type CanvasPalette, type ConnectorObject } from './model.ts'
+import { fontOf, inkColor, isBox, swatch, type BoxObject, type CanvasObject, type CanvasPalette, type ConnectorObject, type TextBoxObject } from './model.ts'
+import { textBoxColor, textBoxFamily, textBoxFormat, textBoxRect } from './textStyle.ts'
 import { dashFor, roughPolyline, shapePaths, sketchBoxPath } from './sketch.ts'
-import { center, connectorGeometry, drawPoints, geometryPolyline, handlePoints, midpointOf, ROTATE_OFFSET, type Distance, type Guide, type Lookup, type Point, type Rect } from './geometry.ts'
+import { center, connectorGeometry, drawPoints, geometryPolyline, handlePoints, midpointOf, ROTATE_OFFSET, sectionHeader, type Distance, type Guide, type Lookup, type Point, type Rect } from './geometry.ts'
 
 export interface View { k: number; tx: number; ty: number; w: number; h: number }
 export type CardState = 'ok' | 'trash' | 'missing' | 'locked'
@@ -20,6 +21,9 @@ export interface RenderOptions {
   image?: (src: string) => CanvasImageSource | null
   /** Clears and paints the background (screen); export may pass false for transparency. */
   background?: boolean
+  sectionName?: string
+  /** Export headings at a stable world size, independent of output resolution. */
+  sectionZoom?: number
 }
 
 type Ctx = CanvasRenderingContext2D
@@ -41,16 +45,28 @@ export function wrapText(measure: (s: string) => number, text: string, maxWidth:
     let line = ''
     for (const word of words) {
       const candidate = line + word
-      if (line && measure(candidate.trimEnd()) > maxWidth) {
+      if (line.trimEnd() && measure(candidate.trimEnd()) > maxWidth) {
         lines.push(line.trimEnd())
         line = word.trimStart()
-        // Palavra maior que a largura: quebra por caracteres.
-        while (line && measure(line) > maxWidth && line.length > 1) {
-          let cut = line.length - 1
-          while (cut > 1 && measure(line.slice(0, cut)) > maxWidth) cut--
-          lines.push(line.slice(0, cut)); line = line.slice(cut)
+      } else {
+        line = candidate
+      }
+      // A larger font can make even the first word wider than the text box.
+      while (line.length > 1 && measure(line.trimEnd()) > maxWidth) {
+        let low = 1
+        let high = line.length - 1
+        while (low < high) {
+          const cut = Math.ceil((low + high) / 2)
+          if (measure(line.slice(0, cut)) <= maxWidth) low = cut
+          else high = cut - 1
         }
-      } else line = candidate
+        // Avoid splitting a UTF-16 surrogate pair.
+        const nextCode = line.charCodeAt(low)
+        const cut = nextCode >= 0xdc00 && nextCode <= 0xdfff ? (low === 1 ? 2 : low - 1) : low
+        if (cut === line.length) break
+        lines.push(line.slice(0, cut))
+        line = line.slice(cut)
+      }
     }
     lines.push(line.trimEnd())
   }
@@ -59,7 +75,23 @@ export function wrapText(measure: (s: string) => number, text: string, maxWidth:
   return lines
 }
 
-export const NOTE_FONT = 16, SHAPE_FONT = 16, SECTION_FONT = 15, CARD_TITLE_FONT = 15
+export const CARD_TITLE_FONT = 15
+
+export function sectionTitle(title: string, fallback = 'Section') {
+  return (typeof title === 'string' && title.replace(/\s+/g, ' ').trim()) || fallback
+}
+
+export function fitSectionTitle(measure: (s: string) => number, title: string, width: number): string {
+  if (measure(title) <= width) return title
+  const chars = Array.from(title)
+  let min = 0, max = chars.length
+  while (min < max) {
+    const mid = Math.ceil((min + max) / 2)
+    if (measure(chars.slice(0, mid).join('') + '…') <= width) min = mid
+    else max = mid - 1
+  }
+  return chars.slice(0, min).join('').trimEnd() + '…'
+}
 
 function textBlock(ctx: Ctx, v: View, text: string, r: Rect, size: number, color: string, palette: CanvasPalette, align: 'left' | 'center' | 'right' = 'left', vAlign: 'top' | 'middle' = 'top', weight = 400, family = palette.font, italic = false) {
   if (!text) return
@@ -85,6 +117,12 @@ function textBlock(ctx: Ctx, v: View, text: string, r: Rect, size: number, color
   const x = align === 'center' ? r.x + r.w / 2 : align === 'right' ? r.x + r.w : r.x
   for (const line of shown) { ctx.fillText(line, x, y + (lineHeight - size) / 2); y += lineHeight }
   ctx.textAlign = 'left'
+}
+
+function drawTextBox(ctx: Ctx, v: View, o: TextBoxObject, palette: CanvasPalette) {
+  const { fontSize, align, weight, italic } = textBoxFormat(o)
+  textBlock(ctx, v, o.text, textBoxRect(o), fontSize, textBoxColor(o, palette), palette, align,
+    o.type === 'shape' ? 'middle' : 'top', weight, textBoxFamily(o, palette), italic)
 }
 
 function roundRect(ctx: Ctx, r: Rect, radius: number) {
@@ -116,29 +154,46 @@ function drawBox(ctx: Ctx, v: View, o: BoxObject, opts: RenderOptions) {
   if (o.rotation) { const c = center(o); ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(o.rotation * Math.PI / 180); ctx.translate(-c.x, -c.y) }
   switch (o.type) {
     case 'section': {
-      const [bg, , stroke] = swatch(o.color, dark)
+      const [bg, fg, stroke] = swatch(o.color, dark)
+      const alpha = o.opacity ?? 1
       roundRect(ctx, o, 12)
-      ctx.fillStyle = bg; ctx.globalAlpha = 0.55; ctx.fill(); ctx.globalAlpha = 1
-      ctx.strokeStyle = stroke; ctx.lineWidth = (o.sketch ? (o.strokeWidth ?? 2) : 1.5) / Math.max(v.k, 0.4); ctx.globalAlpha = 0.7
+      ctx.fillStyle = bg; ctx.globalAlpha = 0.55 * alpha; ctx.fill()
+      ctx.strokeStyle = stroke; ctx.lineWidth = (o.sketch ? (o.strokeWidth ?? 2) : 1.5) / Math.max(opts.sectionZoom ?? v.k, 0.4)
+      ctx.globalAlpha = 0.7 * alpha
       if (o.sketch && typeof Path2D === 'function') { ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke(new Path2D(sketchBoxPath(o, o.sketch))) } else ctx.stroke()
-      ctx.globalAlpha = 1
-      if (!hide) textBlock(ctx, v, o.title || '', { x: o.x + 16, y: o.y + 12, w: o.w - 32, h: SECTION_FONT * 1.4 }, SECTION_FONT, dark ? p.text : swatch(o.color, false)[1], p, 'left', 'top', 600)
+      ctx.globalAlpha = alpha
+      const zoom = opts.sectionZoom ?? v.k
+      const header = sectionHeader(o, zoom)
+      roundRect(ctx, header.rect, header.radius)
+      ctx.fillStyle = bg; ctx.fill()
+      ctx.strokeStyle = hide ? p.accent : stroke; ctx.lineWidth = (hide ? 2 : 1) / zoom; ctx.stroke()
+      roundRect(ctx, header.accent, header.accent.w / 2)
+      ctx.fillStyle = stroke; ctx.fill()
+      if (!hide) {
+        ctx.font = `600 ${header.fontSize}px ${family}`
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = fg
+        const title = fitSectionTitle(label => ctx.measureText(label).width, sectionTitle(o.title, opts.sectionName), header.text.w)
+        ctx.fillText(title, header.text.x, header.text.y + header.text.h / 2)
+      }
       break
     }
     case 'note': {
-      const [bg, fg] = swatch(o.color, dark)
+      const [bg] = swatch(o.color, dark)
       if (v.k > 0.3) { ctx.save(); ctx.shadowColor = dark ? 'rgba(0,0,0,0.45)' : 'rgba(15,15,15,0.12)'; ctx.shadowBlur = 8 * v.k; ctx.shadowOffsetY = 2 * v.k }
       roundRect(ctx, o, 4); ctx.fillStyle = bg; ctx.fill()
       if (v.k > 0.3) ctx.restore()
       if (o.sketch && typeof Path2D === 'function') { ctx.strokeStyle = swatch(o.color, dark)[2]; ctx.lineWidth = o.strokeWidth ?? 1.8; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke(new Path2D(sketchBoxPath(o, o.sketch))) }
-      if (!hide) textBlock(ctx, v, o.text, { x: o.x + 14, y: o.y + 12, w: o.w - 28, h: o.h - 24 }, NOTE_FONT, fg, p, 'left', 'top', 400, family)
+      if (!hide) drawTextBox(ctx, v, o, p)
       break
     }
     case 'text':
-      if (!hide) textBlock(ctx, v, o.text, o, o.fontSize, o.color === 'default' ? p.text : inkColor(o.color, dark), p, o.align ?? 'left', 'top', o.bold ? 700 : 400, family, o.italic)
+      if (o.background) {
+        roundRect(ctx, o, 4); ctx.fillStyle = swatch(o.background, dark)[0]; ctx.fill()
+      }
+      if (!hide) drawTextBox(ctx, v, o, p)
       break
     case 'shape': {
-      const [bg, fg, stroke] = swatch(o.color, dark)
+      const [bg, , stroke] = swatch(o.color, dark)
       const width = o.strokeWidth ?? 2
       const paths = typeof Path2D === 'function' ? shapePaths(o) : null
       const crisp = () => { shapePath(ctx, o) }
@@ -148,8 +203,7 @@ function drawBox(ctx: Ctx, v: View, o: BoxObject, opts: RenderOptions) {
       ctx.setLineDash(dashFor(o.strokeStyle, width))
       if (paths) ctx.stroke(new Path2D(paths.outline)); else { crisp(); ctx.stroke() }
       ctx.setLineDash([])
-      const inset = o.shape === 'rect' ? 12 : o.w * 0.18
-      if (!hide) textBlock(ctx, v, o.text, { x: o.x + inset, y: o.y + 8, w: o.w - inset * 2, h: o.h - 16 }, SHAPE_FONT, o.fill === 'solid' ? '#ffffff' : (o.fill === 'none' || o.fill === 'hachure' || o.fill === 'cross' ? p.text : fg), p, 'center', 'middle', 500, family)
+      if (!hide) drawTextBox(ctx, v, o, p)
       break
     }
     case 'draw': ctx.setLineDash(dashFor(o.strokeStyle, o.size)); drawStroke(ctx, o, inkColor(o.color, dark)); ctx.setLineDash([]); break
@@ -330,6 +384,11 @@ export function drawOverlay(ctx: Ctx, v: View, overlay: Overlay, opts: RenderOpt
     const c = center(o)
     const corners = [{ x: o.x, y: o.y }, { x: o.x + o.w, y: o.y }, { x: o.x + o.w, y: o.y + o.h }, { x: o.x, y: o.y + o.h }].map(p => S(rotate(p, c, o.rotation ?? 0)))
     ctx.beginPath(); ctx.moveTo(corners[0].x, corners[0].y); for (const p of corners.slice(1)) ctx.lineTo(p.x, p.y); ctx.closePath(); ctx.stroke()
+    if (o.type === 'section') {
+      const { rect, radius } = sectionHeader(o, v.k)
+      roundRect(ctx, { ...S(rect), w: rect.w * v.k, h: rect.h * v.k }, radius * v.k)
+      ctx.stroke()
+    }
   }
   if (overlay.hover && !overlay.selected.some(o => o.id === overlay.hover!.id)) outline(overlay.hover, accent, 1)
   for (const id of overlay.highlight ?? []) { const o = opts.lookup(id); if (o) { ctx.setLineDash([4, 3]); outline(o, accent, 2); ctx.setLineDash([]) } }

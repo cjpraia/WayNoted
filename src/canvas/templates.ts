@@ -1,6 +1,6 @@
 // Modelos prontos do quadro (inspirados nos do Miro; conteúdo e desenho próprios). Cada modelo é uma lista
 // de objetos em coordenadas locais; a inserção remapeia ids (pasteObjects) e centraliza na visão.
-import type { CanvasColor, CanvasObject, ConnectorObject, ShapeKind } from './model.ts'
+import type { CanvasColor, CanvasObject, ConnectorObject, ShapeKind, ShapeObject } from './model.ts'
 
 export type TemplateId = 'kanban' | 'mindmap' | 'retro' | 'brainstorm' | 'flowchart' | 'timeline'
 export interface CanvasTemplate { id: TemplateId; pt: string; en: string; descriptionPt: string; descriptionEn: string; build(locale: 'pt-BR' | 'en-US'): CanvasObject[] }
@@ -9,7 +9,7 @@ let counter = 0
 const id = (prefix: string) => `tpl-${prefix}-${++counter}`
 const note = (x: number, y: number, text: string, color: CanvasColor = 'yellow', w = 200, h = 160): CanvasObject => ({ id: id('n'), type: 'note', x, y, w, h, text, color })
 const section = (x: number, y: number, w: number, h: number, title: string, color: CanvasColor = 'gray'): CanvasObject => ({ id: id('s'), type: 'section', x, y, w, h, title, color })
-const shape = (shapeKind: ShapeKind, x: number, y: number, w: number, h: number, text: string, color: CanvasColor = 'blue', fill: 'tint' | 'solid' = 'tint'): CanvasObject => ({ id: id('sh'), type: 'shape', shape: shapeKind, x, y, w, h, text, color, fill })
+const shape = (shapeKind: ShapeKind, x: number, y: number, w: number, h: number, text: string, color: CanvasColor = 'blue', fill: 'tint' | 'solid' = 'tint'): ShapeObject => ({ id: id('sh'), type: 'shape', shape: shapeKind, x, y, w, h, text, color, fill })
 const link = (from: string, to: string, route: ConnectorObject['route'] = 'curve', label?: string): ConnectorObject => ({ id: id('k'), type: 'connector', from: { id: from, x: 0, y: 0 }, to: { id: to, x: 0, y: 0 }, route, color: 'default', endArrow: true, ...(label ? { label } : {}) })
 const text = (x: number, y: number, w: number, value: string, fontSize = 20): CanvasObject => ({ id: id('t'), type: 'text', x, y, w, h: fontSize * 1.4, text: value, color: 'default', fontSize })
 
@@ -26,12 +26,12 @@ export const CANVAS_TEMPLATES: CanvasTemplate[] = [
   } },
   { id: 'mindmap', pt: 'Mapa mental', en: 'Mind map', descriptionPt: 'Tema central com ramos', descriptionEn: 'Central topic with branches', build: locale => {
     const center = shape('ellipse', -120, -60, 240, 120, locale === 'en-US' ? 'Central topic' : 'Tema central', 'blue', 'solid')
-    const out: CanvasObject[] = [center]
+    const out: CanvasObject[] = [{ ...center, mindMap: 'root' }]
     const colors: CanvasColor[] = ['orange', 'green', 'purple', 'pink', 'yellow', 'red']
     for (let i = 0; i < 6; i++) {
       const a = (i / 6) * Math.PI * 2 - Math.PI / 2
       const branch = shape('rect', Math.round(Math.cos(a) * 380) - 90, Math.round(Math.sin(a) * 260) - 35, 180, 70, (locale === 'en-US' ? 'Idea ' : 'Ideia ') + (i + 1), colors[i])
-      out.push(branch, link(center.id, branch.id, 'curve'))
+      out.push({ ...branch, mindMap: 'branch' }, { ...link(center.id, branch.id), endArrow: false, color: colors[i] })
     }
     return out
   } },

@@ -8,6 +8,8 @@ import { SpatialIndex } from '../src/canvas/spatial.ts'
 import { CanvasHistory } from '../src/canvas/history.ts'
 import { createBox, deleteObjects, duplicateObjects, freezeConnectorEnds, groupObjects, lookupOf, parseClipboard, pasteObjects, reorder, serializeClipboard, simplifySamples, strokeFromSamples, strokesAt, withGroups } from '../src/canvas/ops.ts'
 import { canvasToSvg } from '../src/canvas/svg.ts'
+import { wrapText } from '../src/canvas/render.ts'
+import { textBoxColor } from '../src/canvas/textStyle.ts'
 import { LIGHT_PALETTE, DARK_PALETTE } from '../src/canvas/model.ts'
 import { documentLinks, validateMeta } from '../src/workspace.ts'
 import { blocksToText } from '../src/components/page/util.ts'
@@ -111,11 +113,24 @@ test('interior connector anchors survive document and clipboard round trips, res
 
 test('text formatting survives saving and is rendered in SVG export', () => {
   const doc = canvasDocument({ ...emptyCanvas(), objects: [
-    { id: 't', type: 'text', x: 0, y: 0, w: 300, h: 60, text: 'Título', color: 'default', bold: true, italic: true, align: 'right', fontSize: 36 },
+    { id: 't', type: 'text', x: 0, y: 0, w: 300, h: 60, text: 'Título', color: 'default', bold: true, italic: true, align: 'right', fontSize: 36, background: 'pink', opacity: 0.5 },
+    { id: 'f', type: 'shape', shape: 'rect', x: 0, y: 80, w: 300, h: 100, text: 'Forma', color: 'blue', fill: 'tint', textColor: 'purple', fontSize: 28, align: 'left' },
+    { id: 'n', type: 'note', x: 0, y: 200, w: 300, h: 200, text: 'Nota', color: 'yellow', textColor: 'green', fontSize: 22, align: 'center', bold: true },
   ] }, 'blk')
   const saved = readCanvasDocument(JSON.parse(JSON.stringify(doc))).data.objects
+  assert.deepEqual(saved, readCanvasDocument(doc).data.objects)
   const svg = canvasToSvg(saved, { palette: LIGHT_PALETTE })
+  assert.match(svg, /data-id="t" opacity="0.5"><rect[^>]+fill="#fae6f0"/)
   assert.match(svg, /font-size="36" font-weight="700" font-style="italic"[^>]+text-anchor="end"/)
+  assert.match(svg, /font-size="28" font-weight="500"[^>]+text-anchor="start"/)
+  assert.match(svg, /font-size="22" font-weight="700"[^>]+text-anchor="middle"/)
+  for (const palette of [LIGHT_PALETTE, DARK_PALETTE]) {
+    const shape = saved.find(o => o.type === 'shape')!
+    assert.equal(shape.textColor, 'purple')
+    assert.ok(contrast(textBoxColor(shape, palette), swatch(shape.color, palette.dark)[0]) >= 4.5)
+  }
+  assert.deepEqual(wrapText(s => s.length * 10, 'ABCDEFGHIJ', 30, 'test-first-word'), ['ABC', 'DEF', 'GHI', 'J'])
+  assert.deepEqual(wrapText(s => s.length * 10, '🙂🙂', 10, 'test-emoji'), ['🙂', '🙂'])
 })
 
 test('connectors anchor to facing sides, follow moved objects and fall back when the target is gone', () => {
