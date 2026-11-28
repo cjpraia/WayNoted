@@ -333,6 +333,7 @@ export type Route = { type: 'home' } | { type: 'graph' } | { type: 'productivity
   /** Coleção de um tipo como tela própria (docs/USAGE.md). */
   | { type: 'objectType'; id: string }
   | { type: 'library'; scope: LibraryScope }
+  | { type: 'trash' }
 
 /** Destinos de workspace:// além das rotas da interface (electron/deep-links.cjs). */
 export type DeepLinkRoute = Route | { type: 'daily'; date: string } | { type: 'search'; q: string } | { type: 'new'; title: string }

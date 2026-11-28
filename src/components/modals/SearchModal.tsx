@@ -126,7 +126,7 @@ export function SearchModal() {
     { id: 'canvas-new', title: t('Nova lousa', 'New whiteboard'), hint: '', icon: CanvasGlyph, run: () => { actions.openPage(createCanvas(null)); close() } },
     { id: 'home', title: t('Meu dia', 'My day'), hint: '', icon: House, run: () => { actions.navigate({ type: 'home' }); close() } },
     { id: 'settings', title: t('Configurações', 'Settings'), hint: shortcutHint('settings'), icon: Settings, run: () => { close(); actions.setSettingsOpen(true) } },
-    { id: 'trash-open', title: t('Abrir lixeira', 'Open trash'), hint: '', icon: Trash, run: () => { requestSettingsSection('data'); close(); actions.setSettingsOpen(true) } },
+    { id: 'trash-open', title: t('Abrir lixeira', 'Open trash'), hint: '', icon: Trash, run: () => { close(); actions.navigate({ type: 'trash' }) } },
     { id: 'import', title: t("Importar (Export Bundle, Markdown Vault, ENEX Archive)…", "Import (Export Bundle, Markdown Vault, ENEX Archive)…"), hint: '', icon: FileUp, run: () => { close(); openBundleImport() } },
     { id: 'export', title: t('Exportar…', 'Export…'), hint: shortcutHint('export'), icon: FileDown, run: () => { close(); openExportDialog() } },
     { id: 'backup', title: t('Backup e restauração', 'Backup and restore'), hint: '', icon: Database, run: () => { requestSettingsSection('data'); close(); actions.setSettingsOpen(true) } },

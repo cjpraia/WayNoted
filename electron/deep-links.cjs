@@ -25,7 +25,7 @@ function onlyParams(search, names) {
 
 /**
  * Rotas aceitas (qualquer outra coisa devolve null, sem efeito colateral):
- *   workspace://home | tasks | graph | productivity
+ *   workspace://home | tasks | graph | productivity | trash
  *   workspace://page/UUID[#block=ID&view=ID]  (também ?view=ID)
  *   workspace://type/UUID   (coleção de um tipo de objeto)
  *   workspace://daily/AAAA-MM-DD
@@ -38,7 +38,7 @@ function parseDeepLink(value) {
     const url = new URL(value)
     if (![PRODUCT.protocol + ":", COMPAT.record005, ...(PRODUCT.protocolAliases ?? []).map(scheme => scheme + ":")].includes(url.protocol) || url.username || url.password || url.port) return null
     const bare = ['', '/'].includes(url.pathname) && !url.hash && !url.search
-    if (['home', 'tasks', 'graph', 'productivity'].includes(url.hostname)) return bare ? { type: url.hostname } : null
+    if (['home', 'tasks', 'graph', 'productivity', 'trash'].includes(url.hostname)) return bare ? { type: url.hostname } : null
     if (url.hostname === 'library') {
       if (!['', '/'].includes(url.pathname) || url.hash) return null
       const scope = onlyParams(url.search, ['scope'])?.scope
@@ -78,7 +78,7 @@ function sanitizeWindowRoute(route) {
   if (route?.type === 'page' && typeof route.id === 'string' && UUID.test(route.id)) return { type: 'page', id: route.id }
   if (route?.type === 'objectType' && typeof route.id === 'string' && UUID.test(route.id)) return { type: 'objectType', id: route.id }
   if (route?.type === 'library' && ['all', 'recent', 'untyped'].includes(route.scope)) return { type: 'library', scope: route.scope }
-  if (['graph', 'productivity', 'tasks', 'review'].includes(route?.type)) return { type: route.type }
+  if (['graph', 'productivity', 'tasks', 'review', 'trash'].includes(route?.type)) return { type: route.type }
   return { type: 'home' }
 }
 

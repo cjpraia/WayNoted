@@ -75,6 +75,13 @@ test('native close handshake accepts only the matching top-level renderer and pr
  await rejection
 })
 
+test('Trash deep link and window route preserve the local view', () => {
+ const {parseDeepLink,sanitizeWindowRoute}=require('../electron/deep-links.cjs')
+ assert.deepEqual(parseDeepLink('workspace://trash'),{type:'trash'})
+ assert.deepEqual(sanitizeWindowRoute({type:'trash',id:'ignored'}),{type:'trash'})
+ for (const suffix of ['/item','?id=page','#item']) assert.equal(parseDeepLink(`workspace://trash${suffix}`),null)
+})
+
 test("rota da coleção de tipo: link workspace://type/<id>, janela nova e busca do espaço que tem o tipo",()=>{
  const {randomUUID}=require('node:crypto'),{parseDeepLink,sanitizeWindowRoute,metaHasObjectType}=require('../electron/deep-links.cjs')
  const id=randomUUID()

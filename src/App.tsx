@@ -1,4 +1,5 @@
 import { LibraryView } from './components/library/LibraryView'
+import { TrashView } from './components/trash/TrashView'
 import { PageCreationHost, requestPageCreation } from './components/library/PageCreation'
 import PRODUCT from '../shared/product.json' with { type: 'json' }
 import COMPAT from '../shared/compatibility.ts'
@@ -281,6 +282,8 @@ function AppShell() {
             <ProductivityView />
           ) : route.type === 'library' ? (
             <LibraryView scope={route.scope} />
+          ) : route.type === 'trash' ? (
+            <TrashView />
           ) : route.type === 'objectType' ? (
             <TypeCollectionPage key={route.id} typeId={route.id} />
           ) : (

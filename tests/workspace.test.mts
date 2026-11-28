@@ -111,7 +111,7 @@ test('table column display options survive persistence and reject malformed valu
 })
 
 test('pinned tabs and named groups survive workspace persistence', () => {
-  const tabs = [{ id: 'pin', route: { type: 'home' }, pinned: true }, { id: 'group-tab', route: { type: 'page', id: a }, group: { id: 'project', name: 'Projetos' } }]
+  const tabs = [{ id: 'pin', route: { type: 'trash' }, pinned: true }, { id: 'group-tab', route: { type: 'page', id: a }, group: { id: 'project', name: 'Projetos' } }]
   const raw = { pages: { [a]: page(a) }, settings: { ...defaultSettings, openTabs: tabs, activeTabId: 'pin' } }
   assert.deepEqual(validateMeta(JSON.parse(JSON.stringify(raw))).settings.openTabs, tabs)
 })

@@ -12,7 +12,6 @@ import { MenuItem, Popover, menuKeyNav, type Anchor } from './Popover'
 import { PageMenu, RenamePopover } from './PageMenu'
 import { PageIcon as TreePageIcon, PageNode, PageTree, TreeContext, applyDrop, treeChildren, type DropTarget, type TreeCtx } from './PageTree'
 import { TooltipLayer } from './Tooltip'
-import { TrashPopover } from './TrashPopover'
 import { DailyFlowNav } from '../../daily/DailyFlowNav'
 import { BlockIcon } from '../ui/BlockIcon'
 import { Icon } from '../ui/icons/Icon'
@@ -72,7 +71,6 @@ export function Sidebar() {
   const [rename, setRename] = useState<{ pageId: string; anchor: DOMRect } | null>(null)
   const [selMenu, setSelMenu] = useState<Anchor | null>(null)
   const [wsMenu, setWsMenu] = useState<{ anchor: DOMRect; trigger: Element } | null>(null)
-  const [trash, setTrash] = useState<{ anchor: DOMRect; trigger: Element } | null>(null)
   const [dragId, setDrag] = useState<string | null>(null)
   const [drop, setDrop] = useState<DropTarget | null>(null)
   const [sections, setSections] = useState(loadSections)
@@ -119,7 +117,6 @@ export function Sidebar() {
       setMenu(null)
       setRename(null)
       setWsMenu(null)
-      setTrash(null)
       setSelMenu(null)
     }
   }, [collapsed])
@@ -337,10 +334,9 @@ export function Sidebar() {
       {rename && <RenamePopover pageId={rename.pageId} anchor={rename.anchor} onClose={() => setRename(null)} />}
       {wsMenu && (
         <Popover anchor={wsMenu.anchor} onClose={() => setWsMenu(null)} ignore={wsMenu.trigger} className="sb-menu sb-ws-menu" label={t("Espaço de trabalho", "Workspace")}>
-          <WorkspaceMenu name={wsName} userName={settings.userName} onClose={() => setWsMenu(null)} onTrash={() => { const source = wsMenu; setWsMenu(null); if (source) setTrash(source) }} />
+          <WorkspaceMenu name={wsName} userName={settings.userName} onClose={() => setWsMenu(null)} onTrash={() => { setWsMenu(null); actions.navigate({ type: 'trash' }) }} />
         </Popover>
       )}
-      {trash && <TrashPopover anchor={trash.anchor} trigger={trash.trigger} onClose={() => setTrash(null)} />}
     </aside>
   )
 }

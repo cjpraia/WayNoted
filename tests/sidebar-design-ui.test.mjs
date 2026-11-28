@@ -101,13 +101,6 @@ const mocks = {
   BlockIcon,
 }
 globalThis.__sidebarDesignTest = mocks
-let trashSource = await readFile(new URL('../src/components/sidebar/TrashPopover.tsx', import.meta.url), 'utf8')
-trashSource = trashSource.replace(/^import \{ t, getLocale \} from .*$/m, 'const { t } = globalThis.__sidebarDesignTest')
-  .replace(/^import \{ actions, selectors, useStore \} from .*$/m, 'const { actions, selectors, useStore } = globalThis.__sidebarDesignTest')
-  .replace(/^import \{ Popover \} from .*$/m, 'const { Popover } = globalThis.__sidebarDesignTest')
-  .replace(/^import \{ PageIcon \} from .*$/m, 'const { PageIcon } = globalThis.__sidebarDesignTest')
-mocks.PageIcon = mocks.TreePageIcon
-mocks.TrashPopover = (await import(await moduleUrl(trashSource, 'TrashPopover.tsx'))).TrashPopover
 let sidebarSource = await readFile(new URL('../src/components/sidebar/Sidebar.tsx', import.meta.url), 'utf8')
 sidebarSource = sidebarSource.replace(/^import \{ t \} from .*$/m, 'const { t } = globalThis.__sidebarDesignTest')
   .replace(/^import \{ MAIN_ID \} from .*$/m, 'const MAIN_ID = "app-main"')
@@ -116,7 +109,6 @@ sidebarSource = sidebarSource.replace(/^import \{ t \} from .*$/m, 'const { t } 
   .replace(/^import \{ PageMenu, RenamePopover \} from .*$/m, 'const { PageMenu, RenamePopover } = globalThis.__sidebarDesignTest')
   .replace(/^import \{ PageIcon as TreePageIcon, PageNode, PageTree, TreeContext, applyDrop, treeChildren, type DropTarget, type TreeCtx \} from .*$/m, 'const { TreePageIcon, PageNode, PageTree, TreeContext, applyDrop, treeChildren } = globalThis.__sidebarDesignTest')
   .replace(/^import \{ TooltipLayer \} from .*$/m, 'const { TooltipLayer } = globalThis.__sidebarDesignTest')
-  .replace(/^import \{ TrashPopover \} from .*$/m, 'const { TrashPopover } = globalThis.__sidebarDesignTest')
   .replace(/^import \{ protectedTitle \} from .*$/m, 'const { protectedTitle } = globalThis.__sidebarDesignTest')
   .replace(/^import \{ BlockIcon \} from .*$/m, 'const { BlockIcon } = globalThis.__sidebarDesignTest')
   .replace(/^import \{ shortcutHint \} from .*$/m, 'const shortcutHint = () => ""')
@@ -157,7 +149,8 @@ test('sidebar navigation and workspace menu open the connected local actions', a
   assert.deepEqual(calls.at(-1), ['settings', true])
   await click(document.querySelector('.sb-footer .sb-ws-btn'))
   await click([...document.querySelectorAll('[role="menuitem"]')].find(item => item.textContent === 'Trash'))
-  assert.match(document.querySelector('[role="dialog"][aria-label="Trash"]')?.textContent ?? '', /Trash is empty/)
+  assert.deepEqual(calls.at(-1), ['navigate', 'trash'])
+  assert.equal(document.querySelector('[role="dialog"][aria-label="Workspace"]'), null)
   await act(async () => root.unmount())
 })
 

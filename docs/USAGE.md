@@ -14,6 +14,10 @@ When pasting a URL, the menu offers the representations available for that link:
 
 Drag a tab by its title to the left or right side of another tab to reorder it. Pinned tabs keep their pinned status. Tabs in a group can move within that group, and dragging one outside it moves the entire group.
 
+## Trash
+
+Open **Trash** from the workspace menu or run **Open trash** in global search. Select a deleted item to open its preview. Use the search field to filter by title or location. Select and copy a passage, or use **Copy content** to copy the preview as plain text. Choose **Restore** to return the item to your workspace.
+
 ## Library
 
 Open **Library** from the sidebar and search by title or content. Use the **Type** filter to narrow the results. A page with multiple types appears once in the library and can appear under each of its types. Open **Untyped** for regular pages and database rows that have no type. The library opens the original item in its existing location.
