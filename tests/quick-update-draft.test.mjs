@@ -26,14 +26,23 @@ test('restart saves the latest quick note while the autosave timer is still pend
     saveDraft: async draft => { writes.push(draft); return { locked: false } },
   }
 
+  async function moduleUrl(file, source, overrides) {
+    const { code } = await transformWithOxc(source, file.pathname, { jsx: { runtime: 'automatic' } })
+    const resolved = code.replace(/from ["']([^"']+)["']/g, (_match, specifier) => {
+      const url = overrides[specifier] ?? (specifier.startsWith('.') ? new URL(specifier + '.ts', file).href : import.meta.resolve(specifier))
+      return 'from ' + JSON.stringify(url)
+    })
+    return 'data:text/javascript;base64,' + Buffer.from(resolved).toString('base64')
+  }
+
+  const select = new URL('../src/components/ui/Select.tsx', import.meta.url)
+  const selectUrl = await moduleUrl(select, await readFile(select, 'utf8'), {
+    './icons/Icon': 'data:text/javascript,export const Icon=()=>null',
+  })
   const file = new URL('../src/quick/QuickNote.tsx', import.meta.url)
   const source = inlineProductSource(await readFile(file, 'utf8'))
     .replace('const quick =', 'const setTimeout = globalThis.quickUpdateTestTimer\nconst quick =')
-  const { code } = await transformWithOxc(source, 'QuickNote.tsx', { jsx: { runtime: 'automatic' } })
-  const resolved = code.replace(/from ["']([^"']+)["']/g, (_match, specifier) => {
-    return 'from ' + JSON.stringify(specifier.startsWith('.') ? new URL(specifier + '.ts', file).href : import.meta.resolve(specifier))
-  })
-  const { QuickNote } = await import('data:text/javascript;base64,' + Buffer.from(resolved).toString('base64'))
+  const { QuickNote } = await import(await moduleUrl(file, source, { '../components/ui/Select': selectUrl }))
   const root = createRoot(document.querySelector('#app'))
   try {
     await act(async () => root.render(React.createElement(QuickNote)))
