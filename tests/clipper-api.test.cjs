@@ -183,3 +183,76 @@ test('conversor Markdown → blocos: estrutura, estilos, links seguros, tabelas,
   assert.ok(blocks.every(block => typeof block.id === 'string'))
   assert.equal(clip.markdownToBlocks('<script>alert(1)</script> <img src=x onerror=1>').blocks[0].content[0].text.includes('<script>'), true, 'HTML vira texto literal, nunca é interpretado')
 })
+
+const resourceType = () => ({ id: randomUUID(), name: 'Leituras QA', preset: 'resource', properties: [{ id: randomUUID(), name: 'URL', type: 'url' }] })
+const setTypes = (store, types) => store.mutateMeta(meta => ({ ...meta, settings: { ...meta.settings, objectTypes: types } }))
+
+test('Salvar como Recurso conserva a linha em Recortes da web e preenche a URL do tipo', async () => harness(async ({ pair, call, store }) => {
+  const { token } = await pair()
+  const from = origin(EXT)
+  const resource = resourceType()
+  await setTypes(store, [resource])
+
+  const capabilities = await (await call('/v1/clip/whoami', { method: 'GET', token, from })).json()
+  assert.equal(capabilities.supportsResourcePreset, true)
+  assert.equal('objectTypes' in capabilities, false)
+
+  const ordinary = await (await call('/v1/clip', { token, from, body: sample })).json()
+  assert.equal('preset' in ordinary, false)
+  const response = await call('/v1/clip', { token, from, body: { ...sample, preset: 'resource' } })
+  assert.equal(response.status, 201)
+  const result = await response.json()
+  assert.equal(result.preset, 'resource')
+  const { pages } = await store.loadMeta()
+  const saved = pages[result.pageId]
+  const bank = pages[saved.parentId]
+  assert.equal(bank.title, 'Recortes da web')
+  assert.equal(saved.parentId, pages[ordinary.pageId].parentId)
+  assert.equal(pages[ordinary.pageId].types, undefined)
+  assert.deepEqual(saved.types, [resource.id])
+  const bankUrl = bank.database.properties.find(prop => prop.type === 'url').id
+  const bankDate = bank.database.properties.find(prop => prop.type === 'date').id
+  assert.equal(saved.props[bankUrl], sample.url)
+  assert.match(saved.props[bankDate].start, /^\d{4}-\d{2}-\d{2}$/)
+  assert.deepEqual(saved.typeProps, { [resource.properties[0].id]: sample.url })
+  assert.ok((await store.loadDoc(result.pageId)).length > 0)
+}))
+
+test('preset inválido e classificação ausente ou ambígua são recusados antes de gravar', async () => harness(async ({ pair, call, store, dir }) => {
+  const { token } = await pair()
+  const send = preset => call('/v1/clip', { token, from: origin(EXT), body: { ...sample, preset } })
+  assert.equal((await send(randomUUID())).status, 400)
+
+  const resource = resourceType()
+  for (const [types, code] of [
+    [[], 'CLIP_RESOURCE_UNAVAILABLE'],
+    [[{ ...resource, name: 'Recurso', preset: undefined }], 'CLIP_RESOURCE_UNAVAILABLE'],
+    [[resource, resourceType()], 'CLIP_RESOURCE_UNAVAILABLE'],
+    [[resource, { ...resource, preset: undefined }], 'CLIP_RESOURCE_UNAVAILABLE'],
+    [[{ ...resource, properties: [] }], 'CLIP_RESOURCE_URL_UNAVAILABLE'],
+  ]) {
+    await setTypes(store, types)
+    const response = await send('resource')
+    assert.equal(response.status, 422)
+    assert.equal((await response.json()).code, code)
+  }
+  assert.equal(Object.keys((await store.loadMeta()).pages).length, 1)
+  const docs = await fs.readdir(path.join(dir, 'docs')).catch(error => { if (error.code === 'ENOENT') return []; throw error })
+  assert.deepEqual(docs, [])
+}))
+
+test('remoção do tipo durante a captura não deixa um recorte sem classificação nem um documento órfão', async () => harness(async ({ pair, call, store, access, dir }) => {
+  const { token } = await pair()
+  await setTypes(store, [resourceType()])
+  const originalApprove = access.requestApproval
+  access.requestApproval = async (...args) => {
+    const approved = await originalApprove(...args)
+    await setTypes(store, [])
+    return approved
+  }
+  const response = await call('/v1/clip', { token, from: origin(EXT), body: { ...sample, preset: 'resource' } })
+  assert.equal(response.status, 422)
+  assert.equal((await response.json()).code, 'CLIP_RESOURCE_UNAVAILABLE')
+  assert.equal(Object.keys((await store.loadMeta()).pages).length, 1)
+  assert.deepEqual(await fs.readdir(path.join(dir, 'docs')), [])
+}))

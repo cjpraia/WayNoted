@@ -175,3 +175,48 @@ test('popup saves the selection once and links to the note acknowledged by WayNo
     win.close()
   }
 })
+
+test('popup negocia suporte à classificação Recurso e só confirma resposta classificada', async () => {
+  for (const [supported, acknowledged, expected] of [
+    [false, false, /Update the app|Atualize o app/],
+    [true, false, /did not confirm the classification|não confirmou a classificação/],
+    [true, true, /Saved in|Salvo em/],
+  ] as const) {
+    const dom = new JSDOM(source('popup.html'), { runScripts: 'outside-only' })
+    const win = dom.window
+    const requests: string[] = []
+    const sent: Record<string, unknown>[] = []
+    const url = 'https://example.test/article'
+    const title = 'Article title'
+    const tick = () => new Promise(resolve => setImmediate(resolve))
+    Object.assign(win, {
+      WorkspaceProduct: { name: 'WayNoted' },
+      WorkspaceClipper: {
+        load: async () => ({ base: 'http://127.0.0.1:5123', token: 'npc_test' }),
+        whoami: async () => { requests.push('whoami'); return { supportsResourcePreset: supported } },
+        send: async (_config: object, clip: Record<string, unknown>) => {
+          requests.push('send')
+          sent.push(clip)
+          return { pageId: 'f3f403a8-2d66-4316-99c8-3cda1990ebff', folder: 'Web clips', title, ...(acknowledged ? { preset: clip.preset } : {}) }
+        },
+      },
+      chrome: {
+        tabs: { query: async () => [{ id: 7, title, url }] },
+        scripting: { executeScript: async (script: { args?: object[] }) => script.args ? [{ result: { title, url, text: 'Article content' } }] : [] },
+      },
+    })
+    try {
+      win.eval(source('popup.js'))
+      await tick()
+      const resource = win.document.querySelector<HTMLInputElement>('#resource')!
+      assert.equal(resource.checked, false)
+      resource.click()
+      win.document.querySelector<HTMLFormElement>('#form')!.requestSubmit()
+      await tick()
+      assert.deepEqual(requests, supported ? ['whoami', 'send'] : ['whoami'])
+      assert.equal(sent[0]?.preset, supported ? 'resource' : undefined)
+      assert.match(win.document.querySelector('#status')!.textContent!, expected)
+      assert.equal(win.document.querySelector<HTMLAnchorElement>('#open-clip')!.hidden, !acknowledged)
+    } finally { win.close() }
+  }
+})

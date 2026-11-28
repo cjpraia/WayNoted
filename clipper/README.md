@@ -6,7 +6,7 @@ A Manifest V3 extension for **Chrome, Edge, Brave, and Arc** that sends the curr
 
 The title, URL (without `utm_*`, `fbclid`, or fragment), site name, cleaned main text, current selection when available, featured-image URL (`og:image`), and optional Markdown content, including headings, lists, tables, code, and links. Reader-style extraction removes menus, footers, ads, and scripts.
 
-WayNoted creates a row in **Web clips**, with Name, URL, and Date properties and the captured content in the page. Names follow the workspace language.
+WayNoted creates a row in **Web clips**, with Name, URL, and Date properties and the captured content in the page. Names follow the workspace language. Select **Save as Resource** to also classify the clip under the built-in **Resource** type and populate its URL field. The clip stays in **Web clips**. This option requires an up-to-date WayNoted app and an available Resource type with a compatible URL field.
 
 ## Load the extension
 
@@ -20,7 +20,7 @@ The app persists its port when possible. If the address changes, pair again.
 
 ## Security
 
-- **Create-only access.** The paired token (`npc_…`) works only with `POST /v1/clip`, creating pages in the clips database. It cannot read, edit, delete, or access other routes (`403`).
+- **Create-only note access.** The paired token (`npc_…`) can create pages with `POST /v1/clip` and check pairing and capture capabilities with `GET /v1/clip/whoami`. It cannot read, edit, or delete notes, or access other routes (`403`).
 - **Pairing grants approval.** The short code appears only in the app; generating it is the approval step. Subsequent automatic calls are limited to `/v1/clip` and appear in the agent call log.
 - **Bound origin.** Only `Origin: chrome-extension://<id>` is accepted, and the token is bound to the paired extension ID. Web pages and other extensions receive `403`; the rest of the API continues to reject any `Origin`.
 - **Limits.** Request body ≤ 2 MB, title ≤ 300 characters, text ≤ 300,000 characters, Markdown ≤ 500,000 characters, and 30 clips per minute. URLs must be HTTP/HTTPS without credentials. HTML is converted to text, never executed.

@@ -95,7 +95,7 @@ async function body(req, limit = 16 * 1024 * 1024) {
 function send(res, status, data, headers = {}) { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers }); res.end(JSON.stringify(data)) }
 
 // ---------- helpers de conteúdo ----------
-const ERROR_CODES = new Set(['CANVAS_PROTECTED', 'SYNCED_BLOCK_PROTECTED', 'APPROVAL_REJECTED', 'APPROVAL_TIMEOUT', 'SCOPE_REQUIRED', 'REVOKED'])
+const ERROR_CODES = new Set(['CANVAS_PROTECTED', 'SYNCED_BLOCK_PROTECTED', 'APPROVAL_REJECTED', 'APPROVAL_TIMEOUT', 'SCOPE_REQUIRED', 'REVOKED', 'CLIP_RESOURCE_UNAVAILABLE', 'CLIP_RESOURCE_URL_UNAVAILABLE'])
 const fail = (status, message, code) => { throw Object.assign(new Error(message), { status, ...(code ? { code } : {}) }) }
 const DATE = /^\d{4}-\d{2}-\d{2}$/
 const validDay = value => typeof value === 'string' && DATE.test(value) && new Date(value + 'T00:00:00Z').toISOString().slice(0, 10) === value
@@ -192,7 +192,7 @@ async function startLocalApi({ storage: rawStorage, token, onChange, port = 0, a
       if (url.pathname === '/v1/clip/whoami') {
         if (req.method !== 'GET') return send(res, 405, { error: 'Method not allowed' }, cors)
         const meta = await storage.loadMeta()
-        return send(res, 200, { client: found.name, folder: clip.clipFolderName(meta?.settings?.locale), canCreateOnly: true }, cors)
+        return send(res, 200, { client: found.name, folder: clip.clipFolderName(meta?.settings?.locale), canCreateOnly: true, supportsResourcePreset: true }, cors)
       }
       if (req.method !== 'POST') return send(res, 405, { error: 'Method not allowed' }, cors)
       call.action = 'clip.create'
@@ -202,6 +202,7 @@ async function startLocalApi({ storage: rawStorage, token, onChange, port = 0, a
       const meta = await storage.loadMeta()
       if (!meta) return send(res, 503, { error: 'Workspace is not initialized' }, cors)
       const locale = meta.settings?.locale === 'en-US' ? 'en-US' : 'pt-BR'
+      clip.clipClassification(meta, clean)
       const blocks = clip.clipBlocks(clean, locale)
       const existing = clip.findClipDatabase(meta.pages, id => isLivePage(id, meta.pages))
       if (existing?.page.locked) fail(423, 'Page is locked')
@@ -211,6 +212,8 @@ async function startLocalApi({ storage: rawStorage, token, onChange, port = 0, a
       await storage.saveDoc(id, blocks)
       let target
       const next = await storage.mutateMeta(current => {
+        // The types may have changed since the preflight check.
+        const classification = clip.clipClassification(current, clean)
         const live = clip.findClipDatabase(current.pages, pageId => isLivePage(pageId, current.pages))
         if (live?.page.locked) throw Object.assign(new Error('Page is locked'), { status: 423 })
         const pages = { ...current.pages }
@@ -221,11 +224,18 @@ async function startLocalApi({ storage: rawStorage, token, onChange, port = 0, a
           folder = { page: pages[dbId], urlId: schema.properties[1].id, dateId: schema.properties[2].id }
         }
         target = newPage({ ...current, pages }, { id, parentId: folder.page.id, title: clean.title, props: { [folder.urlId]: clean.url, [folder.dateId]: { start: day } }, text: clip.blocksText(blocks) })
+        Object.assign(target, classification)
         pages[id] = target
         return { ...current, pages }
+      }).catch(async error => {
+        // Only roll back the new document when the current classification rejected the write.
+        if (error.code === 'CLIP_RESOURCE_UNAVAILABLE' || error.code === 'CLIP_RESOURCE_URL_UNAVAILABLE') {
+          await storage.deleteDoc?.(id).catch(() => {})
+        }
+        throw error
       })
       emit({ meta: next })
-      return send(res, 201, { pageId: id, title: target.title, folder: clip.clipFolderName(locale) }, cors)
+      return send(res, 201, { pageId: id, title: target.title, folder: clip.clipFolderName(locale), ...(clean.preset ? { preset: clean.preset } : {}) }, cors)
     } catch (error) {
       call.error = error
       return send(res, error.status || 500, { error: error.message, ...(ERROR_CODES.has(error.code) ? { code: error.code } : {}) }, cors)

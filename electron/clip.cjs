@@ -2,6 +2,7 @@
 // Markdown → blocos (subconjunto seguro: nada de HTML nem de imagens remotas incorporadas) e o banco
 // "Recortes da web" (Nome, URL, Data) onde cada recorte vira uma linha. Puro: sem disco, rede nem Electron.
 const { randomUUID } = require('node:crypto')
+const { captureTypePatch } = require('./capture-types.cjs')
 
 const LIMITS = Object.freeze({ body: 2 * 1024 * 1024, title: 300, url: 2048, text: 300_000, selection: 100_000, markdown: 500_000, blocks: 1000, site: 120 })
 const FOLDER_NAMES = Object.freeze({ 'pt-BR': 'Recortes da web', 'en-US': 'Web clips' })
@@ -34,6 +35,7 @@ function optionalString(input, field, max) {
 /** Valida e limpa o corpo do recorte. Lança erro com `status` (400/413). */
 function parseClip(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw bad('Expected a JSON object')
+  if (input.preset !== undefined && input.preset !== 'resource') throw bad('Invalid clip classification')
   const url = safeHttpUrl(input.url, 'url')
   const text = optionalString(input, 'text', LIMITS.text), selection = optionalString(input, 'selection', LIMITS.selection), markdown = optionalString(input, 'markdown', LIMITS.markdown)
   if (!text.trim() && !selection.trim() && !markdown.trim()) throw bad('Nothing to clip: send text, selection or markdown')
@@ -42,7 +44,25 @@ function parseClip(input) {
   title = [...title].slice(0, LIMITS.title).join('') || new URL(url).hostname
   const image = input.image ? (() => { try { return safeHttpUrl(input.image, 'image') } catch { return '' } })() : ''
   const site = typeof input.site === 'string' ? [...oneLine(input.site)].slice(0, LIMITS.site).join('') : ''
-  return { title, url, text, selection, markdown, image, site }
+  return { title, url, text, selection, markdown, image, site, ...(input.preset ? { preset: input.preset } : {}) }
+}
+
+/** The extension can request the built-in preset, without choosing a type or property ID. */
+function clipClassification(meta, clip) {
+  if (clip.preset !== 'resource') return {}
+  const types = meta.settings?.objectTypes
+  const resources = Array.isArray(types) ? types.filter(type => type?.preset === 'resource') : []
+  const [resource] = resources
+  if (resources.length !== 1 || types.some(type => type !== resource && type?.id === resource.id)) {
+    throw Object.assign(bad('The Resource type is unavailable or ambiguous.', 422), { code: 'CLIP_RESOURCE_UNAVAILABLE' })
+  }
+  try {
+    return captureTypePatch(meta, resource.id, { sourceUrl: clip.url, requiredUrl: true })
+  } catch (error) {
+    if (error.code === 'CAPTURE_TYPE_UNAVAILABLE') throw Object.assign(bad(error.message, 422), { code: 'CLIP_RESOURCE_UNAVAILABLE' })
+    if (error.code === 'CAPTURE_TYPE_URL_UNAVAILABLE') throw Object.assign(bad(error.message, 422), { code: 'CLIP_RESOURCE_URL_UNAVAILABLE' })
+    throw error
+  }
 }
 
 // ---------- Markdown → blocos ----------
@@ -209,4 +229,4 @@ function createRateLimiter({ limit = 30, windowMs = 60_000, now = () => Date.now
   }
 }
 
-module.exports = { LIMITS, CLIP_FOLDER_NAMES, parseClip, markdownToBlocks, inlineNodes, clipBlocks, blocksText, clipFolderName, clipDatabaseSchema, findClipDatabase, localDay, extensionIdFromOrigin, createRateLimiter }
+module.exports = { LIMITS, CLIP_FOLDER_NAMES, parseClip, clipClassification, markdownToBlocks, inlineNodes, clipBlocks, blocksText, clipFolderName, clipDatabaseSchema, findClipDatabase, localDay, extensionIdFromOrigin, createRateLimiter }
