@@ -61,8 +61,10 @@ Global shortcuts must differ and include a modifier other than Shift. If another
 | ⌘⌥0 / ⌘⌥1–3 | Paragraph / heading 1–3 |
 | ⌘⇧6 through ⌘⇧9 | List conversions: task, numbered, bulleted, toggle |
 | ⌘⌥C | Code block |
-| Tab / ⇧Tab | Indent / outdent |
+| Tab / ⇧Tab | Indent under the previous sibling / outdent one level |
 | Esc | Exit focus mode or dismiss menus/side preview |
+
+Indenting or outdenting a text block moves its children with it. Outdenting sibling text blocks leaves the unselected siblings under their original parent. Tables, code blocks, and focused controls retain their own shortcuts. Tab can navigate the formatting toolbar when it is open.
 
 Formatting and conversion shortcuts include BlockNote 0.55 defaults inspected in library code. They have not all been checked on a physical keyboard in the packaged app; the exact ⌘⇧6–9 mapping still needs individual verification.
 
