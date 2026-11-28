@@ -3,14 +3,14 @@
 .library-header { justify-content: space-between; }
 .library-header h1 { margin: 0; font-size: 28px; line-height: 1.2; }
 .library-scopes { margin-block: var(--space-4); }
-.library-view button, .library-create button { font: inherit; cursor: pointer; }
-.library-header button, .library-scopes button, .library-view > button, .library-create button { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); padding: 8px 12px; }
+.library-view button, .library-create button:not(.np-select) { font: inherit; cursor: pointer; }
+.library-header button, .library-scopes button, .library-view > button, .library-create button:not(.np-select) { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); padding: 8px 12px; }
 .library-scopes button[aria-current], .library-header button, .library-create button[type=submit] { background: var(--bg-hover); font-weight: 600; }
 .library-search, .library-select { display: flex; align-items: center; gap: var(--space-2); }
 .library-search { flex: 1 1 240px; }
 .library-search input { flex: 1; min-width: 0; }
-.library-select select { max-width: 240px; }
-.library-view input, .library-view select, .library-create input, .library-create select { min-height: 32px; padding: 4px 8px; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.library-select .np-select { max-width: 240px; }
+.library-view input, .library-create input { min-height: 32px; padding: 4px 8px; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); }
 .library-count { margin-block: var(--space-3) var(--space-2); color: var(--text-secondary); font-size: 13px; }
 .library-list { list-style: none; padding: 0; margin: 0 0 var(--space-3); border-top: 1px solid var(--border); }
 .library-item { width: 100%; display: flex; align-items: center; gap: var(--space-2); text-align: start; padding: 8px 4px; color: var(--text); background: transparent; border: 0; border-bottom: 1px solid var(--border); }
@@ -22,7 +22,7 @@
 .library-types span { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1px 8px; color: var(--text-secondary); font-size: 12px; overflow-wrap: anywhere; }
 .library-create { width: min(420px, calc(100% - 32px)); padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg); color: var(--text); box-shadow: var(--shadow-modal); }
 .library-create::backdrop { background: rgb(0 0 0 / 30%); }
-.library-create form, .library-create label { display: grid; gap: var(--space-2); }
+.library-create form, .library-create label, .library-create-type { display: grid; gap: var(--space-2); }
 .library-create form { gap: var(--space-3); }
 .library-create h2, .library-create p { margin: 0; }
 .library-create h2 { font-size: 17px; }

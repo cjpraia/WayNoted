@@ -43,7 +43,7 @@ export function Select({ value, onOpen, onChange, onValueChange, multiple, onVal
   const uid = useId()
   const listId = `${uid}-list`
 
-  const close = useCallback((refocus = true) => { setOpen(false); if (refocus) trigger.current?.focus() }, [])
+  const close = useCallback((refocus = true) => { setOpen(false); if (refocus) trigger.current?.focus({ preventScroll: true }) }, [])
   const commit = useCallback((index: number) => {
     const option = options[index]
     if (!option || option.disabled) return
@@ -57,16 +57,19 @@ export function Select({ value, onOpen, onChange, onValueChange, multiple, onVal
 
   const openList = useCallback((at?: number) => {
     if (disabled) return
+    trigger.current?.focus({ preventScroll: true })
+    buffer.current = { text: '', at: 0 }
     setActive(at ?? (selected >= 0 && !options[selected]?.disabled ? selected : firstEnabled(options)))
     setOpen(true); onOpen?.()
   }, [disabled, selected, options, onOpen])
 
-  // Posição: abaixo do campo, ou acima quando falta espaço (position: fixed, dentro do mesmo contêiner para não "sair" do popover pai).
   useLayoutEffect(() => {
-    if (!open || !trigger.current) return
-    const r = trigger.current.getBoundingClientRect()
-    const wanted = Math.min(options.length, 12) * 28 + 8 + options.filter((o, i) => o.group && o.group !== options[i - 1]?.group).length * 24
-    setBox(placeList(r, { width: window.innerWidth, height: window.innerHeight }, wanted))
+    const field = trigger.current
+    const menu = list.current
+    if (!open || !field || !menu) return
+    const viewport = { width: window.innerWidth, height: window.innerHeight }
+    const bounds = field.closest('dialog[open]')?.getBoundingClientRect()
+    setBox(placeList(field.getBoundingClientRect(), viewport, menu.scrollHeight, bounds))
   }, [open, options])
 
   useEffect(() => {
@@ -84,11 +87,20 @@ export function Select({ value, onOpen, onChange, onValueChange, multiple, onVal
     return () => { document.removeEventListener('mousedown', onDown, true); window.removeEventListener('resize', onResize); window.removeEventListener('scroll', onScroll, true) }
   }, [open, close])
 
-  useEffect(() => { if (open && active >= 0) list.current?.querySelector<HTMLElement>(`[data-index="${active}"]`)?.scrollIntoView({ block: 'nearest' }) }, [open, active, box])
+  useLayoutEffect(() => {
+    const menu = list.current
+    const option = menu?.querySelector<HTMLElement>(`[data-index="${active}"]`)
+    if (!open || !box || !menu || !option) return
+    const top = option.offsetTop
+    const bottom = top + option.offsetHeight
+    if (top < menu.scrollTop) menu.scrollTop = top
+    else if (bottom > menu.scrollTop + menu.clientHeight) menu.scrollTop = bottom - menu.clientHeight
+  }, [open, active, box])
 
   const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (disabled) return
     const key = event.key
+    if (key === 'Enter' && (event.metaKey || event.ctrlKey)) return
     if (!open) {
       if (key === 'ArrowDown' || key === 'ArrowUp' || key === 'Enter' || key === ' ') { event.preventDefault(); openList() }
       else if (key.length === 1 && !event.metaKey && !event.ctrlKey && !event.altKey) {
@@ -119,13 +131,13 @@ export function Select({ value, onOpen, onChange, onValueChange, multiple, onVal
       <button ref={trigger} type="button" id={id} name={name} title={title} role="combobox" aria-haspopup="listbox" aria-expanded={open} aria-controls={open ? listId : undefined}
         aria-activedescendant={open && active >= 0 ? `${uid}-o${active}` : undefined} disabled={disabled} autoFocus={autoFocus}
         className={`np-select${block ? ' np-select--block' : ''}${className ? ` ${className}` : ''}`} style={style}
-        onClick={() => (open ? close(false) : openList())} onKeyDown={onKeyDown} {...aria}>
+        onClick={() => (open ? close(false) : openList())} onKeyDown={onKeyDown} onBlur={() => { if (open) close(false) }} {...aria}>
         <span className={`np-select-value${!hasValue ? ' is-placeholder' : ''}`}>{label ?? ' '}</span>
         <Icon name="chevron-down" size={14} className="np-select-caret" />
       </button>
       {open && (
-        <ul ref={list} id={listId} role="listbox" aria-multiselectable={multiple || undefined} tabIndex={-1} className={`np-select-list${box?.up ? ' is-up' : ''}`} aria-label={aria['aria-label']}
-          style={{ left: box?.left ?? 0, top: box?.top ?? 0, minWidth: box?.minWidth, maxHeight: box?.maxHeight, visibility: box ? 'visible' : 'hidden' }}
+        <ul ref={list} id={listId} role="listbox" aria-multiselectable={multiple || undefined} tabIndex={-1} className={`np-select-list${box?.up ? ' is-up' : ''}`} aria-label={aria['aria-label']} aria-labelledby={aria['aria-labelledby']}
+          style={{ left: box?.left ?? 0, top: box?.top ?? 0, minWidth: box?.minWidth, maxWidth: box?.maxWidth, maxHeight: box?.maxHeight, visibility: box ? 'visible' : 'hidden' }}
           onMouseDown={(event) => event.preventDefault()}>
           {options.map((option, index) => {
             const heading = option.group && option.group !== lastGroup ? <li role="presentation" className="np-select-group">{option.group}</li> : null

@@ -131,6 +131,79 @@ test('selectModel: posição abre para cima quando falta espaço embaixo e nunca
   assert.equal(edge.left + 160 <= 1000 - 8 + 1, true)
 })
 
+test('selectModel: limita largura e rolagem ao diálogo, incluindo janelas compactas', () => {
+  const dialog = { left: 24, top: 80, right: 302, bottom: 258 }
+  const trigger = { left: 40, top: 156, bottom: 188, width: 246 }
+  const viewport = { width: 320, height: 280 }
+  const box = model.placeList(trigger, viewport, 300, dialog)
+  assert.equal(box.up, true)
+  assert.equal(box.top, dialog.top + 8)
+  assert.equal(box.top + box.maxHeight, trigger.top - 4)
+  assert.equal(box.left + box.maxWidth, dialog.right - 8)
+  assert.equal(box.minWidth, trigger.width)
+  const narrow = model.placeList({ ...trigger, width: 300 }, { width: 140, height: 280 }, 300, dialog)
+  assert.equal(narrow.left + narrow.maxWidth, 140 - 8)
+  assert.equal(narrow.minWidth, narrow.maxWidth)
+})
+
+test('Select: mede a lista real e usa os limites do diálogo que contém o campo', async () => {
+  const rect = (left, top, width, height) => ({ left, top, width, height, right: left + width, bottom: top + height })
+  const choices = Array.from({ length: 12 }, (_, index) => h('option', { key: index, value: String(index) }, `Tipo ${index + 1}`))
+  await mount(h('dialog', { open: true }, h(Select, { value: '0', 'aria-label': 'Tipo' }, choices)))
+  document.querySelector('dialog').getBoundingClientRect = () => rect(180, 100, 320, 200)
+  trigger().getBoundingClientRect = () => rect(200, 190, 280, 28)
+  const scrollHeight = Object.getOwnPropertyDescriptor(dom.window.Element.prototype, 'scrollHeight')
+  Object.defineProperty(dom.window.Element.prototype, 'scrollHeight', {
+    configurable: true,
+    get() { return this.getAttribute('role') === 'listbox' ? 344 : scrollHeight.get.call(this) },
+  })
+  try {
+    await press(trigger(), 'ArrowDown')
+    const list = document.querySelector('[role=listbox]')
+    assert.equal(list.style.top, '108px')
+    assert.equal(list.style.maxHeight, '78px')
+    assert.equal(Number.parseFloat(list.style.left) + Number.parseFloat(list.style.maxWidth), 492)
+    await press(trigger(), 'End')
+    assert.equal(activeText(), 'Tipo 12')
+  } finally {
+    Object.defineProperty(dom.window.Element.prototype, 'scrollHeight', scrollHeight)
+    await act(async () => root.unmount())
+  }
+})
+
+test('Select: abrir pelo mouse foca o campo; Escape não sobe ao diálogo e Tab libera o foco', async () => {
+  const seen = []
+  await mount(h('dialog', { open: true, onKeyDown: e => seen.push(e.key) }, h(Harness), h('button', { id: 'after-select' }, 'Enviar')))
+  await act(async () => trigger().click())
+  assert.equal(document.activeElement === trigger(), true)
+  await press(trigger(), 'Escape')
+  assert.equal(trigger().getAttribute('aria-expanded'), 'false')
+  assert.equal(document.activeElement === trigger(), true)
+  assert.deepEqual(seen, [])
+  await press(trigger(), 'Enter')
+  await press(trigger(), 'Tab')
+  assert.equal(trigger().getAttribute('aria-expanded'), 'false')
+  assert.deepEqual(seen, ['Enter', 'Tab'])
+  document.getElementById('after-select').focus()
+  assert.equal(document.activeElement.id, 'after-select')
+})
+
+test('Select: Ctrl/Command+Enter chega ao atalho do formulário sem abrir ou escolher a lista', async () => {
+  const shortcuts = [], picked = []
+  await mount(h('div', { onKeyDown: e => { if (e.ctrlKey || e.metaKey) shortcuts.push(!e.defaultPrevented) } }, h(Harness, { onPick: v => picked.push(v) })))
+  const shortcut = (modifier) => act(async () => {
+    trigger().dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, [modifier]: true }))
+  })
+  await shortcut('ctrlKey')
+  assert.equal(trigger().getAttribute('aria-expanded'), 'false')
+  await press(trigger(), 'Enter')
+  await press(trigger(), 'ArrowDown')
+  await shortcut('metaKey')
+  assert.deepEqual(shortcuts, [true, true])
+  assert.deepEqual(picked, [])
+  assert.equal(trigger().getAttribute('aria-expanded'), 'true')
+})
+
 test('DialogActions: destrutivo dá o foco inicial ao Cancelar e coloca a confirmação por último', async () => {
   const calls = []
   await mount(h(DialogActions, { confirmLabel: 'Excluir 3 linhas', destructive: true, onConfirm: () => calls.push('ok'), onCancel: () => calls.push('cancel') }))

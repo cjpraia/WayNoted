@@ -81,6 +81,10 @@ input.np-switch:checked::after, .np-switch-track.is-on::after { transform: trans
 @media (prefers-reduced-motion: reduce) { .np-select-list { animation: none; } }
 .np-select-option { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: var(--hit-min); padding: 0 var(--space-2); border-radius: var(--radius); cursor: pointer; }
 .np-select-option.is-active { background: var(--bg-hover); }
+@media (forced-colors: active) {
+  .np-select-list { border: 1px solid CanvasText; }
+  .np-select-option.is-active { outline: 1px solid Highlight; outline-offset: -1px; }
+}
 .np-select-option.is-selected { color: var(--accent-text); font-weight: 500; }
 .np-select-option.is-disabled { opacity: var(--disabled-opacity, 0.5); cursor: default; }
 .np-select-option-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

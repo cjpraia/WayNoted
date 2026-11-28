@@ -1,6 +1,7 @@
 import { useDeferredValue, useMemo, useState, useSyncExternalStore } from 'react'
 import { Search } from 'lucide-react'
 import { actions, useStore } from '../../store'
+import { Select } from '../ui/Select'
 import { t } from '../../i18n'
 import type { LibraryScope } from '../../types'
 import { pageTypes, type TypeList } from '../../objecttypes/model'
@@ -48,12 +49,12 @@ export function LibraryView({ scope }: { scope: LibraryScope }) {
       <label className="library-search"><Search size={16} aria-hidden />
         <input type="search" aria-label={t('Buscar no acervo', 'Search library')} placeholder={t('Buscar no acervo', 'Search library')} value={query} onChange={event => { setQuery(event.target.value); setLimit(PAGE_SIZE) }} />
       </label>
-      {scope !== 'untyped' && types.length > 0 && <label className="library-select">{t('Tipo', 'Type')}
-        <select value={selectedType?.id ?? ''} onChange={event => { setTypeId(event.target.value); setLimit(PAGE_SIZE) }}>
+      {scope !== 'untyped' && types.length > 0 && <div className="library-select"><span aria-hidden>{t('Tipo', 'Type')}</span>
+        <Select aria-label={t('Tipo', 'Type')} value={selectedType?.id ?? ''} onChange={event => { setTypeId(event.target.value); setLimit(PAGE_SIZE) }}>
           <option value="">{t('Todos os tipos', 'All types')}</option>
           {types.map(type => <option key={type.id} value={type.id}>{type.name}</option>)}
-        </select>
-      </label>}
+        </Select>
+      </div>}
     </div>
     <p className="library-count" role="status">{results.length === 1 ? t('1 item', '1 item') : t('{count} itens', '{count} items', { count: results.length })}</p>
     {results.length > 0 ? <ul className="library-list">
