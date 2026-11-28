@@ -6,6 +6,7 @@ import { openTypeCollection } from '../../objecttypes/ui'
 import { t } from '../../i18n'
 import type { Page } from '../../types'
 import { protectedTitle } from '../../security/pageLock'
+import { Select } from '../ui/Select'
 
 interface CreationRequest {
   kind: 'page' | 'database' | 'type'
@@ -48,6 +49,7 @@ function PageCreationDialog({ request, close }: { request: CreationRequest; clos
   const [error, setError] = useState('')
   const dialog = useRef<HTMLDialogElement>(null)
   const heading = useId()
+  const typeLabel = useId()
   useLayoutEffect(() => {
     const element = dialog.current!
     element.showModal()
@@ -77,11 +79,14 @@ function PageCreationDialog({ request, close }: { request: CreationRequest; clos
     }}>
       <h2 id={heading}>{headingText}</h2>
       <label>{request.kind === 'page' ? t('Título', 'Title') : t('Nome', 'Name')}<input autoFocus required={request.kind === 'type'} value={title} onChange={event => { setTitle(event.target.value); setError('') }} /></label>
-      {request.kind === 'page' && <label>{t('Tipo', 'Type')}<select value={typeId} onChange={event => { setTypeId(event.target.value); setError('') }}>
-        <option value="">{t('Sem tipo', 'Untyped')}</option>
-        {typeId && !settings.objectTypes?.some(type => type.id === typeId) && <option value={typeId}>{t('Tipo indisponível', 'Type unavailable')}</option>}
-        {settings.objectTypes?.map(type => <option key={type.id} value={type.id}>{type.name}</option>)}
-      </select></label>}
+      {request.kind === 'page' && <div className="library-create-type">
+        <span id={typeLabel}>{t('Tipo', 'Type')}</span>
+        <Select block aria-labelledby={typeLabel} value={typeId} onChange={event => { setTypeId(event.target.value); setError('') }}>
+          <option value="">{t('Sem tipo', 'Untyped')}</option>
+          {typeId && !settings.objectTypes?.some(type => type.id === typeId) && <option value={typeId} disabled>{t('Tipo indisponível', 'Type unavailable')}</option>}
+          {settings.objectTypes?.map(type => <option key={type.id} value={type.id}>{type.name}</option>)}
+        </Select>
+      </div>}
       {request.kind === 'type' ? <p>{t('Cria uma coleção para as páginas que tiverem esse tipo.', 'Creates a collection for pages of this type.')}</p>
         : <p>{t('Local: {name}', 'Location: {name}', { name: location })}</p>}
       {error && <p role="alert">{error}</p>}

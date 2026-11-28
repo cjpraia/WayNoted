@@ -1,6 +1,7 @@
 import PRODUCT from '../../shared/product.json' with { type: 'json' }
 import { createRoot } from 'react-dom/client'
 import '../styles/tokens.css'
+import '../components/ui/controls.css'
 import './quick.css'
 import '../styles/a11y.css'
 import { QuickNote } from './QuickNote'

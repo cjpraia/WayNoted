@@ -1,6 +1,7 @@
 import PRODUCT from '../../shared/product.json' with { type: 'json' }
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { Calendar, ChevronDown, Database, FileText, Inbox, Link2, Lock, Mic, Search, Square, Tag, X } from 'lucide-react'
+import { Select } from '../components/ui/Select'
 import { translate, type Locale } from '../localization'
 import { markdownToBlocks, blocksPlainText } from './markdown'
 import { extractQuickTokens } from './tokens'
@@ -212,14 +213,14 @@ export function QuickNote() {
       <textarea ref={bodyRef} className="qn-body" value={body} onChange={event => setBody(event.target.value)} spellCheck
         placeholder={t('Escreva… Markdown leve: # título, - lista, [ ] tarefa, **negrito** · @amanhã às 9h define a data · #tag', 'Write… Light Markdown: # heading, - list, [ ] task, **bold** · @tomorrow 9am sets the date · #tag')} aria-label={t('Conteúdo', 'Content')} />
       {showType || (info?.database && (info.tags || info.date)) || sourceUrl ? <div className="qn-meta">
-        {showType && <label className="qn-field qn-type">
-          {t('Tipo', 'Type')}
-          <select value={typeId ?? ''} disabled={busy} onChange={event => { setTypeId(event.target.value || null); setError(null) }}>
+        {showType && <div className="qn-field qn-type">
+          <span aria-hidden>{t('Tipo', 'Type')}</span>
+          <Select aria-label={t('Tipo', 'Type')} value={typeId ?? ''} disabled={busy} onChange={event => { setTypeId(event.target.value || null); setError(null) }}>
             <option value="">{t('Sem tipo', 'No type')}</option>
             {typeId && !types.some(type => type.id === typeId) && <option value={typeId} disabled>{t('Tipo indisponível', 'Type unavailable')}</option>}
             {types.map(type => <option key={type.id} value={type.id}>{type.name || t('Sem nome', 'Unnamed')}</option>)}
-          </select>
-        </label>}
+          </Select>
+        </div>}
         {info?.tags && <label className="qn-field qn-tags"><Tag size={14} aria-hidden />
           {tags.map(tag => <span key={tag} className="qn-chip">{tag}<button onClick={() => setTags(tags.filter(item => item !== tag))} aria-label={t('Remover {tag}', 'Remove {tag}', { tag })}><X size={11} /></button></span>)}
           <input list="qn-tag-options" value={tagInput} onChange={event => event.target.value.endsWith(',') ? addTag(event.target.value) : setTagInput(event.target.value)}

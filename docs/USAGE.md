@@ -22,7 +22,7 @@ Open **Trash** from the workspace menu or run **Open trash** in global search. S
 
 Open **Library** from the sidebar and search by title or content. Use the **Type** filter to narrow the results. A page with multiple types appears once in the library and can appear under each of its types. Open **Untyped** for regular pages and database rows that have no type. The library opens the original item in its existing location.
 
-The sidebar lists your five most recent pages. Select **View all** to open the full recent history. When you create a page through **New page**, choose its type in the dialog or leave it **Untyped**.
+The sidebar lists your five most recent pages. Select **View all** to open the full recent history. When you create a page through **New page**, choose its type in the dialog or leave it **Untyped**. The **Type** menus in page creation, Library, and Quick Capture follow your theme. Open the menu with **Enter**, move with the arrow keys, and press **Enter** to choose or **Esc** to close it.
 
 The sidebar’s **Workspace** contains **Types**, **Untyped**, and **Pages**. Use its **+** to create a page, a database, or a type. The collapsible **Pages** list shows where pages are stored. Use **+** beside a page or **Move page to** to put a page inside it. Type collections list matching pages across the workspace.
 

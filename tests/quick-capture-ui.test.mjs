@@ -33,14 +33,22 @@ globalThis.__quickTest = {
   markdownToBlocks: text => text ? [{ type: 'paragraph', content: text }] : [],
   blocksPlainText: blocks => blocks.map(block => block.content).join('\n'),
 }
+async function compile(source, filename, lang = 'tsx') {
+  const out = await transformWithOxc(source, filename, { jsx: { runtime: 'automatic' }, lang })
+  const code = out.code.replace(/from ["'](react(?:\/jsx-runtime)?|lucide-react)["']/g, (_m, name) => `from ${JSON.stringify(import.meta.resolve(name))}`)
+  return `data:text/javascript;base64,${Buffer.from(code).toString('base64')}`
+}
+const selectModel = await compile(await readFile(new URL('../src/components/ui/selectModel.ts', import.meta.url), 'utf8'), 'selectModel.ts', 'ts')
+const selectSource = await readFile(new URL('../src/components/ui/Select.tsx', import.meta.url), 'utf8')
+const selectUrl = await compile(selectSource.replace("from './icons/Icon'", "from 'data:text/javascript,export const Icon=()=>null'")
+  .replace("from './selectModel'", `from ${JSON.stringify(selectModel)}`), 'Select.tsx')
 let source = await readFile(new URL('../src/quick/QuickNote.tsx', import.meta.url), 'utf8')
-source = source.replace("import { translate, type Locale } from '../localization'", 'const { translate } = globalThis.__quickTest')
+source = source.replace("from '../components/ui/Select'", `from ${JSON.stringify(selectUrl)}`)
+  .replace("import { translate, type Locale } from '../localization'", 'const { translate } = globalThis.__quickTest')
   .replace("import { markdownToBlocks, blocksPlainText } from './markdown'", 'const { markdownToBlocks, blocksPlainText } = globalThis.__quickTest')
   .replace("from './voice'", `from ${JSON.stringify(new URL('../src/quick/voice.ts', import.meta.url).href)}`)
   .replace("from './tokens'", `from ${JSON.stringify(new URL('../src/quick/tokens.ts', import.meta.url).href)}`)
-const compiled = await transformWithOxc(source, 'QuickNote.tsx', { jsx: { runtime: 'automatic' }, lang: 'tsx' })
-const code = compiled.code.replace(/from ["'](react(?:\/jsx-runtime)?|lucide-react)["']/g, (_m, name) => `from ${JSON.stringify(import.meta.resolve(name))}`)
-const mod = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`)
+const mod = await import(await compile(source, 'QuickNote.tsx'))
 const QuickNote = mod.QuickNote ?? mod.default
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -93,17 +101,24 @@ test('tipo de captura fica no rascunho; erro de tipo removido preserva texto e p
   const root = createRoot(document.getElementById('app'))
   try {
     await act(async () => { root.render(React.createElement(QuickNote)); await wait(30) })
-    const select = document.querySelector('.qn-type select')
-    assert.equal(select.value, 'deleted')
-    assert.equal(select.selectedOptions[0].textContent, 'Tipo indisponível')
-    assert.equal(select.selectedOptions[0].disabled, true)
+    const select = document.querySelector('.qn-type [role="combobox"]')
+    assert.equal(select.getAttribute('aria-label'), 'Tipo')
+    assert.match(select.textContent, /Tipo indisponível/)
+    const press = key => act(async () => {
+      select.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
+    })
+    await press('ArrowDown')
+    assert.equal(document.querySelector('[role="option"][aria-selected="true"]').getAttribute('aria-disabled'), 'true')
+    await press('Escape')
+    assert.equal(select.getAttribute('aria-expanded'), 'false')
+    assert.equal(document.activeElement === select, true)
     await act(async () => { document.querySelector('.qn-save').click(); await wait(20) })
     assert.match(document.querySelector('[role="alert"]').textContent, /Tipo indisponível/)
     assert.equal(document.querySelector('.qn-body').value, 'texto preservado')
-    await act(async () => {
-      select.value = 'resource'
-      select.dispatchEvent(new dom.window.Event('change', { bubbles: true }))
-    })
+    await press('ArrowDown')
+    await press('ArrowDown')
+    await press('Enter')
+    assert.match(select.textContent, /Recurso/)
     await act(async () => { await wait(275) })
     assert.equal(JSON.parse(saved.at(-1)).typeId, 'resource')
     await act(async () => { document.querySelector('.qn-save').click(); await wait(20) })

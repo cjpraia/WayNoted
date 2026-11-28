@@ -47,14 +47,35 @@ export function typeahead(options: SelectOption[], current: number, buffer: stri
   return current
 }
 
-/** Posição do popover: abaixo do campo, ou acima quando falta espaço; sempre dentro da janela. */
-export function placeList(trigger: { left: number; top: number; bottom: number; width: number }, viewport: { width: number; height: number }, wanted: number, margin = 8) {
-  const below = viewport.height - trigger.bottom - margin
-  const above = trigger.top - margin
+interface ListBounds { left: number; right: number; top: number; bottom: number }
+
+/** Mantém a lista dentro da janela, inclusive quando está em um diálogo modal. */
+export function placeList(
+  trigger: { left: number; top: number; bottom: number; width: number },
+  viewport: { width: number; height: number },
+  wanted: number,
+  bounds?: ListBounds,
+) {
+  const margin = 8
+  const gap = 4
+  const start = Math.max(0, bounds?.left ?? 0) + margin
+  const end = Math.min(viewport.width, bounds?.right ?? viewport.width) - margin
+  const top = Math.max(0, bounds?.top ?? 0) + margin
+  const bottom = Math.min(viewport.height, bounds?.bottom ?? viewport.height) - margin
+  const below = Math.max(0, bottom - trigger.bottom - gap)
+  const above = Math.max(0, trigger.top - top - gap)
   const up = below < Math.min(wanted, 160) && above > below
-  const maxHeight = Math.max(96, Math.min(280, up ? above : below))
-  const height = Math.min(wanted, maxHeight)
-  const minWidth = trigger.width
-  const left = Math.max(margin, Math.min(trigger.left, viewport.width - margin - Math.max(minWidth, 160)))
-  return { left, top: up ? trigger.top - 4 - height : trigger.bottom + 4, minWidth, maxHeight, up }
+  const maxHeight = Math.min(280, up ? above : below)
+  const availableWidth = Math.max(0, end - start)
+  const minWidth = Math.min(availableWidth, trigger.width)
+  const alignedWidth = Math.min(availableWidth, Math.max(minWidth, 160))
+  const left = Math.max(start, Math.min(trigger.left, end - alignedWidth))
+  return {
+    left,
+    top: up ? trigger.top - gap - Math.min(wanted, maxHeight) : trigger.bottom + gap,
+    minWidth,
+    maxWidth: Math.max(0, end - left),
+    maxHeight,
+    up,
+  }
 }
