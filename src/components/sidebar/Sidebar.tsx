@@ -5,12 +5,12 @@ import { MAIN_ID } from '../../a11y/SkipLink'
 import { protectedTitle } from '../../security/pageLock'
 // Barra lateral do aplicativo.
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
-import { ChevronDown, ChevronRight, LayoutGrid, LibraryBig, PanelLeft, Plus, SquarePen } from 'lucide-react'
+import { ChevronDown, ChevronRight, LayoutGrid, LibraryBig, PanelLeft, Plus, Shapes, SquarePen } from 'lucide-react'
 import { actions, api, selectors, useStore } from '../../store'
 import type { Page, LocalWorkspace } from '../../types'
 import { MenuItem, Popover, menuKeyNav, type Anchor } from './Popover'
 import { PageMenu, RenamePopover } from './PageMenu'
-import { PageIcon as TreePageIcon, PageNode, PageTree, TreeContext, applyDrop, treeChildren, type DropTarget, type TreeCtx } from './PageTree'
+import { PageIcon as TreePageIcon, PageNode, PageTree, TreeContext, applyDrop, type DropTarget, type TreeCtx } from './PageTree'
 import { TooltipLayer } from './Tooltip'
 import { DailyFlowNav } from '../../daily/DailyFlowNav'
 import { BlockIcon } from '../ui/BlockIcon'
@@ -23,7 +23,7 @@ import { MessageCircleQuestion } from 'lucide-react'
 import { toggleAskPanel, useAskPanel } from '../../ai/panel'
 import { SidebarTypes } from '../objecttypes/SidebarTypes'
 import { openTypesGallery } from '../../objecttypes/ui'
-import { requestPageCreation } from '../library/PageCreation'
+import { requestPageCreation, requestWorkspaceCreation } from '../library/PageCreation'
 import { isQueryable } from '../../query/engine'
 import { SelectionBar, SelectionMenu } from '../../subpages/SelectionBar'
 import { clearSelection, selectedIds } from '../../subpages/selection'
@@ -70,6 +70,11 @@ export function Sidebar() {
   const [menu, setMenu] = useState<MenuState | null>(null)
   const [rename, setRename] = useState<{ pageId: string; anchor: DOMRect } | null>(null)
   const [selMenu, setSelMenu] = useState<Anchor | null>(null)
+  const [createMenu, setCreateMenu] = useState<{ anchor: DOMRect; trigger: HTMLButtonElement } | null>(null)
+  const createMenuRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (createMenu) createMenuRef.current?.querySelector('button')?.focus({ preventScroll: true })
+  }, [createMenu])
   const [wsMenu, setWsMenu] = useState<{ anchor: DOMRect; trigger: Element } | null>(null)
   const [dragId, setDrag] = useState<string | null>(null)
   const [drop, setDrop] = useState<DropTarget | null>(null)
@@ -77,7 +82,7 @@ export function Sidebar() {
 
   const toggleSection = (key: string) => {
     setSections((s) => {
-      const next = { ...s, [key]: !s[key] }
+      const next = { ...s, [key]: !(s[key] ?? (key === 'pageTree')) }
       try {
         localStorage.setItem(LS_SECTIONS, JSON.stringify(next))
       } catch {
@@ -118,6 +123,7 @@ export function Sidebar() {
       setRename(null)
       setWsMenu(null)
       setSelMenu(null)
+      setCreateMenu(null)
     }
   }, [collapsed])
 
@@ -162,7 +168,7 @@ export function Sidebar() {
   const recent = selectors.recent(50).filter(page => isQueryable(state.pages, page.id)).slice(0, 5)
   const libraryActive = route.type === 'library' && route.scope === 'all'
   const untypedActive = route.type === 'library' && route.scope === 'untyped'
-  const rootPages = treeChildren(null)
+  const rootPages = selectors.children(null)
   const wsName = settings.workspaceName.trim() || `${PRODUCT.name}`
   const isHome = route.type === 'home'
   const menuPage = menu ? selectors.page(menu.pageId) : undefined
@@ -253,41 +259,43 @@ export function Sidebar() {
                 ))}
               </Section>
             )}
-            {settings.objectTypesSidebar !== false && (
-              <Section title={t('Tipos', 'Types')} closed={!!sections.types} onToggle={() => toggleSection('types')} addLabel={t('Explorar tipos', 'Explore types')} onAdd={() => openTypesGallery()}>
+            <Section title={t('Workspace', 'Workspace')} closed={!!sections.workspace} onToggle={() => toggleSection('workspace')}
+              addLabel={t('Criar no Workspace', 'Create in Workspace')} addMenuOpen={!!createMenu}
+              onAdd={(trigger) => setCreateMenu(createMenu ? null : { anchor: trigger.getBoundingClientRect(), trigger })}>
+              {settings.objectTypesSidebar !== false && <>
+                <div className="sb-section-head sb-section-head--static sb-workspace-subhead"><span className="sb-section-title">{t('Tipos', 'Types')}</span></div>
                 <SidebarTypes />
+              </>}
+              <button type="button" className={`sb-row sb-nav${untypedActive ? ' sb-row--active' : ''}`} aria-current={untypedActive ? 'page' : undefined} onClick={() => actions.navigate({ type: 'library', scope: 'untyped' })}>
+                <span className="sb-row-icon"><LayoutGrid size={18} aria-hidden /></span><span className="sb-row-title">{t('Sem tipo', 'Untyped')}</span>
+              </button>
+              <Section title={t('Páginas', 'Pages')} closed={sections.pageTree ?? true} onToggle={() => toggleSection('pageTree')}>
+                <div
+                  role="tree"
+                  aria-multiselectable="true"
+                  aria-label={t("Páginas", "Pages")}
+                  className={`sb-tree${drop?.pos === 'root' ? ' sb-tree--drop-root' : ''}`}
+                  onDragOver={onRootDragOver}
+                  onDrop={onRootDrop}
+                  onDragLeave={(e) => {
+                    if (!e.currentTarget.contains(e.relatedTarget as Node)) setDrop(null)
+                  }}
+                >
+                  <PageTree parentId={null} depth={0} draggable />
+                  <button type="button" className="sb-row sb-add-row" onClick={() => newRootPage()}>
+                    <span className="sb-row-icon"><Plus size={16} strokeWidth={1.7} /></span>
+                    <span className="sb-row-title">{rootPages.length ? t("Adicionar página", "Add page") : t("Adicionar uma página", "Add a page")}</span>
+                  </button>
+                </div>
               </Section>
-            )}
-            <button type="button" className={`sb-row sb-nav${untypedActive ? ' sb-row--active' : ''}`} aria-current={untypedActive ? 'page' : undefined} onClick={() => actions.navigate({ type: 'library', scope: 'untyped' })}>
-              <span className="sb-row-icon"><LayoutGrid size={18} aria-hidden /></span><span className="sb-row-title">{t('Sem tipo', 'Untyped')}</span>
-            </button>
-            <Section
-              title={t("Particular", "Private")}
-              closed={!!sections.private}
-              onToggle={() => toggleSection('private')}
-              addLabel={t("Adicionar uma página", "Add a page")}
-              onAdd={() => newRootPage({ sidebarPrivate: true })}
-            >
-              <div
-                role="tree"
-                aria-multiselectable="true"
-                aria-label={t("Páginas", "Pages")}
-                className={`sb-tree${drop?.pos === 'root' ? ' sb-tree--drop-root' : ''}`}
-                onDragOver={onRootDragOver}
-                onDrop={onRootDrop}
-                onDragLeave={(e) => {
-                  if (!e.currentTarget.contains(e.relatedTarget as Node)) setDrop(null)
-                }}
-              >
-                <PageTree parentId={null} depth={0} draggable />
-                <button type="button" className="sb-row sb-add-row" onClick={() => newRootPage({ sidebarPrivate: true })}>
-                  <span className="sb-row-icon">
-                    <Plus size={16} strokeWidth={1.7} />
-                  </span>
-                  <span className="sb-row-title">{rootPages.length ? t("Adicionar página", "Add page") : t("Adicionar uma página", "Add a page")}</span>
-                </button>
-              </div>
             </Section>
+            {createMenu && <Popover anchor={createMenu.anchor} ignore={createMenu.trigger} onClose={() => setCreateMenu(null)} className="sb-menu" label={t('Criar no Workspace', 'Create in Workspace')}>
+              <div ref={createMenuRef} role="menu" className="sb-menu-body" onKeyDown={menuKeyNav}>
+                <MenuItem icon={<SquarePen size={18} />} label={t('Nova página', 'New page')} onClick={() => { setCreateMenu(null); requestWorkspaceCreation('page') }} />
+                <MenuItem icon={<BlockIcon name="database-full-page" size={18} />} label={t('Novo banco de dados', 'New database')} onClick={() => { setCreateMenu(null); requestWorkspaceCreation('database') }} />
+                <MenuItem icon={<Shapes size={18} />} label={t('Novo tipo', 'New type')} onClick={() => { setCreateMenu(null); requestWorkspaceCreation('type') }} />
+              </div>
+            </Popover>}
           </div>
         </TreeContext.Provider>
 
@@ -436,8 +444,9 @@ function Section(props: {
   title: string
   closed: boolean
   onToggle: () => void
-  addLabel: string
-  onAdd: () => void
+  addLabel?: string
+  addMenuOpen?: boolean
+  onAdd?: (trigger: HTMLButtonElement) => void
   children: ReactNode
 }) {
   return (
@@ -447,15 +456,17 @@ function Section(props: {
           <span>{props.title}</span>
           <ChevronRight size={12} strokeWidth={2.25} className={`sb-section-chevron${props.closed ? '' : ' sb-chevron--open'}`} aria-hidden />
         </button>
-        <button
+        {props.onAdd && <button
           type="button"
           className="sb-mini-btn sb-section-add"
           aria-label={props.addLabel}
+          aria-haspopup={props.addMenuOpen !== undefined ? 'menu' : undefined}
+          aria-expanded={props.addMenuOpen}
           data-tip={props.addLabel}
-          onClick={props.onAdd}
+          onClick={(event) => props.onAdd?.(event.currentTarget)}
         >
           <Plus size={16} strokeWidth={1.7} />
-        </button>
+        </button>}
       </div>
       {!props.closed && <div className="sb-section-body">{props.children}</div>}
     </section>

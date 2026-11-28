@@ -312,6 +312,9 @@ body.sb-resizing-body * {
 .sb-section:first-child {
   margin-top: 10px;
 }
+.sb-section-body > .sb-section { margin-top: var(--space-1); }
+.sb-section-head.sb-workspace-subhead { height: var(--space-5); }
+.sb-section-add[aria-haspopup="menu"] { opacity: 1; }
 .sb-recents .sb-row { gap: 8px; }
 .sb-section-head--static:hover { background: transparent; }
 .sb-section-head {

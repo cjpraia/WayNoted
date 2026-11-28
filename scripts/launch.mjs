@@ -19,8 +19,9 @@ function checked(command, args, options) {
 const modes = process.argv.slice(2)
 const remote = modes.includes('--remote-main')
 const rebuild = modes.includes('--rebuild')
+const openBuilt = modes.includes('--open-built')
 const test = modes.includes('--test')
-if (modes.some(mode => !['--remote-main', '--rebuild', '--test'].includes(mode)) || remote && rebuild) throw new Error('Invalid launcher arguments.')
+if (modes.some(mode => !['--remote-main', '--rebuild', '--open-built', '--test'].includes(mode)) || [remote, rebuild, openBuilt].filter(Boolean).length > 1) throw new Error('Invalid launcher arguments.')
 brand.legacyEnv()
 const artifacts = path.join(root, '.artifacts')
 const appData = path.join(os.homedir(), 'Library', 'Application Support')
@@ -94,6 +95,25 @@ function buildLocal(npm) {
   return { bundle, commit: checked('/usr/bin/git', ['rev-parse', 'HEAD']), checkout: root }
 }
 
+function latestLocalBuild() {
+  const receipts = (fs.existsSync(artifacts) ? fs.readdirSync(artifacts, { withFileTypes: true }) : [])
+    .filter(entry => entry.isDirectory())
+    .map(entry => path.join(artifacts, entry.name, 'bundle'))
+    .map(file => ({ file, time: fs.lstatSync(file, { throwIfNoEntry: false }) }))
+    .filter(entry => entry.time?.isFile())
+    .sort((a, b) => b.time.mtimeMs - a.time.mtimeMs)
+  for (const { file } of receipts) {
+    try {
+      const expected = bundlePath(path.join(path.dirname(file), 'source'))
+      const bundle = fs.realpathSync(fs.readFileSync(file, 'utf8').trim())
+      if (bundle !== expected || bundleIdentity(bundle) !== bundleId) continue
+      checked('/usr/bin/codesign', ['--verify', '--deep', '--strict', bundle])
+      return { bundle, checkout: root }
+    } catch { /* Skip missing or invalid packages and try the previous receipt. */ }
+  }
+  throw new Error('Nenhuma compilação local disponível. Rode o waynoted-build.command primeiro.')
+}
+
 async function waitForSafeClose(active) {
   console.log('Compilação pronta. Salve e encerre o WayNoted para abrir esta versão.')
   console.log('Build ready. Save and quit WayNoted to open this version.')
@@ -108,6 +128,10 @@ async function waitForSafeClose(active) {
 
 async function launch() {
   const active = runningForProfile()
+  const built = openBuilt ? latestLocalBuild() : null
+  if (active && openBuilt && active.bundle !== built.bundle) {
+    throw new Error('Feche a versão aberta do WayNoted com ⌘Q e clique no atalho de novo.')
+  }
   if (active && !remote && !rebuild) {
     checked('/usr/bin/open', ['-a', active.bundle])
     return
@@ -116,7 +140,7 @@ async function launch() {
     throw new Error('O WayNoted já está aberto. Use Visualizar → Recompilar e reiniciar WayNoted. / WayNoted is already open. Use the View menu.')
   }
   const npm = fs.realpathSync(checked('/usr/bin/which', ['npm']))
-  const result = remote ? buildRemote(npm) : buildLocal(npm)
+  const result = built ?? (remote ? buildRemote(npm) : buildLocal(npm))
   checked('/usr/bin/codesign', ['--verify', '--deep', '--strict', result.bundle])
   if (bundleIdentity(result.bundle) !== bundleId) throw new Error('Incorrect bundle identity.')
 
@@ -150,7 +174,7 @@ async function launch() {
   }
   if (opened?.bundle !== result.bundle) throw new Error('A nova instância não confirmou a abertura. / The new instance did not confirm startup.')
   const version = checked('/usr/bin/plutil', ['-extract', 'CFBundleShortVersionString', 'raw', '-o', '-', path.join(result.bundle, 'Contents', 'Info.plist')])
-  console.log(`WayNoted ${version} · ${result.commit.slice(0, 8)} · ${result.bundle}`)
+  console.log(`WayNoted ${version} · ${result.commit ? result.commit.slice(0, 8) + ' · ' : ''}${result.bundle}`)
 }
 
 launch().catch(error => { console.error(error.message); process.exitCode = 1 })

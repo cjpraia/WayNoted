@@ -6,7 +6,6 @@ import { indexedLibraryMatches, libraryPages, libraryTypePages, searchLibrary } 
 import { pageTextKey, SearchEngine } from '../src/search/engine.ts'
 import { validateMeta } from '../src/workspace.ts'
 import { createRequire } from 'node:module'
-import { keepLegacyPrivateRoots } from '../src/components/sidebar/privateRoots.ts'
 
 const { parseDeepLink, sanitizeWindowRoute } = createRequire(import.meta.url)('../electron/deep-links.cjs')
 const types = normalizeObjectTypes([
@@ -34,7 +33,7 @@ test('unified library projects canonical pages, database rows and subpages exact
   assert.strictEqual(all.find(({ id }) => id === 'row'), pages.row)
   assert.strictEqual(pages.row.parentId, 'db')
   assert.deepEqual(pages.row.types, ['article', 'project'])
-  assert.deepEqual(libraryPages(pages, types, 'untyped', []).map(({ id }) => id), ['plain', 'child'])
+  assert.deepEqual(libraryPages(pages, types, 'untyped', []).map(({ id }) => id), ['plain', 'child', 'db'])
   assert.deepEqual(libraryPages(pages, types, 'recent', ['row', 'private', 'child', 'row', 'missing', 'secret']).map(({ id }) => id), ['row', 'child'])
 })
 
@@ -65,18 +64,4 @@ test('library route survives normalization, links and detached windows', () => {
   assert.deepEqual(parseDeepLink('workspace://library?scope=untyped'), route)
   assert.deepEqual(sanitizeWindowRoute(route), route)
   assert.equal(parseDeepLink('workspace://library?scope=bad'), null)
-})
-
-test('workspace load retains legacy trees and explicit placements without moving pages', () => {
-  const [folder, child, loose, nested] = Array.from({ length: 4 }, () => crypto.randomUUID())
-  const meta = validateMeta({ pages: {
-    [folder]: page(folder), [child]: page(child, { parentId: folder }),
-    [loose]: page(loose, { sidebarPrivate: false }), [nested]: page(nested, { parentId: loose }),
-  }, settings: {} })
-  const loaded = keepLegacyPrivateRoots(meta.pages)
-  assert.equal(loaded[folder].sidebarPrivate, true)
-  assert.equal(loaded[loose].sidebarPrivate, false)
-  assert.equal(loaded[child].parentId, folder)
-  assert.equal(loaded[nested].parentId, loose)
-  assert.equal(meta.pages[folder].sidebarPrivate, undefined)
 })

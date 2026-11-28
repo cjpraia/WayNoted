@@ -377,7 +377,7 @@ async function startLocalApi({ storage: rawStorage, token, onChange, port = 0, a
         call.target = input.title
         await gate({ kind: 'page.create', title: input.title, parentTitle: input.parentId ? meta.pages[input.parentId].title : '', diff: diffBlocks([], [{ type: 'heading', content: inline(input.title) }, ...initial]) })
         const id = randomUUID()
-        const page = { ...newPage(meta, { id, parentId: input.parentId || null, title: input.title }), ...(!input.parentId ? { sidebarPrivate: false } : {}) }
+        const page = newPage(meta, { id, parentId: input.parentId || null, title: input.title })
         await storage.saveDoc(id, initial)
         const next = await storage.saveMeta({ ...meta, pages: { ...meta.pages, [id]: page } }, meta)
         emit({ meta: next }); return send(res, 201, page)

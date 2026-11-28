@@ -1,15 +1,14 @@
 // Menu "⋯" da página: fonte, opções de layout, ações e rodapé com estatísticas.
 import { useRef, useState } from 'react'
 import { Files, Table2, ArrowLeft, Bell, Clock3, Copy, FileCode, FileDown, FileUp, LayoutTemplate, Lock, Maximize2, Mic, Sparkles, Trash2, Type, Focus, ChevronDown } from 'lucide-react'
-import { KeyRound, EyeOff, GraduationCap, PanelLeft } from 'lucide-react'
+import { KeyRound, EyeOff, GraduationCap } from 'lucide-react'
 import { hasToggleCards, isPageCard, setPageCard, setToggleCards } from '../../review/reviewActions'
 import { aiPrivateSource } from '../../agent/privacy'
 import { mirrorAvailable } from '../../mirror/controller'
 import { mirrorSkipSource } from '../../mirror/skip'
 import { openPageLockDialog, pageLockAvailable } from '../../security/PageLockDialog'
 import type { ReactNode } from 'react'
-import { actions, api, selectors, useStore } from '../../store'
-import { isPrivateRoot } from '../sidebar/privateRoots'
+import { actions, api, useStore } from '../../store'
 import type { Page, PageFont } from '../../types'
 import { exportPageAsHTML, exportPageAsMarkdown, exportWorkspaceAsZip, importPageFile } from './exportMarkdown'
 import { openExportDialog } from '../../export/run'
@@ -78,8 +77,6 @@ export function PageMenu({ page, anchor, onClose }: { page: Page; anchor: HTMLEl
     return parent?.closest(`[data-page-id="${CSS.escape(page.id)}"]`) ? selection?.toString() ?? '' : ''
   })
   const locked = page.locked
-  const hasChildren = selectors.childrenShared(page.id).length > 0
-  const inPrivate = isPrivateRoot(page, hasChildren)
   const set = (patch: Partial<Page>) => {
     if (page.locked && patch.locked !== false) return
     actions.updatePage(page.id, patch, false)
@@ -163,14 +160,6 @@ export function PageMenu({ page, anchor, onClose }: { page: Page; anchor: HTMLEl
       <div className="pg-menu-sep" />
       <div className="pg-menu-section">
         <div className="pg-menu-caption">{t('Página', 'Page')}</div>
-        {page.parentId === null && !page.trashed && (!inPrivate || (!page.passwordLock && !page.database && !page.canvas && !hasChildren)) && <Item
-          icon={<PanelLeft size={16} />}
-          label={inPrivate ? t('Remover de Particular', 'Remove from Private') : t('Mostrar em Particular', 'Show in Private')}
-          onClick={() => void run(async () => {
-            actions.updatePage(page.id, { sidebarPrivate: !inPrivate }, false)
-            await actions.flushMeta()
-          })}
-        />}
         <Item icon={<Clock3 size={16} />} label={t('Histórico da página', 'Page history')} onClick={() => setHistoryOpen(true)} />
         {!page.canvas && <Item icon={<CanvasIcon name="canvas" size={16} />} label={t('Mostrar na lousa', 'Show on whiteboard')} onClick={() => setCanvasOpen(true)} />}
         <Item icon={<Lock size={16} />} label={page.database ? t('Bloquear visualizações', 'Lock views') : t('Bloquear página', 'Lock page')} onClick={() => set({ locked: !page.locked })} right={<Toggle on={locked} />} />

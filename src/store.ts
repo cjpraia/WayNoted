@@ -18,7 +18,6 @@ import { pageBlockReferences, ownedPageBlockChanges } from './page-block-ownersh
 import { lockedAncestor, protectedAncestor, lockPrompts } from './security/pageLock.ts'
 import { searchHooks } from './search/hooks.ts'
 import { allChildren, descendantIds, isLiveIndexed, liveChildren, pageIndex } from './perf/pageIndex.ts'
-import { keepLegacyPrivateRoots } from './components/sidebar/privateRoots.ts'
 import { sharePages, shareValue } from './perf/shareMeta.ts'
 import { applyMetaPatch, diffMeta } from '../electron/meta-patch.mjs'
 import { ProductivityClient, browserBackend, nativeBackend } from './activity/client.ts'
@@ -510,7 +509,7 @@ function applySnap(snap: UndoSnap) {
   } finally { dbUndoBusy = false }
 }
 /** Campos restaurados por transações estruturais (conversões de páginas ↔ bancos). */
-const STRUCT_FIELDS = [...UNDO_FIELDS, 'parentId', 'order', 'blockOwnerId', 'sidebarPrivate'] as const
+const STRUCT_FIELDS = [...UNDO_FIELDS, 'parentId', 'order', 'blockOwnerId'] as const
 function snapStruct(ids: string[]): UndoSnap {
   const out: UndoSnap = {}
   for (const id of ids) {
@@ -601,10 +600,10 @@ export const actions = {
           const meta = validateMeta(raw)
           persistedMeta = raw
           metaSeq = -1 // o processo principal guardou esta mesma base no loadMeta
-          set({ ...meta, pages: keepLegacyPrivateRoots(meta.pages), ready: true }, false)
+          set({ ...meta, ready: true }, false)
         } else {
           const id = crypto.randomUUID(), now = Date.now()
-          const page: Page = { id, parentId: null, sidebarPrivate: true, title: 'Getting started', icon: '👋', cover: null, coverPosition: 50,
+          const page: Page = { id, parentId: null, title: 'Getting started', icon: '👋', cover: null, coverPosition: 50,
             favorite: false, trashed: false, trashedAt: null, createdAt: now, updatedAt: now, order: 0, fullWidth: false,
             smallText: false, font: 'default', locked: false, text: blocksToText(welcomeDoc) }
           await api.saveDoc(id, welcomeDoc)
@@ -677,7 +676,7 @@ export const actions = {
       else localStorage.setItem(COMPAT.record060 + Date.now(), JSON.stringify(state.conflictMeta))
     }
     persistedMeta = validated; savedRevision = revision; metaSeq = -1
-    set({ ...validated, pages: keepLegacyPrivateRoots(validated.pages), notifications: validated.notifications ?? {}, syncedBlocks: validated.syncedBlocks ?? {}, saveError: null, conflictMeta: null }, false)
+    set({ ...validated, notifications: validated.notifications ?? {}, syncedBlocks: validated.syncedBlocks ?? {}, saveError: null, conflictMeta: null }, false)
   },
 
   setInboxOpen(open: boolean) { set({ inboxOpen: open }, false) },
@@ -739,7 +738,6 @@ export const actions = {
       text: '',
       // Página nova não tem documento: já nasce indexada (evita a migração de índice na abertura).
       bodyText: '', outboundPageIds: [], bodyOutboundPageIds: [], syncedBlockIds: [],
-      ...(!parentId && !init.database && !init.canvas ? { sidebarPrivate: false } : {}),
       ...init,
       id,
       parentId,
@@ -767,7 +765,7 @@ export const actions = {
     if (!page) return
     const { id: _id, ...safePatch } = patch
     if (page.locked && patch.locked !== false) {
-      const forbidden = ['title', 'icon', 'cover', 'coverPosition', 'fullWidth', 'smallText', 'font', 'props', 'types', 'typeProps']
+      const forbidden = ['title', 'icon', 'cover', 'coverPosition', 'fullWidth', 'smallText', 'font', 'props', 'types', 'typeProps', 'tagPageIds']
       if (Object.keys(safePatch).some(key => forbidden.includes(key))) return
       if (safePatch.database && JSON.stringify({ ...safePatch.database, activeViewId: page.database?.activeViewId }) !== JSON.stringify(page.database)) return
     }
@@ -924,7 +922,7 @@ export const actions = {
   },
 
   /** Move `id` para `parentId`, na posição `index` entre os irmãos (fim se omitido). */
-  movePage(id: string, parentId: string | null, index?: number, showInPrivate = false) {
+  movePage(id: string, parentId: string | null, index?: number) {
     const page = state.pages[id]
     if (!page) return
     if (parentId && (!isLive(parentId) || (state.pages[parentId].locked && !state.pages[parentId].database))) return
@@ -947,7 +945,7 @@ export const actions = {
     siblings.forEach((p, i) => {
       // Só recria as páginas cuja ordem muda (50 mil irmãos: mover uma linha não regrava todas).
       if (p.id !== id && pages[p.id].order === i) return
-      pages[p.id] = { ...pages[p.id], order: i, ...(p.id === id ? { parentId, blockOwnerId: null, ...(showInPrivate && !parentId ? { sidebarPrivate: true } : {}), ...(mirrored ? { typeProps: mirrored } : {}) } : {}) }
+      pages[p.id] = { ...pages[p.id], order: i, ...(p.id === id ? { parentId, blockOwnerId: null, ...(mirrored ? { typeProps: mirrored } : {}) } : {}) }
     })
     const expanded = parentId ? { ...state.settings.expanded, [parentId]: true } : state.settings.expanded
     set({ pages, settings: { ...state.settings, expanded } })

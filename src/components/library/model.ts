@@ -8,7 +8,7 @@ import { typeIndex, type TypeList } from '../../objecttypes/model.ts'
 export function libraryPages(pages: Record<string, Page>, types: TypeList, scope: LibraryScope, recent: readonly string[], dailyDatabaseId?: string) {
   if (scope === 'recent') return [...new Set(recent)].filter(id => isQueryable(pages, id)).map(id => pages[id])
   const candidates = scope === 'untyped'
-    ? untypedPages(pages, types, { includeEditLocked: true, excludeDatabaseIds: dailyDatabaseId ? new Set([dailyDatabaseId]) : undefined })
+    ? untypedPages(pages, types, { includeEditLocked: true, includeContainers: true, excludeDatabaseIds: dailyDatabaseId ? new Set([dailyDatabaseId]) : undefined })
     : Object.values(pages)
   return candidates.filter(page => isQueryable(pages, page.id)).sort((a, b) => b.updatedAt - a.updatedAt || a.id.localeCompare(b.id))
 }

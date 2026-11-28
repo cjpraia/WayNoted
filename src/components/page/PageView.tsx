@@ -35,6 +35,7 @@ import { UnlinkedMentions } from '../graph/UnlinkedMentions'
 import { RowLayoutSettings } from '../database/RowLayoutSettings'
 import { TypeFields, TypeHeader, TypeTagSuggestion } from '../objecttypes/PageTypes'
 import { ChildPages } from './ChildPages'
+import { PageTags } from './PageTags'
 import { insertTextInPageEditor, objectTypes, registerTypeEditor } from '../../objecttypes/actions'
 import { VariablePicker } from '../modals/VariablePicker'
 import { typesAsTemplates } from '../../objecttypes/adjust'
@@ -269,6 +270,7 @@ export function PageView({ pageId, theme }: Props) {
         <DailyNoteNav pageId={pageId} />
         <PageHeader page={page} locked={locked} titleRef={titleRef} onEnter={focusEditorStart} hasDoc={doc.status === 'ready'} onCustomizeLayout={parentDatabase && !parentDatabase.locked ? () => setStarterPanel(starterPanel === 'layout' ? null : 'layout') : undefined} />
         <TypeHeader page={page} locked={locked} />
+        <PageTags page={page} locked={locked} />
         {!!rowLayout?.pinnedPropertyIds?.length && <RowProperties pageId={pageId} placement="pinned" />}
         <div className="pg-layout-nav">
           {!!rowLayout?.tabs?.length && <div role="tablist" aria-label={t('Abas da página', 'Page tabs')}><button role="tab" aria-selected={!selectedLayoutTab} onClick={() => setLayoutTab('content')}>{t('Conteúdo', 'Content')}</button>{rowLayout.tabs.map(tab => <button role="tab" aria-selected={selectedLayoutTab?.id === tab.id} key={tab.id} onClick={() => setLayoutTab(tab.id)}>{tab.name}</button>)}{!locked && !!parentDatabase && !parentDatabase.locked && <button type="button" className="pg-tabs-manage" aria-label={t('Gerenciar abas', 'Manage tabs')} title={t('Gerenciar abas deste banco', 'Manage this database’s tabs')} onClick={() => { setLayoutTab('content'); setStarterPanel('layout') }}>⋯</button>}</div>}

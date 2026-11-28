@@ -14,12 +14,11 @@ const native = {
 }
 Object.assign(globalThis, { window: { api: native, addEventListener() {} } })
 Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: () => null, setItem() {}, removeItem() {} } })
-const { actions, getState } = await import('../src/store.ts')
+const { actions, getState, selectors } = await import('../src/store.ts')
 const ops = await import('../src/objecttypes/actions.ts')
 const adjust = await import('../src/objecttypes/adjust.ts')
 const { buildTypeCollection } = await import('../src/objecttypes/collection.ts')
 const { clearToasts, visibleToasts } = await import('../src/components/ui/toastQueue.ts')
-const { isPrivateRoot } = await import('../src/components/sidebar/privateRoots.ts')
 const { libraryPages } = await import('../src/components/library/model.ts')
 const { movePagesTo } = await import('../src/subpages/actions.ts')
 
@@ -28,17 +27,20 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 30))
 const pages = () => getState().pages
 const types = () => ops.objectTypes()
 
-test('classification, folder placement and Acervo visibility are independent', () => {
+test('root includes loose typed pages and moving them preserves classification', () => {
   const project = ops.createType({ name: 'Projeto da jornada' })
   const resource = ops.createType({ name: 'Recurso da jornada' })
-  const folder = actions.createPage(null, { title: 'Trabalho', sidebarPrivate: true })
-  const note = ops.createObject(resource, {}, { title: 'Referência' })
-  const visible = (id: string) => isPrivateRoot(pages()[id], Object.values(pages()).some(page => page.parentId === id && !page.trashed))
+  const folder = actions.createPage(null, { title: 'Trabalho' })
+  // Existing metadata may still carry a flag from the old, filtered sidebar.
+  const note = ops.createObject(resource, {}, { title: 'Referência', ...{ sidebarPrivate: false } })
+  const atRoot = (id: string) => selectors.childrenShared(null).some(page => page.id === id)
   const collection = (typeId: string) => buildTypeCollection(pages(), types(), types().find(type => type.id === typeId)!, { title: 'Nome' }).rows.map(row => row.id)
-  assert.equal(visible(note), false)
-  assert.equal(visible(folder), true)
+  assert.equal(atRoot(note), true)
+  assert.equal(atRoot(folder), true)
   assert.ok(collection(resource).includes(note))
   movePagesTo([note], folder)
+  assert.equal(atRoot(note), false)
+  assert.ok(collection(resource).includes(note))
   ops.removeType([note], resource)
   assert.ok(!collection(resource).includes(note))
   assert.ok(libraryPages(pages(), types(), 'untyped', []).some(page => page.id === note))
@@ -47,12 +49,8 @@ test('classification, folder placement and Acervo visibility are independent', (
   assert.ok(collection(project).includes(note))
   assert.ok(!libraryPages(pages(), types(), 'untyped', []).some(page => page.id === note))
   movePagesTo([note], null)
-  assert.equal(visible(note), true)
+  assert.equal(atRoot(note), true)
   assert.ok(collection(project).includes(note))
-  const oldPage = { ...pages()[folder], sidebarPrivate: undefined }
-  assert.equal(isPrivateRoot(oldPage, true), true)
-  assert.equal(isPrivateRoot(oldPage, false), false)
-  assert.equal(isPrivateRoot({ ...oldPage, sidebarPrivate: false, passwordLock: { rootId: folder, hideTitle: true } }, false), true)
 })
 
 /** Banco (já nasce com Tags) com as propriedades de teste (Etiquetas multisseleção, Nota texto, Total fórmula) e uma linha. */

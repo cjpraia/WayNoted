@@ -1,0 +1,11 @@
+.pg-tag-links { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-2) 0 var(--space-3); }
+.pg-tag-links button, .pg-tag-picker button, .pg-tag-related button { display: inline-flex; align-items: center; gap: var(--space-1); min-height: var(--hit-min); padding: var(--space-1) var(--space-2); border: 0; border-radius: var(--radius-sm); background: transparent; color: inherit; cursor: pointer; font: inherit; }
+.pg-tag-links button:hover, .pg-tag-picker button:hover, .pg-tag-related button:hover { background: var(--bg-hover); }
+.pg-tag-pill { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; }
+.pg-tag-links .pg-tag-add { color: var(--text-secondary); font-size: 13px; }
+.pg-tag-picker { width: min(290px, calc(100vw - var(--space-6))); padding: var(--space-2); background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-modal); }
+.pg-tag-picker input { box-sizing: border-box; width: 100%; padding: var(--space-2); font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.pg-tag-options { display: grid; max-height: 210px; overflow: auto; }
+.pg-tag-related { margin: var(--space-3) 0; }
+.pg-tag-related h2, .pg-tag-related p { font-size: 14px; }
+.pg-tag-related ul { list-style: none; margin: 0; padding: 0; }

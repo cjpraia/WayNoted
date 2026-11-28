@@ -44,7 +44,7 @@ function richSource(): ExportSource {
     templates: [{ id: 'tpl', name: 'Modelo', title: 'Nova', props: { [P.done]: true }, bodyBlocks: [{ id: 'tb', type: 'paragraph', content: [txt('corpo do modelo')], children: [] }] }],
   }
   const pages: Record<string, unknown> = {
-    [A]: page(A, null, 'Projeto: Alfa/Beta', { icon: '🚀', cover: PNG, coverPosition: 30, favorite: true, fullWidth: true, font: 'serif', order: 0, sidebarPrivate: true }),
+    [A]: page(A, null, 'Projeto: Alfa/Beta', { icon: '🚀', cover: PNG, coverPosition: 30, favorite: true, fullWidth: true, font: 'serif', order: 0 }),
     [B]: page(B, A, 'Notas da reunião', { icon: PNG, order: 0, blockOwnerId: A, comments: [{ id: 'c1', body: 'Revisar', createdAt: 1, updatedAt: 2, author: 'Ana', resolved: false, blockId: 'b-anchor' }] }),
     [T1]: page(T1, A, 'Notas da reunião', { order: 1 }),
     [D]: page(D, null, 'Tarefas', { order: 1, database }),

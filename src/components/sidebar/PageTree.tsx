@@ -1,5 +1,4 @@
 import { requestPageCreation } from '../library/PageCreation'
-import { isPrivateRoot } from './privateRoots'
 import COMPAT from '../../../shared/compatibility.ts'
 import { t, getLocale } from '../../i18n'
 // Árvore de páginas da barra lateral: linhas, expandir/recolher e arrastar e soltar.
@@ -94,7 +93,7 @@ type FlatItem = { key: string; page: Page; depth: number; empty: boolean }
 export function flattenTree(parentId: string | null, depth: number, expanded: Record<string, boolean>, limit = Infinity): FlatItem[] {
   const out: FlatItem[] = []
   const visit = (pid: string | null, d: number, seen: Set<string>) => {
-    for (const page of treeChildren(pid)) {
+    for (const page of selectors.childrenShared(pid)) {
       if (out.length >= limit) return
       out.push({ key: page.id, page, depth: d, empty: false })
       if (!expanded[page.id] || seen.has(page.id)) continue
@@ -105,19 +104,6 @@ export function flattenTree(parentId: string | null, depth: number, expanded: Re
   }
   visit(parentId, depth, new Set())
   return out
-}
-
-const rootCache = new WeakMap<Record<string, Page>, readonly Page[]>()
-
-export function treeChildren(parentId: string | null): readonly Page[] {
-  const pages = selectors.childrenShared(parentId)
-  if (parentId !== null) return pages
-  const statePages = getState().pages
-  const cached = rootCache.get(statePages)
-  if (cached) return cached
-  const roots = pages.filter(page => isPrivateRoot(page, page.sidebarPrivate === undefined && selectors.childrenShared(page.id).length > 0))
-  rootCache.set(statePages, roots)
-  return roots
 }
 
 export function PageTree(props: { parentId: string | null; depth: number; draggable: boolean }) {
@@ -151,7 +137,7 @@ function VirtualPageTree(props: { parentId: string | null; depth: number; dragga
 const flatKey = (item: FlatItem) => item.key
 
 function SmallPageTree(props: { parentId: string | null; depth: number; draggable: boolean }) {
-  const pages = treeChildren(props.parentId)
+  const pages = selectors.childrenShared(props.parentId)
   return (
     <>
       {pages.map((p) => (

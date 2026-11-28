@@ -122,7 +122,9 @@ export function validateMeta(value: unknown): Meta {
       ...raw,
     } as unknown as Page
     const page = pages[id]
-    if (typeof page.sidebarPrivate !== 'boolean') delete page.sidebarPrivate
+    if (Array.isArray(raw.tagPageIds)) {
+      page.tagPageIds = [...new Set(raw.tagPageIds.filter((tagId): tagId is string => typeof tagId === 'string' && tagId !== id && UUID.test(tagId)))].slice(0, 100)
+    } else delete page.tagPageIds
     // Ícone: emoji, imagem local ou `lucide:nome:cor` — tolerante (tipo errado vira null; nunca recusa o meta).
     if (raw.icon !== undefined) page.icon = normalizePageIcon(raw.icon)
     // Tipos de objeto (src/objecttypes): tolerante — formatos inválidos são descartados, nunca recusam o meta.
