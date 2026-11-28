@@ -1,4 +1,5 @@
 import { SyntaxHighlightingExtension } from '@blocknote/core'
+import { PreserveSiblingsOnOutdent } from './blockIndent.ts'
 import { PreserveListChildrenOnEnter } from './listEnter.ts'
 
 /** Shiki grammars and themes come from the installed package; nothing is fetched. */
@@ -27,5 +28,5 @@ export async function createLocalHighlighter() {
 }
 
 export function editorExtensions() {
-  return [PreserveListChildrenOnEnter(), SyntaxHighlightingExtension({ createHighlighter: createLocalHighlighter })]
+  return [PreserveSiblingsOnOutdent(), PreserveListChildrenOnEnter(), SyntaxHighlightingExtension({ createHighlighter: createLocalHighlighter })]
 }
